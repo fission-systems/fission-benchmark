@@ -8,7 +8,7 @@ on:
       fission_version:
         description: "Fission release tag baked into GHCR image"
         type: string
-        default: "v0.1.6"
+        default: "latest"
       trials:
         description: "Timed trials per decompiler (trial 0 = cold)"
         type: string
@@ -30,7 +30,7 @@ on:
 
 env:
   FISSION_SOURCE: release
-  FISSION_VERSION: ${{ github.event.inputs.fission_version || 'v0.1.6' }}
+  FISSION_VERSION: ${{ github.event.inputs.fission_version || 'latest' }}
   REGISTRY: ghcr.io
   IMAGE_PREFIX: ghcr.io/${{ github.repository_owner }}/fission-benchmark
   PYTHONPATH: .
@@ -64,7 +64,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          requested="${FISSION_VERSION:-v0.1.6}"
+          requested="${FISSION_VERSION:-latest}"
           if [ "$requested" = "latest" ]; then
             requested="$(gh api repos/fission-systems/Fission/releases/latest --jq .tag_name)"
           fi

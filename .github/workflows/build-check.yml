@@ -3,8 +3,7 @@
 name: Docker Build Check
 
 env:
-  FISSION_VERSION: v0.1.6
-  FISSION_ASSETS_TAG: assets-v1
+  FISSION_VERSION: latest
   PYTHONPATH: .
 
 on:
@@ -34,7 +33,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          requested="${FISSION_VERSION:-v0.1.6}"
+          requested="${FISSION_VERSION:-latest}"
           if [ "$requested" = "latest" ]; then
             resolved="$(gh api repos/fission-systems/Fission/releases/latest --jq .tag_name)"
           else
@@ -175,7 +174,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          requested="${FISSION_VERSION:-v0.1.6}"
+          requested="${FISSION_VERSION:-latest}"
           if [ "$requested" = "latest" ]; then
             resolved="$(gh api repos/fission-systems/Fission/releases/latest --jq .tag_name)"
           else

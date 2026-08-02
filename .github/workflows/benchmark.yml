@@ -7,8 +7,7 @@ name: Benchmark & Deploy
 env:
   # Official / Pages contract: only GitHub Release bundles. Never FISSION_SOURCE=local.
   FISSION_SOURCE: release
-  FISSION_VERSION: ${{ github.event.client_payload.fission_version || github.event.inputs.fission_version || 'v0.1.6' }}
-  FISSION_ASSETS_TAG: assets-v1
+  FISSION_VERSION: ${{ github.event.client_payload.fission_version || github.event.inputs.fission_version || 'latest' }}
   CORPUS_TARGET: windows-x86_64
   CORPUS_SPLIT: ${{ github.event.inputs.corpus || 'dev' }}
   # Tiered decompiler sets (wall-clock ≈ cells × Ghidra cost):
@@ -57,7 +56,7 @@ on:
       fission_version:
         description: "Fission release tag to benchmark"
         type: string
-        default: "v0.1.6"
+        default: "latest"
       corpus:
         description: "Corpus split to benchmark"
         type: choice
@@ -163,7 +162,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          requested="${FISSION_VERSION:-v0.1.6}"
+          requested="${FISSION_VERSION:-latest}"
           if [ "$requested" = "latest" ]; then
             resolved="$(gh api repos/fission-systems/Fission/releases/latest --jq .tag_name)"
           else
