@@ -9,10 +9,22 @@ RUN apt-get update && apt-get install -y \
     git \
     && rm -rf /var/lib/apt/lists/*
 
-# Clone and build Reko
+# Clone and build Reko, pinned to a known-good commit.
+#
+# Upstream floats on main with no release cadence we track, so an
+# unpinned `git clone --depth 1` periodically breaks this image on
+# unrelated upstream changes -- e.g. commit 2a488d8 (2026-07-06)
+# refactored several ViewModels to use C#13's `field` keyword, which
+# this SDK/csproj's LangVersion doesn't recognize (CS0103: the name
+# 'field' does not exist in the current context), failing the build.
+# Pin to the last commit before that refactor and bump deliberately.
+ARG REKO_COMMIT=19d53a830a033317c4fc7f744633c9d90df5b94a
 WORKDIR /tmp
-RUN git clone --depth 1 https://github.com/uxmal/reko.git && \
+RUN git init reko && \
     cd reko && \
+    git remote add origin https://github.com/uxmal/reko.git && \
+    git fetch --depth 1 origin "${REKO_COMMIT}" && \
+    git checkout FETCH_HEAD && \
     export DOTNET_ROLL_FORWARD=Major && \
     dotnet msbuild -p:Platform=x64 -p:Configuration=UnixRelease -t:build_solution -m ./src/BuildTargets/BuildTargets.csproj
 
