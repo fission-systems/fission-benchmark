@@ -3,14 +3,14 @@
   "publishable": true,
   "reasons": [],
   "dev": {
-    "run_id": "46f33b47-f0d6-4d2f-a65d-01424d3d54ed",
-    "envelope_sha256": "4ac9a1e1d71ec282f78e05578c3dcb1272ce1744a17a6a8133e99ae18dffe482",
+    "run_id": "36b128a1-7e36-4530-8eb9-c8f20ceddcd3",
+    "envelope_sha256": "f8957b5ac075f093f5cbdab111b0d8d2216f289f4c31735f569871307ab492d6",
     "manifest_sha256": "f1f4c55a2670d497c100defd10ce8687952f5acdcf33780738aea3943a1d17b6"
   },
   "holdout": {
-    "run_id": "8a0618f1-c5e7-48af-91ee-0610eb195b35",
-    "envelope_sha256": "819dd60c430a80e803065ab5069ab99dc3c1e76dfb9bd44770f75522509138a8",
+    "run_id": "9328eba2-5167-4c62-897a-441ea86500fe",
+    "envelope_sha256": "1c76024252f4bc30eab916ae74a0c1d0b2d54678a5d27ec4387e511a861cb119",
     "manifest_sha256": "3f2983c36f1532783b29c50bc44ba4cf435b6e209c076eff55fe45c81d3f8a88"
   },
-  "overfitting_sha256": "c4bf134e47e823b41c27530288d55f859e75826c6b9fd414328d43342fdcb30b"
+  "overfitting_sha256": "911d06143105740559a77d6869e8c0eaa5ff2370df32769400d5806d67f8cc59"
 }

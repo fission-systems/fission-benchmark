@@ -18,7 +18,7 @@
           "compiler": "gcc",
           "opt": "-O1",
           "binary": "binaries/c/math_gcc_O1.exe",
-          "addr": "0x0",
+          "addr": "0x140001561",
           "isa": "x86_64",
           "format": "pe",
           "abi_profile": "windows-x86_64"
@@ -36,7 +36,7 @@
           "compiler": "gcc",
           "opt": "-Os",
           "binary": "binaries/c/math_gcc_Os.exe",
-          "addr": "0x0",
+          "addr": "0x14000155f",
           "isa": "x86_64",
           "format": "pe",
           "abi_profile": "windows-x86_64"
@@ -45,7 +45,7 @@
           "compiler": "gcc",
           "opt": "-O3",
           "binary": "binaries/c/math_gcc_O3.exe",
-          "addr": "0x0",
+          "addr": "0x140001580",
           "isa": "x86_64",
           "format": "pe",
           "abi_profile": "windows-x86_64"
@@ -72,7 +72,7 @@
           "compiler": "clang",
           "opt": "-O0",
           "binary": "binaries/c/math_clang_O0.exe",
-          "addr": "0x0",
+          "addr": "0x140001560",
           "isa": "x86_64",
           "format": "pe",
           "abi_profile": "windows-x86_64"
@@ -81,7 +81,7 @@
           "compiler": "clang",
           "opt": "-O2",
           "binary": "binaries/c/math_clang_O2.exe",
-          "addr": "0x0",
+          "addr": "0x140001550",
           "isa": "x86_64",
           "format": "pe",
           "abi_profile": "windows-x86_64"
@@ -111,7 +111,7 @@
           "compiler": "gcc",
           "opt": "-O1",
           "binary": "binaries/c/math_gcc_O1.exe",
-          "addr": "0x0",
+          "addr": "0x14000158c",
           "isa": "x86_64",
           "format": "pe",
           "abi_profile": "windows-x86_64"
@@ -129,7 +129,7 @@
           "compiler": "gcc",
           "opt": "-Os",
           "binary": "binaries/c/math_gcc_Os.exe",
-          "addr": "0x0",
+          "addr": "0x140001583",
           "isa": "x86_64",
           "format": "pe",
           "abi_profile": "windows-x86_64"
@@ -138,7 +138,7 @@
           "compiler": "gcc",
           "opt": "-O3",
           "binary": "binaries/c/math_gcc_O3.exe",
-          "addr": "0x0",
+          "addr": "0x1400015c0",
           "isa": "x86_64",
           "format": "pe",
           "abi_profile": "windows-x86_64"
@@ -165,7 +165,7 @@
           "compiler": "clang",
           "opt": "-O0",
           "binary": "binaries/c/math_clang_O0.exe",
-          "addr": "0x0",
+          "addr": "0x1400015e0",
           "isa": "x86_64",
           "format": "pe",
           "abi_profile": "windows-x86_64"
@@ -174,7 +174,7 @@
           "compiler": "clang",
           "opt": "-O2",
           "binary": "binaries/c/math_clang_O2.exe",
-          "addr": "0x0",
+          "addr": "0x1400015b0",
           "isa": "x86_64",
           "format": "pe",
           "abi_profile": "windows-x86_64"
@@ -204,7 +204,7 @@
           "compiler": "gcc",
           "opt": "-O1",
           "binary": "binaries/c/math_gcc_O1.exe",
-          "addr": "0x0",
+          "addr": "0x140001600",
           "isa": "x86_64",
           "format": "pe",
           "abi_profile": "windows-x86_64"
@@ -222,7 +222,7 @@
           "compiler": "gcc",
           "opt": "-Os",
           "binary": "binaries/c/math_gcc_Os.exe",
-          "addr": "0x0",
+          "addr": "0x1400015dd",
           "isa": "x86_64",
           "format": "pe",
           "abi_profile": "windows-x86_64"
@@ -231,7 +231,7 @@
           "compiler": "gcc",
           "opt": "-O3",
           "binary": "binaries/c/math_gcc_O3.exe",
-          "addr": "0x0",
+          "addr": "0x140001660",
           "isa": "x86_64",
           "format": "pe",
           "abi_profile": "windows-x86_64"
@@ -258,7 +258,7 @@
           "compiler": "clang",
           "opt": "-O0",
           "binary": "binaries/c/math_clang_O0.exe",
-          "addr": "0x0",
+          "addr": "0x140001760",
           "isa": "x86_64",
           "format": "pe",
           "abi_profile": "windows-x86_64"
@@ -267,7 +267,7 @@
           "compiler": "clang",
           "opt": "-O2",
           "binary": "binaries/c/math_clang_O2.exe",
-          "addr": "0x0",
+          "addr": "0x1400016c0",
           "isa": "x86_64",
           "format": "pe",
           "abi_profile": "windows-x86_64"
@@ -297,7 +297,7 @@
           "compiler": "gcc",
           "opt": "-O1",
           "binary": "binaries/c/math_gcc_O1.exe",
-          "addr": "0x0",
+          "addr": "0x140001679",
           "isa": "x86_64",
           "format": "pe",
           "abi_profile": "windows-x86_64"
@@ -315,7 +315,7 @@
           "compiler": "gcc",
           "opt": "-Os",
           "binary": "binaries/c/math_gcc_Os.exe",
-          "addr": "0x0",
+          "addr": "0x140001624",
           "isa": "x86_64",
           "format": "pe",
           "abi_profile": "windows-x86_64"
@@ -324,7 +324,7 @@
           "compiler": "gcc",
           "opt": "-O3",
           "binary": "binaries/c/math_gcc_O3.exe",
-          "addr": "0x0",
+          "addr": "0x1400016f0",
           "isa": "x86_64",
           "format": "pe",
           "abi_profile": "windows-x86_64"
@@ -351,7 +351,7 @@
           "compiler": "clang",
           "opt": "-O0",
           "binary": "binaries/c/math_clang_O0.exe",
-          "addr": "0x0",
+          "addr": "0x140001860",
           "isa": "x86_64",
           "format": "pe",
           "abi_profile": "windows-x86_64"
@@ -360,7 +360,7 @@
           "compiler": "clang",
           "opt": "-O2",
           "binary": "binaries/c/math_clang_O2.exe",
-          "addr": "0x0",
+          "addr": "0x140001770",
           "isa": "x86_64",
           "format": "pe",
           "abi_profile": "windows-x86_64"

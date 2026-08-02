@@ -16,7 +16,7 @@
           "compiler": "rustc",
           "opt": "-O0",
           "binary": "binaries/rust/patterns_rustc_O0.exe",
-          "addr": "0x140001840",
+          "addr": "0x140001920",
           "isa": "x86_64",
           "format": "pe",
           "abi_profile": "windows-x86_64"
@@ -25,7 +25,7 @@
           "compiler": "rustc",
           "opt": "-O2",
           "binary": "binaries/rust/patterns_rustc_O2.exe",
-          "addr": "0x1400014b0",
+          "addr": "0x140001590",
           "isa": "x86_64",
           "format": "pe",
           "abi_profile": "windows-x86_64"
@@ -46,7 +46,7 @@
           "compiler": "rustc",
           "opt": "-O0",
           "binary": "binaries/rust/patterns_rustc_O0.exe",
-          "addr": "0x140001850",
+          "addr": "0x140001930",
           "isa": "x86_64",
           "format": "pe",
           "abi_profile": "windows-x86_64"
@@ -55,7 +55,7 @@
           "compiler": "rustc",
           "opt": "-O2",
           "binary": "binaries/rust/patterns_rustc_O2.exe",
-          "addr": "0x1400014c0",
+          "addr": "0x1400015a0",
           "isa": "x86_64",
           "format": "pe",
           "abi_profile": "windows-x86_64"
@@ -76,7 +76,7 @@
           "compiler": "rustc",
           "opt": "-O0",
           "binary": "binaries/rust/patterns_rustc_O0.exe",
-          "addr": "0x140001b40",
+          "addr": "0x140001c20",
           "isa": "x86_64",
           "format": "pe",
           "abi_profile": "windows-x86_64"
@@ -85,7 +85,7 @@
           "compiler": "rustc",
           "opt": "-O2",
           "binary": "binaries/rust/patterns_rustc_O2.exe",
-          "addr": "0x1400015f0",
+          "addr": "0x1400016d0",
           "isa": "x86_64",
           "format": "pe",
           "abi_profile": "windows-x86_64"
@@ -106,7 +106,7 @@
           "compiler": "rustc",
           "opt": "-O0",
           "binary": "binaries/rust/patterns_rustc_O0.exe",
-          "addr": "0x1400018a0",
+          "addr": "0x140001980",
           "isa": "x86_64",
           "format": "pe",
           "abi_profile": "windows-x86_64"
@@ -115,7 +115,7 @@
           "compiler": "rustc",
           "opt": "-O2",
           "binary": "binaries/rust/patterns_rustc_O2.exe",
-          "addr": "0x1400014d0",
+          "addr": "0x1400015b0",
           "isa": "x86_64",
           "format": "pe",
           "abi_profile": "windows-x86_64"
@@ -136,7 +136,7 @@
           "compiler": "rustc",
           "opt": "-O0",
           "binary": "binaries/rust/patterns_rustc_O0.exe",
-          "addr": "0x1400019b0",
+          "addr": "0x140001a90",
           "isa": "x86_64",
           "format": "pe",
           "abi_profile": "windows-x86_64"
@@ -145,7 +145,7 @@
           "compiler": "rustc",
           "opt": "-O2",
           "binary": "binaries/rust/patterns_rustc_O2.exe",
-          "addr": "0x140001500",
+          "addr": "0x1400015e0",
           "isa": "x86_64",
           "format": "pe",
           "abi_profile": "windows-x86_64"
@@ -166,7 +166,7 @@
           "compiler": "rustc",
           "opt": "-O0",
           "binary": "binaries/rust/patterns_rustc_O0.exe",
-          "addr": "0x140001900",
+          "addr": "0x1400019e0",
           "isa": "x86_64",
           "format": "pe",
           "abi_profile": "windows-x86_64"
@@ -175,7 +175,7 @@
           "compiler": "rustc",
           "opt": "-O2",
           "binary": "binaries/rust/patterns_rustc_O2.exe",
-          "addr": "0x1400014f0",
+          "addr": "0x1400015d0",
           "isa": "x86_64",
           "format": "pe",
           "abi_profile": "windows-x86_64"
@@ -196,7 +196,7 @@
           "compiler": "rustc",
           "opt": "-O0",
           "binary": "binaries/rust/patterns_rustc_O0.exe",
-          "addr": "0x140001bd0",
+          "addr": "0x140001cb0",
           "isa": "x86_64",
           "format": "pe",
           "abi_profile": "windows-x86_64"
@@ -205,7 +205,7 @@
           "compiler": "rustc",
           "opt": "-O2",
           "binary": "binaries/rust/patterns_rustc_O2.exe",
-          "addr": "0x140001620",
+          "addr": "0x140001700",
           "isa": "x86_64",
           "format": "pe",
           "abi_profile": "windows-x86_64"
@@ -226,7 +226,7 @@
           "compiler": "rustc",
           "opt": "-O0",
           "binary": "binaries/rust/patterns_rustc_O0.exe",
-          "addr": "0x140001b80",
+          "addr": "0x140001c60",
           "isa": "x86_64",
           "format": "pe",
           "abi_profile": "windows-x86_64"
@@ -235,7 +235,7 @@
           "compiler": "rustc",
           "opt": "-O2",
           "binary": "binaries/rust/patterns_rustc_O2.exe",
-          "addr": "0x140001600",
+          "addr": "0x1400016e0",
           "isa": "x86_64",
           "format": "pe",
           "abi_profile": "windows-x86_64"
