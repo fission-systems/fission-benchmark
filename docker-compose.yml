@@ -46,7 +46,7 @@ services:
       args:
         # CI must leave this as release (Dockerfile default). Local overlay sets local.
         FISSION_SOURCE: ${FISSION_SOURCE:-release}
-        FISSION_VERSION: ${FISSION_VERSION:-v0.1.6}
+        FISSION_VERSION: ${FISSION_VERSION:-latest}
     platform: linux/amd64
     ports: ["${FISSION_HOST_PORT:-8000}:8000"]
     volumes:

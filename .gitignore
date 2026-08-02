@@ -37,3 +37,6 @@ out/
 node_modules/
 next-env.d.ts
 vendor/
+
+# Joern/pyjoern's own scratch working directory (runner/ged.py)
+workspace/
