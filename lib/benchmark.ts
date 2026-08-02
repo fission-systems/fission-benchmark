@@ -45,6 +45,11 @@ export type MvpDecompilerStats = {
   meanTypeMatch: number | null;
   typeMatchTestedRows: number;
   typeMatchPerfectRows: number;
+  // Structural correctness vs source CFG (diagnostic; not ranking).
+  // Lower is better, 0.0 = perfect structural match.
+  meanGed: number | null;
+  gedTestedRows: number;
+  gedPerfectRows: number;
 };
 
 export type CrossVariantRow = {
@@ -236,6 +241,11 @@ export function groupByDecompiler(data: BenchmarkEnvelope): MvpDecompilerStats[]
             perfect_rows?: number;
             tested_rows?: number;
           };
+          ged?: {
+            mean_ged?: number | null;
+            perfect_rows?: number;
+            tested_rows?: number;
+          };
         }
       >
     | undefined;
@@ -266,6 +276,12 @@ export function groupByDecompiler(data: BenchmarkEnvelope): MvpDecompilerStats[]
             : Number(s.type_match.mean_accuracy),
         typeMatchTestedRows: s.type_match?.tested_rows ?? 0,
         typeMatchPerfectRows: s.type_match?.perfect_rows ?? 0,
+        meanGed:
+          s.ged?.mean_ged === undefined || s.ged?.mean_ged === null
+            ? null
+            : Number(s.ged.mean_ged),
+        gedTestedRows: s.ged?.tested_rows ?? 0,
+        gedPerfectRows: s.ged?.perfect_rows ?? 0,
       }))
       .sort((a, b) => {
         if (a.decompiler === "fission") return -1;
@@ -286,6 +302,7 @@ export function groupByDecompiler(data: BenchmarkEnvelope): MvpDecompilerStats[]
       times: number[];
       taxonomy: Record<string, number>;
       typeMatchScores: number[];
+      gedScores: number[];
     }
   >();
 
@@ -301,6 +318,7 @@ export function groupByDecompiler(data: BenchmarkEnvelope): MvpDecompilerStats[]
         times: [],
         taxonomy: {},
         typeMatchScores: [],
+        gedScores: [],
       });
     }
     const s = map.get(d)!;
@@ -325,6 +343,9 @@ export function groupByDecompiler(data: BenchmarkEnvelope): MvpDecompilerStats[]
     if (row.time_ms > 0) s.times.push(row.time_ms);
     if (row.type_match_score !== null && row.type_match_score !== undefined) {
       s.typeMatchScores.push(row.type_match_score);
+    }
+    if (row.ged_score !== null && row.ged_score !== undefined) {
+      s.gedScores.push(row.ged_score);
     }
   }
 
@@ -351,6 +372,12 @@ export function groupByDecompiler(data: BenchmarkEnvelope): MvpDecompilerStats[]
           : null,
       typeMatchTestedRows: s.typeMatchScores.length,
       typeMatchPerfectRows: s.typeMatchScores.filter((v) => v >= 1).length,
+      meanGed:
+        s.gedScores.length > 0
+          ? s.gedScores.reduce((a, b) => a + b, 0) / s.gedScores.length
+          : null,
+      gedTestedRows: s.gedScores.length,
+      gedPerfectRows: s.gedScores.filter((v) => v === 0).length,
     }))
     .sort((a, b) => {
       if (a.decompiler === "fission") return -1;

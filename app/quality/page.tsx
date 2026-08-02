@@ -36,6 +36,11 @@ function RateCell({ value }: { value: number | null | undefined }) {
   return <span>{(value * 100).toFixed(1)}%</span>;
 }
 
+function DistanceCell({ value }: { value: number | null | undefined }) {
+  if (value == null || Number.isNaN(value)) return <span>—</span>;
+  return <span>{value.toFixed(2)}</span>;
+}
+
 async function QualitySection() {
   const data = await getLatestBenchmarkOptional();
   if (!data) {
@@ -49,6 +54,7 @@ async function QualitySection() {
 
   const ext = extractQualityExtensions(data);
   const typeMatchStats = groupByDecompiler(data).filter((s) => s.typeMatchTestedRows > 0);
+  const gedStats = groupByDecompiler(data).filter((s) => s.gedTestedRows > 0);
   const bareTools = Object.keys(ext.bareByDecompiler).sort((a, b) => {
     if (a === "fission") return -1;
     if (b === "fission") return 1;
@@ -170,6 +176,54 @@ async function QualitySection() {
                       <RateCell value={s.meanTypeMatch} />
                     </td>
                     <td className={tableStyles.num}>{s.typeMatchPerfectRows}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
+      <section className={styles.section}>
+        <h2 className={styles.sectionTitle}>EXT · Structural correctness (GED)</h2>
+        <p className={styles.sectionLead}>
+          Graph edit distance between the decompiled function&apos;s control-flow
+          graph and the original source&apos;s CFG (both parsed with the same
+          tool, Joern, for structural comparability). Lower is better — 0.0
+          means the control-flow shape matches exactly. Rows without an
+          extractable CFG pair are excluded rather than counted as a miss.
+          Diagnostic evidence only, not a ranking axis.
+        </p>
+        {gedStats.length === 0 ? (
+          <p className={styles.sectionLead}>
+            No ged field on this envelope yet (re-run the runner after the GED
+            metric ship).
+          </p>
+        ) : (
+          <div className={tableStyles.wrap}>
+            <table className={tableStyles.table}>
+              <thead>
+                <tr>
+                  <th>Decompiler</th>
+                  <th className={tableStyles.num}>Tested</th>
+                  <th>Mean GED</th>
+                  <th className={tableStyles.num}>Exact match (GED=0)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {gedStats.map((s) => (
+                  <tr
+                    key={s.decompiler}
+                    className={
+                      s.decompiler === "fission" ? tableStyles.fissionRow : undefined
+                    }
+                  >
+                    <td>{s.decompiler}</td>
+                    <td className={tableStyles.num}>{s.gedTestedRows}</td>
+                    <td>
+                      <DistanceCell value={s.meanGed} />
+                    </td>
+                    <td className={tableStyles.num}>{s.gedPerfectRows}</td>
                   </tr>
                 ))}
               </tbody>

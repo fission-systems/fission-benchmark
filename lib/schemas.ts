@@ -106,6 +106,10 @@ export const RowSchema = z
     // Type correctness vs DWARF ground truth (diagnostic; not ranking).
     // null = no ground truth for this function, not a 0.0 miss.
     type_match_score: z.number().nullable().optional(),
+    // Structural correctness vs source CFG (diagnostic; not ranking).
+    // Lower is better, 0.0 = perfect structural match. null = no CFG pair
+    // extracted for this function (degenerate/unparseable), not a miss.
+    ged_score: z.number().nullable().optional(),
   })
   .passthrough();
 
