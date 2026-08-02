@@ -501,15 +501,7 @@ export function filterCorePairRows(
   return rows.filter((r) => set.has(r.decompiler));
 }
 
-export function pct(rate: number | null | undefined, digits = 1): string {
-  if (rate === null || rate === undefined || Number.isNaN(rate)) return "—";
-  return `${(rate * 100).toFixed(digits)}%`;
-}
-
-export function meanFmt(value: number | null | undefined, digits = 3): string {
-  if (value === null || value === undefined || Number.isNaN(value)) return "—";
-  return value.toFixed(digits);
-}
+export { pct, meanFmt } from "./format";
 
 /** Non-ranking readability / similarity diagnostic row (per decompiler). */
 export type ReadabilityDiagStats = {

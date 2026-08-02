@@ -5,53 +5,10 @@
   background: var(--bg-elevated);
 }
 
-.svg {
+.canvasFrame {
+  position: relative;
   width: 100%;
-  height: auto;
-  overflow: visible;
-}
-
-.gridLine {
-  stroke: var(--border-subtle);
-  stroke-width: 1;
-  stroke-dasharray: 3 4;
-}
-
-.axisLabel {
-  font-size: 10px;
-  fill: var(--text-muted);
-  font-variant-numeric: tabular-nums;
-}
-
-.corpusChangedLabel {
-  font-size: 9px;
-  fill: #f59e0b;
-  font-weight: 600;
-}
-
-.line {
-  stroke: #6366f1;
-  stroke-width: 2.5;
-  stroke-linejoin: round;
-  stroke-linecap: round;
-}
-
-.dot {
-  fill: var(--bg-elevated);
-  stroke: #6366f1;
-  stroke-width: 2;
-}
-
-.dotOfficial {
-  fill: #6366f1;
-  stroke: #6366f1;
-  stroke-width: 2;
-}
-
-.noData {
-  font-size: 10px;
-  fill: var(--text-dim);
-  font-style: italic;
+  aspect-ratio: 720 / 280;
 }
 
 .hint {

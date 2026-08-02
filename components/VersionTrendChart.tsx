@@ -1,132 +1,207 @@
+"use client";
+
+import { useMemo } from "react";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Tooltip,
+  Filler,
+  type ChartOptions,
+  type ChartData,
+  type Plugin,
+  type ScriptableContext,
+  type TooltipItem,
+} from "chart.js";
+import { Line } from "react-chartjs-2";
 import type { VersionTrendPoint } from "@/lib/history";
-import { pct } from "@/lib/benchmark";
+import { pct } from "@/lib/format";
 import styles from "./VersionTrendChart.module.css";
+
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Filler);
 
 interface Props {
   points: VersionTrendPoint[];
 }
 
-const WIDTH = 720;
-const HEIGHT = 240;
-const PAD_LEFT = 44;
-const PAD_RIGHT = 20;
-const PAD_TOP = 20;
-const PAD_BOTTOM = 36;
+const ACCENT = "#6366f1";
+const ACCENT_FILL_TOP = "rgba(99, 102, 241, 0.28)";
+const ACCENT_FILL_BOTTOM = "rgba(99, 102, 241, 0)";
+const GRID = "#2d3748";
+const AXIS_TEXT = "#94a3b8";
+const CORPUS_CHANGED = "#f59e0b";
+const DOT_HOLLOW_FILL = "#1e293b"; // matches --bg-elevated, so a "hollow" point reads as an outline
 
-function xFor(index: number, count: number): number {
-  if (count <= 1) return PAD_LEFT + (WIDTH - PAD_LEFT - PAD_RIGHT) / 2;
-  const span = WIDTH - PAD_LEFT - PAD_RIGHT;
-  return PAD_LEFT + (span * index) / (count - 1);
-}
+const MIN_RADIUS = 3;
+const MAX_RADIUS_BONUS = 7;
 
-function yFor(rate: number): number {
-  const span = HEIGHT - PAD_TOP - PAD_BOTTOM;
-  return PAD_TOP + span * (1 - Math.max(0, Math.min(1, rate)));
-}
-
+/** Same sqrt-area scaling as the original hand-rolled SVG: area (not radius)
+ * scales with row count, so a 4x bigger corpus reads as a 2x bigger dot,
+ * not a 4x bigger one -- otherwise small corpora vanish and big ones
+ * swallow the chart. */
 function dotRadius(rows: number, maxRows: number): number {
-  if (maxRows <= 0) return 4;
+  if (maxRows <= 0) return MIN_RADIUS;
   const scale = Math.sqrt(Math.max(rows, 1) / maxRows);
-  return 3 + scale * 7;
+  return MIN_RADIUS + scale * MAX_RADIUS_BONUS;
+}
+
+/** Draws the small amber "corpus N→M" callouts under releases where the
+ * measured corpus size changed from the previous release -- Chart.js has no
+ * built-in per-point sub-label, so this is a plugin that reaches into the
+ * already-laid-out x scale and paints directly on the canvas after the
+ * chart finishes its own draw pass. */
+function makeCorpusChangePlugin(points: VersionTrendPoint[]): Plugin<"line"> {
+  return {
+    id: "corpusChangeLabels",
+    afterDraw(chart) {
+      const xScale = chart.scales.x;
+      if (!xScale) return;
+      const { ctx } = chart;
+      ctx.save();
+      ctx.font = "600 9px system-ui, sans-serif";
+      ctx.fillStyle = CORPUS_CHANGED;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "top";
+      points.forEach((point, index) => {
+        if (index === 0) return;
+        const prev = points[index - 1];
+        if (prev.totalRows === point.totalRows) return;
+        const x = xScale.getPixelForValue(index);
+        ctx.fillText(`corpus ${prev.totalRows}→${point.totalRows}`, x, xScale.bottom + 14);
+      });
+      ctx.restore();
+    },
+  };
 }
 
 export function VersionTrendChart({ points }: Props) {
+  const maxRows = useMemo(() => Math.max(1, ...points.map((p) => p.totalRows)), [points]);
+  const minRows = useMemo(
+    () => (points.length ? Math.min(...points.map((p) => p.totalRows)) : 0),
+    [points],
+  );
+
+  const data: ChartData<"line", (number | null)[], string> = useMemo(
+    () => ({
+      labels: points.map((p) => p.version),
+      datasets: [
+        {
+          data: points.map((p) => (p.meanSemantic !== null ? p.meanSemantic : null)),
+          borderColor: ACCENT,
+          borderWidth: 2.5,
+          cubicInterpolationMode: "monotone",
+          tension: 0.35,
+          spanGaps: false,
+          fill: true,
+          backgroundColor: (context: ScriptableContext<"line">) => {
+            const { chart } = context;
+            const { ctx, chartArea } = chart;
+            if (!chartArea) return ACCENT_FILL_BOTTOM;
+            const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+            gradient.addColorStop(0, ACCENT_FILL_TOP);
+            gradient.addColorStop(1, ACCENT_FILL_BOTTOM);
+            return gradient;
+          },
+          pointRadius: (context: ScriptableContext<"line">) => {
+            const point = points[context.dataIndex];
+            if (!point || point.meanSemantic === null) return 0;
+            return dotRadius(point.totalRows, maxRows);
+          },
+          pointHoverRadius: (context: ScriptableContext<"line">) => {
+            const point = points[context.dataIndex];
+            if (!point || point.meanSemantic === null) return 0;
+            return dotRadius(point.totalRows, maxRows) + 2;
+          },
+          pointBackgroundColor: (context: ScriptableContext<"line">) => {
+            const point = points[context.dataIndex];
+            return point?.official ? ACCENT : DOT_HOLLOW_FILL;
+          },
+          pointBorderColor: ACCENT,
+          pointBorderWidth: 2,
+          pointHoverBorderWidth: 2,
+        },
+      ],
+    }),
+    [points, maxRows],
+  );
+
+  const options: ChartOptions<"line"> = useMemo(
+    () => ({
+      responsive: true,
+      maintainAspectRatio: false,
+      layout: { padding: { bottom: 20, right: 12, top: 8 } },
+      interaction: { mode: "index", intersect: false },
+      scales: {
+        x: {
+          grid: { display: false },
+          border: { display: false },
+          ticks: { color: AXIS_TEXT, font: { size: 11 } },
+        },
+        y: {
+          min: 0,
+          max: 1,
+          border: { display: false },
+          grid: { color: GRID, drawTicks: false },
+          ticks: {
+            color: AXIS_TEXT,
+            font: { size: 11 },
+            stepSize: 0.25,
+            callback: (value) => `${Math.round(Number(value) * 100)}%`,
+          },
+        },
+      },
+      plugins: {
+        tooltip: {
+          backgroundColor: "#0f172a",
+          borderColor: GRID,
+          borderWidth: 1,
+          cornerRadius: 8,
+          padding: 10,
+          displayColors: false,
+          titleColor: "#e2e8f0",
+          titleFont: { size: 12, weight: 600 },
+          bodyColor: AXIS_TEXT,
+          bodyFont: { size: 11 },
+          callbacks: {
+            title: (items: TooltipItem<"line">[]) => points[items[0].dataIndex]?.version ?? "",
+            label: (item: TooltipItem<"line">) => {
+              const point = points[item.dataIndex];
+              if (!point || point.meanSemantic === null) return "no data";
+              return [
+                `${pct(point.meanSemantic)} semantic pass rate`,
+                `${point.perfectRows}/${point.totalRows} perfect rows`,
+                point.official ? "official run" : "smoke run",
+              ];
+            },
+          },
+        },
+      },
+    }),
+    [points],
+  );
+
+  const plugins = useMemo(() => [makeCorpusChangePlugin(points)], [points]);
+
   if (points.length === 0) {
     return (
-      <p className={styles.empty}>
-        No archived releases with multi-decomp data yet.
-      </p>
+      <p className={styles.empty}>No archived releases with multi-decomp data yet.</p>
     );
   }
 
-  const scored = points.filter((p) => p.meanSemantic !== null);
-  const maxRows = Math.max(1, ...points.map((p) => p.totalRows));
-  const gridLines = [0, 0.25, 0.5, 0.75, 1];
-
-  const linePath = scored
-    .map((p, i) => {
-      const idx = points.indexOf(p);
-      const x = xFor(idx, points.length);
-      const y = yFor(p.meanSemantic ?? 0);
-      return `${i === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`;
-    })
-    .join(" ");
-
   return (
     <div className={styles.wrap}>
-      <svg
-        viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
-        className={styles.svg}
+      <div
+        className={styles.canvasFrame}
         role="img"
-        aria-label="Fission semantic pass rate by release"
+        aria-label={`Fission semantic pass rate by release, from ${points[0].version} to ${points[points.length - 1].version}`}
       >
-        {gridLines.map((g) => (
-          <g key={g}>
-            <line
-              x1={PAD_LEFT}
-              x2={WIDTH - PAD_RIGHT}
-              y1={yFor(g)}
-              y2={yFor(g)}
-              className={styles.gridLine}
-            />
-            <text x={PAD_LEFT - 8} y={yFor(g) + 4} className={styles.axisLabel} textAnchor="end">
-              {Math.round(g * 100)}%
-            </text>
-          </g>
-        ))}
-
-        {linePath && <path d={linePath} className={styles.line} fill="none" />}
-
-        {points.map((p, idx) => {
-          const x = xFor(idx, points.length);
-          const prev = idx > 0 ? points[idx - 1] : null;
-          const corpusChanged = prev !== null && prev.totalRows !== p.totalRows;
-          return (
-            <g key={p.version}>
-              <text
-                x={x}
-                y={HEIGHT - PAD_BOTTOM + 18}
-                className={styles.axisLabel}
-                textAnchor="middle"
-              >
-                {p.version}
-              </text>
-              {corpusChanged && (
-                <text
-                  x={x}
-                  y={HEIGHT - PAD_BOTTOM + 30}
-                  className={styles.corpusChangedLabel}
-                  textAnchor="middle"
-                >
-                  corpus {prev!.totalRows}→{p.totalRows}
-                </text>
-              )}
-              {p.meanSemantic !== null ? (
-                <circle
-                  cx={x}
-                  cy={yFor(p.meanSemantic)}
-                  r={dotRadius(p.totalRows, maxRows)}
-                  className={p.official ? styles.dotOfficial : styles.dot}
-                >
-                  <title>
-                    {p.version}: {pct(p.meanSemantic)} semantic pass rate,{" "}
-                    {p.perfectRows}/{p.totalRows} perfect rows
-                    {p.official ? " (official run)" : " (smoke run)"}
-                  </title>
-                </circle>
-              ) : (
-                <text x={x} y={HEIGHT / 2} className={styles.noData} textAnchor="middle">
-                  no data
-                </text>
-              )}
-            </g>
-          );
-        })}
-      </svg>
+        <Line data={data} options={options} plugins={plugins} />
+      </div>
       <p className={styles.hint}>
-        Dot size ∝ corpus size measured at that release (
-        {Math.min(...points.map((p) => p.totalRows))}–{maxRows} Fission rows). Hollow dots are
-        smoke-profile runs; filled dots are official publications.
+        Dot size ∝ corpus size measured at that release ({minRows}–{maxRows} Fission rows).
+        Hollow dots are smoke-profile runs; filled dots are official publications.
       </p>
     </div>
   );
