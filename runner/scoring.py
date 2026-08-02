@@ -59,6 +59,12 @@ class FunctionScore:
     # matched). Diagnostic evidence only, not part of semantic ranking.
     type_match_score: float | None = None
     type_match_metadata: dict[str, Any] = field(default_factory=dict)
+    # Structural correctness: source-vs-decompiled CFG edit distance (lower
+    # is better; 0.0 = perfect structural match). None = no CFG on one side
+    # (parse failure / degenerate source), not a real 0 miss. Diagnostic
+    # evidence only, not part of semantic ranking.
+    ged_score: float | None = None
+    ged_metadata: dict[str, Any] = field(default_factory=dict)
     output_diagnostics: dict[str, Any] = field(default_factory=dict)
     oracle_evidence: dict[str, Any] = field(default_factory=dict)
     # Stable exclusive fail bucket for standard-set reporting (see standard_summary).

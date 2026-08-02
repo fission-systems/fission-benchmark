@@ -177,6 +177,11 @@ def build_mvp_by_decompiler(rows: list[Mapping[str, Any]]) -> dict[str, Any]:
         # function, excluded rather than counted as a miss.
         type_match_scores: list[float] = []
         type_match_perfect = 0
+        # Structural correctness vs source CFG (diagnostic evidence, not
+        # part of semantic ranking). None = no CFG pair extracted for that
+        # function (degenerate/unparseable), excluded rather than a miss.
+        ged_scores: list[float] = []
+        ged_perfect = 0
 
         for row in tool_rows:
             bucket = row.get("fail_taxonomy") or normalize_fail_taxonomy(row)
@@ -225,6 +230,13 @@ def build_mvp_by_decompiler(rows: list[Mapping[str, Any]]) -> dict[str, Any]:
                 if tm_value >= 1.0:
                     type_match_perfect += 1
 
+            ged = row.get("ged_score")
+            if ged is not None:
+                ged_value = float(ged)
+                ged_scores.append(ged_value)
+                if ged_value == 0.0:
+                    ged_perfect += 1
+
         attempted = len(tool_rows)
         tested = len(semantic_scores)
         # Function-boundary diagnostic breakdown (infra first-class).
@@ -257,6 +269,13 @@ def build_mvp_by_decompiler(rows: list[Mapping[str, Any]]) -> dict[str, Any]:
                 ),
                 "perfect_rows": type_match_perfect,
                 "tested_rows": len(type_match_scores),
+            },
+            "ged": {
+                "mean_ged": (
+                    round(sum(ged_scores) / len(ged_scores), 4) if ged_scores else None
+                ),
+                "perfect_rows": ged_perfect,
+                "tested_rows": len(ged_scores),
             },
             "coverage": {
                 "attempted": attempted,

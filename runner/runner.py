@@ -34,6 +34,7 @@ from run_validity import build_envelope
 from test_wrappers import TEST_WRAPPERS
 from bare_compile import try_bare_compile, classify_track, classify_isa_format
 from type_match import calibrate_binary_shift, compute_type_match, ground_truth_for_binary
+from ged import compute_ged, extract_decompiled_cfgs, extract_source_cfgs
 import subprocess
 
 app = typer.Typer(help="Fission decompiler benchmark runner.")
@@ -157,7 +158,7 @@ async def decompile_batch_and_score(
     dname: str,
     url: str,
     binary_path: Path,
-    targets: List[tuple],  # list of (fn_object, variant_object, function_source)
+    targets: List[tuple],  # list of (fn_object, variant_object, function_source, source_path)
     sem: asyncio.Semaphore,
     oracle_endpoint: str | None,
     corpus_split: str = "dev",
@@ -234,26 +235,31 @@ async def decompile_batch_and_score(
     code_counts = Counter((item.get("code") or "").strip() for item in batch_results if (item.get("code") or "").strip())
     fn_scores = []
 
+    # Ground-truth-based metrics (type_match, ged) both need every function's
+    # decompiled text up front for this (binary, decompiler) batch: type_match
+    # to calibrate one offset shift across the batch, ged to batch all
+    # functions into a single Joern invocation (mirrors decbench's own
+    # per-binary batching) instead of one parse call per function.
+    decompiled_by_function: dict[str, str] = {}
+    for fn, variant, _, _src in targets:
+        item = results_by_addr.get(_addr_key(variant.addr))
+        if not item:
+            continue
+        code = item.get("code", "") or ""
+        code_nir = item.get("code_nir") or code or ""
+        decompiled_by_function[fn.name] = code_nir
+
     # Type-match ground truth (DWARF) is per-binary, not per-function -- cached
     # across the whole run since many decompilers/batches share one binary.
-    # The offset-calibration shift is per (binary, decompiler) batch: it needs
-    # every function's decompiled text up front, so it's computed once here
-    # from the raw batch results (same NIR-preferred surface used below) and
-    # reused for every function's compute_type_match call in this batch.
     gt_types = ground_truth_for_binary(str(binary_path))
     type_match_shift: int | None = None
     if gt_types:
-        decompiled_by_function = {}
-        for fn, variant, _ in targets:
-            item = results_by_addr.get(_addr_key(variant.addr))
-            if not item:
-                continue
-            code = item.get("code", "") or ""
-            code_nir = item.get("code_nir") or code or ""
-            decompiled_by_function[fn.name] = code_nir
         type_match_shift = calibrate_binary_shift(gt_types, decompiled_by_function)
 
-    for fn, variant, function_source in targets:
+    # GED: one Joern parse for every function decompiled in this batch.
+    decompiled_cfgs = extract_decompiled_cfgs(decompiled_by_function)
+
+    for fn, variant, function_source, source_path in targets:
         variant_label = f"{variant.compiler} {variant.opt}"
         item = results_by_addr.get(_addr_key(variant.addr))
 
@@ -307,6 +313,17 @@ async def decompile_batch_and_score(
                 gt_vars, semantic_code, fn.name, type_match_shift
             )
             type_match_score = type_match_metadata.get("accuracy")
+        # Structural correctness: source CFG vs decompiled CFG edit distance
+        # (lower is better; None = no CFG on one side, not a real 0 miss).
+        ged_metadata: dict[str, Any] = {}
+        ged_score: float | None = None
+        if semantic_code and not error:
+            source_cfgs = extract_source_cfgs(str(source_path))
+            source_cfg = source_cfgs.get(fn.name)
+            decompiled_cfg = decompiled_cfgs.get(fn.name)
+            if source_cfg is not None and decompiled_cfg is not None:
+                ged_metadata = compute_ged(source_cfg, decompiled_cfg)
+                ged_score = ged_metadata.get("ged")
         # Primary readability metrics: prefer HIR for Fission dual printers.
         readability_metrics = (
             analyze_readability(readability_code, dname)
@@ -415,6 +432,8 @@ async def decompile_batch_and_score(
             ast_similarity=ast_similarity,
             type_match_score=type_match_score,
             type_match_metadata=type_match_metadata,
+            ged_score=ged_score,
+            ged_metadata=ged_metadata,
             output_diagnostics=output_diagnostics,
             oracle_evidence=oracle_evidence,
             bare_compile=bare,
@@ -520,7 +539,7 @@ async def run_all(
                 key = (dname, url, binary_path)
                 if key not in groups:
                     groups[key] = []
-                groups[key].append((fn, variant, function_source))
+                groups[key].append((fn, variant, function_source, source_path))
 
     # HTTP decompile batches are I/O-bound (work runs in containers). Prefer an
     # explicit BENCHMARK_HTTP_CONCURRENCY override in CI; otherwise scale past

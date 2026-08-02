@@ -16,6 +16,14 @@ dependencies = [
     "pyyaml>=6.0",
     "zss>=1.2",
     "pyelftools>=0.31",
+    # GED metric (runner/ged.py). NOTE: first import of pyjoern downloads
+    # ~1.8GB of Joern (JVM) binaries into pyjoern's own site-packages
+    # directory -- not a separate user cache dir, and not something `pip
+    # install` itself fetches. This is a deliberate, known infra cost
+    # (chosen over a lighter pycparser-based CFG extractor) -- see
+    # runner/ged.py's module docstring.
+    "pyjoern>=4.0",
+    "cfgutils>=1.16",
 ]
 
 [project.optional-dependencies]
