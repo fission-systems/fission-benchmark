@@ -165,7 +165,7 @@ jobs:
           set -euo pipefail
           requested="${FISSION_VERSION:-v0.1.6}"
           if [ "$requested" = "latest" ]; then
-            resolved="$(gh api repos/sjkim1127/Fission/releases/latest --jq .tag_name)"
+            resolved="$(gh api repos/fission-systems/Fission/releases/latest --jq .tag_name)"
           else
             resolved="$requested"
           fi
@@ -650,8 +650,8 @@ jobs:
             --check-remote \
             --local-paths public/benchmark-latest.json \
             --remote-paths \
-              https://raw.githubusercontent.com/sjkim1127/fission-benchmark/main/public/benchmark-latest.json \
-              https://raw.githubusercontent.com/sjkim1127/fission-benchmark/main/results/dev_latest.json
+              https://raw.githubusercontent.com/fission-systems/fission-benchmark/main/public/benchmark-latest.json \
+              https://raw.githubusercontent.com/fission-systems/fission-benchmark/main/results/dev_latest.json
           # This-run structural sanity (not the multi-decomp UI contract).
           # Validity/publishability is owned by "Validate Fission coverage gate".
           if [ -f results/dev_latest.json ]; then

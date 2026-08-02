@@ -109,7 +109,7 @@ jobs:
           svc="${{ matrix.service }}"
           fission_version="${FISSION_VERSION:-v0.1.6}"
           if [ "$svc" = "fission" ] && [ "$fission_version" = "latest" ]; then
-            fission_version="$(gh api repos/sjkim1127/Fission/releases/latest --jq .tag_name)"
+            fission_version="$(gh api repos/fission-systems/Fission/releases/latest --jq .tag_name)"
           fi
 
           {
@@ -176,7 +176,7 @@ jobs:
           set -euo pipefail
           ver="${{ github.event.client_payload.fission_version || github.event.inputs.fission_version || 'v0.1.6' }}"
           if [ "$ver" = "latest" ]; then
-            ver="$(gh api repos/sjkim1127/Fission/releases/latest --jq .tag_name)"
+            ver="$(gh api repos/fission-systems/Fission/releases/latest --jq .tag_name)"
           fi
           echo "Dispatching Benchmark & Deploy for FISSION_VERSION=${ver}"
           # Same-repo workflow_dispatch chains with GITHUB_TOKEN (unlike on.push).

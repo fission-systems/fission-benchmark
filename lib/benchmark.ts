@@ -6,7 +6,7 @@ import {
 } from "./schemas";
 
 const REPO_RAW =
-  "https://raw.githubusercontent.com/sjkim1127/fission-benchmark/main";
+  "https://raw.githubusercontent.com/fission-systems/fission-benchmark/main";
 
 /**
  * Ordered candidates for multi-decomp dashboard data.

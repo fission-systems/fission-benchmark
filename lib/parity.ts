@@ -77,7 +77,7 @@ const LOCAL_URL =
 
 const REMOTE_FALLBACK =
   process.env.PARITY_TELEMETRY_REMOTE_URL ??
-  "https://raw.githubusercontent.com/sjkim1127/fission-benchmark/main/results/telemetry/latest.json";
+  "https://raw.githubusercontent.com/fission-systems/fission-benchmark/main/results/telemetry/latest.json";
 
 export async function getParityTelemetry(): Promise<ParityTelemetry | null> {
   for (const url of [LOCAL_URL, REMOTE_FALLBACK]) {

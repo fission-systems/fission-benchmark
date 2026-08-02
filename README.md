@@ -2,12 +2,12 @@
 
 # fission-benchmark
 
-**Multi-decompiler comparison benchmark for [Fission](https://github.com/sjkim1127/Fission)**
+**Multi-decompiler comparison benchmark for [Fission](https://github.com/fission-systems/Fission)**
 
 Fission · Ghidra · Radare2+r2ghidra · angr · Snowman · rev.ng · Boomerang · Reko
 
-[![Benchmark](https://github.com/sjkim1127/fission-benchmark/actions/workflows/benchmark.yml/badge.svg)](https://github.com/sjkim1127/fission-benchmark/actions/workflows/benchmark.yml)
-[![Docker Build](https://github.com/sjkim1127/fission-benchmark/actions/workflows/build-check.yml/badge.svg)](https://github.com/sjkim1127/fission-benchmark/actions/workflows/build-check.yml)
+[![Benchmark](https://github.com/fission-systems/fission-benchmark/actions/workflows/benchmark.yml/badge.svg)](https://github.com/fission-systems/fission-benchmark/actions/workflows/benchmark.yml)
+[![Docker Build](https://github.com/fission-systems/fission-benchmark/actions/workflows/build-check.yml/badge.svg)](https://github.com/fission-systems/fission-benchmark/actions/workflows/build-check.yml)
 
 📊 **[Live Dashboard →](https://fission-benchmark.vercel.app)**  
 ⏱️ **Speed tab** (`/speed`): decompile latency (`time_ms`) + optional cold/warm micro-bench — non-ranking
@@ -290,13 +290,13 @@ does the chain automatically after a successful fission bake):
 ```bash
 # 1) Bake fission image for a SemVer tag (also chains Benchmark & Deploy)
 gh workflow run "Publish Images" \
-  --repo sjkim1127/fission-benchmark \
+  --repo fission-systems/fission-benchmark \
   -f services=fission \
   -f fission_version=v0.1.6
 
 # 2) Official ranking + Pages (fast path: fission+ghidra only)
 gh workflow run "Benchmark & Deploy" \
-  --repo sjkim1127/fission-benchmark \
+  --repo fission-systems/fission-benchmark \
   -f fission_version=v0.1.6 \
   -f corpus=dev \
   -f run_mode=official \
@@ -307,7 +307,7 @@ gh workflow run "Benchmark & Deploy" \
 
 # 3) Multi-decomp UI snapshot (slow: 9 tools; smoke or core as needed)
 gh workflow run "Benchmark & Deploy" \
-  --repo sjkim1127/fission-benchmark \
+  --repo fission-systems/fission-benchmark \
   -f fission_version=v0.1.6 \
   -f run_mode=official \
   -f publish_results=false \
@@ -316,7 +316,7 @@ gh workflow run "Benchmark & Deploy" \
 
 # 4) Language pivots (weekly default: full_matrix, 2-tool parallel fan-out)
 gh workflow run "Benchmark & Deploy" \
-  --repo sjkim1127/fission-benchmark \
+  --repo fission-systems/fission-benchmark \
   -f fission_version=v0.1.6 \
   -f run_mode=official \
   -f publish_results=true \
@@ -343,7 +343,7 @@ racing Benchmark before the image exists). After bake, CI runs
 
 ```bash
 # Correct client_payload shape (must be a JSON object, not a string):
-gh api repos/sjkim1127/fission-benchmark/dispatches --input - <<'EOF'
+gh api repos/fission-systems/fission-benchmark/dispatches --input - <<'EOF'
 {
   "event_type": "fission-release",
   "client_payload": { "fission_version": "v0.1.6" }
@@ -575,7 +575,7 @@ python -m runner.speed_microbench \
   --output results/speed/microbench_latest.json
 
 # CI
-gh workflow run "Speed Smoke" --repo sjkim1127/fission-benchmark \
+gh workflow run "Speed Smoke" --repo fission-systems/fission-benchmark \
   -f fission_version=v0.1.6 \
   -f trials=5 \
   -f decompilers=fission,ghidra

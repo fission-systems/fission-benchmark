@@ -34,8 +34,8 @@ DEFAULT_LOCAL = (
 )
 
 DEFAULT_REMOTE = (
-    "https://raw.githubusercontent.com/sjkim1127/fission-benchmark/main/results/latest.json",
-    "https://raw.githubusercontent.com/sjkim1127/fission-benchmark/main/results/dev_latest.json",
+    "https://raw.githubusercontent.com/fission-systems/fission-benchmark/main/results/latest.json",
+    "https://raw.githubusercontent.com/fission-systems/fission-benchmark/main/results/dev_latest.json",
 )
 
 

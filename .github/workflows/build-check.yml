@@ -36,7 +36,7 @@ jobs:
           set -euo pipefail
           requested="${FISSION_VERSION:-v0.1.6}"
           if [ "$requested" = "latest" ]; then
-            resolved="$(gh api repos/sjkim1127/Fission/releases/latest --jq .tag_name)"
+            resolved="$(gh api repos/fission-systems/Fission/releases/latest --jq .tag_name)"
           else
             resolved="$requested"
           fi
@@ -125,7 +125,7 @@ jobs:
             --check-remote \
             --local-paths public/benchmark-latest.json \
             --remote-paths \
-              https://raw.githubusercontent.com/sjkim1127/fission-benchmark/main/public/benchmark-latest.json
+              https://raw.githubusercontent.com/fission-systems/fission-benchmark/main/public/benchmark-latest.json
       - name: Verify tests do not generate publication artifacts
         run: git diff --exit-code -- docs/index.html results/latest.json results/latest.md results/latest-summary.json results/artifact-manifest.json
 
@@ -177,7 +177,7 @@ jobs:
           set -euo pipefail
           requested="${FISSION_VERSION:-v0.1.6}"
           if [ "$requested" = "latest" ]; then
-            resolved="$(gh api repos/sjkim1127/Fission/releases/latest --jq .tag_name)"
+            resolved="$(gh api repos/fission-systems/Fission/releases/latest --jq .tag_name)"
           else
             resolved="$requested"
           fi

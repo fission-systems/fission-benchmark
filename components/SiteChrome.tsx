@@ -117,7 +117,7 @@ export function SiteChrome({
               </Link>
             ))}
             <a
-              href="https://github.com/sjkim1127/fission-benchmark"
+              href="https://github.com/fission-systems/fission-benchmark"
               target="_blank"
               rel="noopener noreferrer"
               className={styles.headerLink}
@@ -134,11 +134,11 @@ export function SiteChrome({
           Speed · IR parity · ISR 15 min
         </span>
         <a
-          href="https://github.com/sjkim1127/fission-benchmark"
+          href="https://github.com/fission-systems/fission-benchmark"
           target="_blank"
           rel="noopener noreferrer"
         >
-          sjkim1127/fission-benchmark
+          fission-systems/fission-benchmark
         </a>
       </footer>
     </div>

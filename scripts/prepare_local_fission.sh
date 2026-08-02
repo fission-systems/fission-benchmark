@@ -153,11 +153,14 @@ build_cli_host_cd_target() {
 
   if ensure_cargo_zigbuild; then
     info "host cross-build (CD target): cargo zigbuild -p fission-cli ${LOCKED_FLAG} --release --target ${LINUX_TARGET}"
-    (
+    if ! (
       cd "$FISSION_ROOT"
       # shellcheck disable=SC2086
       cargo zigbuild -p fission-cli ${LOCKED_FLAG} --release --target "$LINUX_TARGET"
-    )
+    ); then
+      info "host cross-build failed; falling back to Docker"
+      return 1
+    fi
     is_linux_elf_x64 "$out" || die "zigbuild produced non-Linux CLI at $out"
     printf '%s\n' "$SOURCE_FINGERPRINT" >"$TARGET_STAMP"
     echo "$out"
@@ -167,11 +170,14 @@ build_cli_host_cd_target() {
   # Native Linux x86_64: same command as Fission/.github/workflows/cd.yml
   if [[ "$(uname -s)" == "Linux" && "$(uname -m)" =~ ^(x86_64|amd64)$ ]]; then
     info "host native build (CD): cargo build -p fission-cli ${LOCKED_FLAG} --release --target ${LINUX_TARGET}"
-    (
+    if ! (
       cd "$FISSION_ROOT"
       # shellcheck disable=SC2086
       cargo build -p fission-cli ${LOCKED_FLAG} --release --target "$LINUX_TARGET"
-    )
+    ); then
+      info "host native build failed; falling back to Docker"
+      return 1
+    fi
     is_linux_elf_x64 "$out" || die "native build produced non-Linux CLI at $out"
     printf '%s\n' "$SOURCE_FINGERPRINT" >"$TARGET_STAMP"
     echo "$out"

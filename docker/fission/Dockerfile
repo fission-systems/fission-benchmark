@@ -32,9 +32,9 @@ RUN set -eux; \
         chmod +x /usr/local/bin/fission_cli; \
     else \
         if [ "$FISSION_VERSION" = "latest" ]; then \
-            CLI_URL="https://github.com/sjkim1127/Fission/releases/latest/download/fission-linux-x64.tar.gz"; \
+            CLI_URL="https://github.com/fission-systems/Fission/releases/latest/download/fission-linux-x64.tar.gz"; \
         else \
-            CLI_URL="https://github.com/sjkim1127/Fission/releases/download/${FISSION_VERSION}/fission-linux-x64.tar.gz"; \
+            CLI_URL="https://github.com/fission-systems/Fission/releases/download/${FISSION_VERSION}/fission-linux-x64.tar.gz"; \
         fi; \
         echo "Downloading fission bundle from: $CLI_URL"; \
         curl -fL "$CLI_URL" -o /tmp/fission-bundle.tar.gz; \

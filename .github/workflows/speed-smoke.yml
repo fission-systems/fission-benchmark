@@ -66,7 +66,7 @@ jobs:
           set -euo pipefail
           requested="${FISSION_VERSION:-v0.1.6}"
           if [ "$requested" = "latest" ]; then
-            requested="$(gh api repos/sjkim1127/Fission/releases/latest --jq .tag_name)"
+            requested="$(gh api repos/fission-systems/Fission/releases/latest --jq .tag_name)"
           fi
           echo "FISSION_VERSION=$requested" >> "$GITHUB_ENV"
           echo "Resolved FISSION_VERSION=$requested"
