@@ -807,7 +807,23 @@ jobs:
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git pull --rebase --autostash origin main || true
+          git pull --rebase --autostash origin main
+          # A concurrent run (e.g. a push-triggered smoke profile racing an
+          # official ranking run -- concurrency.group is keyed by profile
+          # specifically so they don't cancel each other, see top of file)
+          # can make the autostash re-apply above conflict. `git pull` does
+          # not fail the step for that on its own since the fetch+rebase
+          # itself succeeded; committing anyway would bake literal
+          # `<<<<<<<`/`>>>>>>>` markers into these JSON files (this
+          # happened for real on 2026-08-02: results/dev_latest.json landed
+          # on main with unresolved conflict markers, breaking every JSON
+          # consumer). Refuse rather than commit garbage.
+          CONFLICTED="$(grep -rlE '^(<<<<<<< |>>>>>>> )' results/dev_latest.json public/benchmark-latest.json public/benchmark-history/ 2>/dev/null || true)"
+          if [ -n "$CONFLICTED" ]; then
+            echo "::error::Unresolved conflict markers after autostash pop in: $CONFLICTED" >&2
+            echo "::error::A concurrent workflow run likely raced this commit. Not committing -- re-run this job." >&2
+            exit 1
+          fi
           git add -f results/dev_latest.json public/benchmark-latest.json public/benchmark-history/
           if git diff --staged --quiet; then
             echo "Dashboard envelope unchanged — no commit"
@@ -829,6 +845,17 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git pull --rebase --autostash origin main
+          # See the matching guard in "Update dashboard multi-decomp envelope"
+          # above for why this check exists -- a racing concurrent run's
+          # autostash re-apply can conflict without failing `git pull`
+          # itself, and committing anyway bakes conflict markers straight
+          # into these JSON files.
+          CONFLICTED="$(grep -rlE '^(<<<<<<< |>>>>>>> )' results/ docs/ public/parity-telemetry.json public/benchmark-latest.json 2>/dev/null || true)"
+          if [ -n "$CONFLICTED" ]; then
+            echo "::error::Unresolved conflict markers after autostash pop in: $CONFLICTED" >&2
+            echo "::error::A concurrent workflow run likely raced this commit. Not committing -- re-run this job." >&2
+            exit 1
+          fi
           git add -f results/ docs/ public/parity-telemetry.json public/benchmark-latest.json
           git diff --staged --quiet || git commit -m "chore: update benchmark results [skip ci]"
           git push
