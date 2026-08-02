@@ -11,6 +11,7 @@ import {
   getLatestBenchmarkOptional,
   extractQualityExtensions,
   buildReadabilityDiagnostics,
+  groupByDecompiler,
 } from "@/lib/benchmark";
 import { ReadabilityDiagnosticsPanel } from "@/components/ReadabilityDiagnosticsPanel";
 import styles from "../dashboard.module.css";
@@ -47,6 +48,7 @@ async function QualitySection() {
   }
 
   const ext = extractQualityExtensions(data);
+  const typeMatchStats = groupByDecompiler(data).filter((s) => s.typeMatchTestedRows > 0);
   const bareTools = Object.keys(ext.bareByDecompiler).sort((a, b) => {
     if (a === "fission") return -1;
     if (b === "fission") return 1;
@@ -124,6 +126,52 @@ async function QualitySection() {
                     </tr>
                   );
                 })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
+      <section className={styles.section}>
+        <h2 className={styles.sectionTitle}>EXT · Type correctness (DWARF)</h2>
+        <p className={styles.sectionLead}>
+          Recovered variable types checked against the DWARF debug info baked
+          into each corpus binary (rows without ground truth — no debug info,
+          or no matched function — are excluded rather than counted as a
+          miss). Diagnostic evidence only, not a ranking axis.
+        </p>
+        {typeMatchStats.length === 0 ? (
+          <p className={styles.sectionLead}>
+            No type_match field on this envelope yet (re-run the runner after
+            the type_match metric ship).
+          </p>
+        ) : (
+          <div className={tableStyles.wrap}>
+            <table className={tableStyles.table}>
+              <thead>
+                <tr>
+                  <th>Decompiler</th>
+                  <th className={tableStyles.num}>Tested</th>
+                  <th>Mean accuracy</th>
+                  <th className={tableStyles.num}>Perfect</th>
+                </tr>
+              </thead>
+              <tbody>
+                {typeMatchStats.map((s) => (
+                  <tr
+                    key={s.decompiler}
+                    className={
+                      s.decompiler === "fission" ? tableStyles.fissionRow : undefined
+                    }
+                  >
+                    <td>{s.decompiler}</td>
+                    <td className={tableStyles.num}>{s.typeMatchTestedRows}</td>
+                    <td>
+                      <RateCell value={s.meanTypeMatch} />
+                    </td>
+                    <td className={tableStyles.num}>{s.typeMatchPerfectRows}</td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>

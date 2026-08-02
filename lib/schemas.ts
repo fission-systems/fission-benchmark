@@ -103,6 +103,9 @@ export const RowSchema = z
     readability_proxy_score_hir: z.number().nullable().optional(),
     // Phase-2 AST similarity (corpus-only diagnostic; not ranking).
     ast_similarity: z.record(z.string(), z.unknown()).optional(),
+    // Type correctness vs DWARF ground truth (diagnostic; not ranking).
+    // null = no ground truth for this function, not a 0.0 miss.
+    type_match_score: z.number().nullable().optional(),
   })
   .passthrough();
 

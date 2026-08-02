@@ -41,6 +41,10 @@ export type MvpDecompilerStats = {
   meanTimeMs: number | null;
   taxonomy: Record<string, number>;
   oracleSubject: string | null;
+  // Type correctness vs DWARF ground truth (diagnostic; not ranking).
+  meanTypeMatch: number | null;
+  typeMatchTestedRows: number;
+  typeMatchPerfectRows: number;
 };
 
 export type CrossVariantRow = {
@@ -159,14 +163,25 @@ export async function getLatestBenchmarkOptional(options?: {
   const local = await loadFromPublicFile();
   if (local) candidates.push(local);
 
-  for (const url of candidateUrls()) {
-    try {
-      const res = await fetch(url, { cache: "no-store" });
-      if (!res.ok) continue;
-      const env = await tryParseEnvelope(await res.json());
-      if (env) candidates.push(env);
-    } catch {
-      // try next source
+  // `next dev` locally: skip the network candidates entirely once a local
+  // public/benchmark-latest.json parses. Otherwise the remote-published
+  // envelope (scored higher whenever it's `publishable`) always wins the
+  // ranking below regardless of what's on disk, making it impossible to
+  // preview a fresh local runner output without pushing it to GitHub first.
+  // Production/build (`next build` / `next start`, where NODE_ENV is
+  // "production") is unaffected -- it always fetches, same as before.
+  const skipNetwork = process.env.NODE_ENV === "development" && local !== null;
+
+  if (!skipNetwork) {
+    for (const url of candidateUrls()) {
+      try {
+        const res = await fetch(url, { cache: "no-store" });
+        if (!res.ok) continue;
+        const env = await tryParseEnvelope(await res.json());
+        if (env) candidates.push(env);
+      } catch {
+        // try next source
+      }
     }
   }
 
@@ -216,6 +231,11 @@ export function groupByDecompiler(data: BenchmarkEnvelope): MvpDecompilerStats[]
           };
           fail_taxonomy?: Record<string, number>;
           runtime?: { mean_ms?: number | null };
+          type_match?: {
+            mean_accuracy?: number | null;
+            perfect_rows?: number;
+            tested_rows?: number;
+          };
         }
       >
     | undefined;
@@ -240,6 +260,12 @@ export function groupByDecompiler(data: BenchmarkEnvelope): MvpDecompilerStats[]
             : Number(s.runtime.mean_ms),
         taxonomy: s.fail_taxonomy ?? {},
         oracleSubject: s.semantic?.oracle_subject ?? null,
+        meanTypeMatch:
+          s.type_match?.mean_accuracy === undefined || s.type_match?.mean_accuracy === null
+            ? null
+            : Number(s.type_match.mean_accuracy),
+        typeMatchTestedRows: s.type_match?.tested_rows ?? 0,
+        typeMatchPerfectRows: s.type_match?.perfect_rows ?? 0,
       }))
       .sort((a, b) => {
         if (a.decompiler === "fission") return -1;
@@ -259,6 +285,7 @@ export function groupByDecompiler(data: BenchmarkEnvelope): MvpDecompilerStats[]
       noWrapper: number;
       times: number[];
       taxonomy: Record<string, number>;
+      typeMatchScores: number[];
     }
   >();
 
@@ -273,6 +300,7 @@ export function groupByDecompiler(data: BenchmarkEnvelope): MvpDecompilerStats[]
         noWrapper: 0,
         times: [],
         taxonomy: {},
+        typeMatchScores: [],
       });
     }
     const s = map.get(d)!;
@@ -295,6 +323,9 @@ export function groupByDecompiler(data: BenchmarkEnvelope): MvpDecompilerStats[]
       s.semanticScores.push(row.semantic_score);
     }
     if (row.time_ms > 0) s.times.push(row.time_ms);
+    if (row.type_match_score !== null && row.type_match_score !== undefined) {
+      s.typeMatchScores.push(row.type_match_score);
+    }
   }
 
   return Array.from(map.entries())
@@ -314,6 +345,12 @@ export function groupByDecompiler(data: BenchmarkEnvelope): MvpDecompilerStats[]
         s.times.length > 0 ? s.times.reduce((a, b) => a + b, 0) / s.times.length : null,
       taxonomy: s.taxonomy,
       oracleSubject: null,
+      meanTypeMatch:
+        s.typeMatchScores.length > 0
+          ? s.typeMatchScores.reduce((a, b) => a + b, 0) / s.typeMatchScores.length
+          : null,
+      typeMatchTestedRows: s.typeMatchScores.length,
+      typeMatchPerfectRows: s.typeMatchScores.filter((v) => v >= 1).length,
     }))
     .sort((a, b) => {
       if (a.decompiler === "fission") return -1;
