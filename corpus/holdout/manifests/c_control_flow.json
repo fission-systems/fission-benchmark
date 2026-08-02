@@ -18,7 +18,7 @@
           "compiler": "gcc",
           "opt": "-O1",
           "binary": "binaries/c/control_flow_gcc_O1.exe",
-          "addr": "0x0",
+          "addr": "0x140001593",
           "isa": "x86_64",
           "format": "pe",
           "abi_profile": "windows-x86_64"
@@ -36,7 +36,7 @@
           "compiler": "gcc",
           "opt": "-Os",
           "binary": "binaries/c/control_flow_gcc_Os.exe",
-          "addr": "0x0",
+          "addr": "0x14000157b",
           "isa": "x86_64",
           "format": "pe",
           "abi_profile": "windows-x86_64"
@@ -45,7 +45,7 @@
           "compiler": "gcc",
           "opt": "-O3",
           "binary": "binaries/c/control_flow_gcc_O3.exe",
-          "addr": "0x0",
+          "addr": "0x1400015b0",
           "isa": "x86_64",
           "format": "pe",
           "abi_profile": "windows-x86_64"
@@ -72,7 +72,7 @@
           "compiler": "clang",
           "opt": "-O0",
           "binary": "binaries/c/control_flow_clang_O0.exe",
-          "addr": "0x0",
+          "addr": "0x140001670",
           "isa": "x86_64",
           "format": "pe",
           "abi_profile": "windows-x86_64"
@@ -81,7 +81,7 @@
           "compiler": "clang",
           "opt": "-O2",
           "binary": "binaries/c/control_flow_clang_O2.exe",
-          "addr": "0x0",
+          "addr": "0x140001610",
           "isa": "x86_64",
           "format": "pe",
           "abi_profile": "windows-x86_64"

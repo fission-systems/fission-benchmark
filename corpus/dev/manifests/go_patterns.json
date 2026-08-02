@@ -16,7 +16,7 @@
           "compiler": "go",
           "opt": "noopt",
           "binary": "binaries/go/patterns_go_noopt.exe",
-          "addr": "0x140083a80",
+          "addr": "0x140072d80",
           "isa": "x86_64",
           "format": "pe",
           "abi_profile": "windows-x86_64"
@@ -25,7 +25,7 @@
           "compiler": "go",
           "opt": "default",
           "binary": "binaries/go/patterns_go_default.exe",
-          "addr": "0x140077320",
+          "addr": "0x1400679c0",
           "isa": "x86_64",
           "format": "pe",
           "abi_profile": "windows-x86_64"
@@ -46,7 +46,7 @@
           "compiler": "go",
           "opt": "noopt",
           "binary": "binaries/go/patterns_go_noopt.exe",
-          "addr": "0x140083ae0",
+          "addr": "0x140072de0",
           "isa": "x86_64",
           "format": "pe",
           "abi_profile": "windows-x86_64"
@@ -55,7 +55,7 @@
           "compiler": "go",
           "opt": "default",
           "binary": "binaries/go/patterns_go_default.exe",
-          "addr": "0x140077380",
+          "addr": "0x140067a20",
           "isa": "x86_64",
           "format": "pe",
           "abi_profile": "windows-x86_64"
@@ -76,7 +76,7 @@
           "compiler": "go",
           "opt": "noopt",
           "binary": "binaries/go/patterns_go_noopt.exe",
-          "addr": "0x140083b40",
+          "addr": "0x140072e40",
           "isa": "x86_64",
           "format": "pe",
           "abi_profile": "windows-x86_64"
@@ -85,7 +85,7 @@
           "compiler": "go",
           "opt": "default",
           "binary": "binaries/go/patterns_go_default.exe",
-          "addr": "0x1400773e0",
+          "addr": "0x140067a80",
           "isa": "x86_64",
           "format": "pe",
           "abi_profile": "windows-x86_64"
@@ -106,7 +106,7 @@
           "compiler": "go",
           "opt": "noopt",
           "binary": "binaries/go/patterns_go_noopt.exe",
-          "addr": "0x140083ba0",
+          "addr": "0x140072ea0",
           "isa": "x86_64",
           "format": "pe",
           "abi_profile": "windows-x86_64"
@@ -115,7 +115,7 @@
           "compiler": "go",
           "opt": "default",
           "binary": "binaries/go/patterns_go_default.exe",
-          "addr": "0x140077440",
+          "addr": "0x140067ae0",
           "isa": "x86_64",
           "format": "pe",
           "abi_profile": "windows-x86_64"
@@ -136,7 +136,7 @@
           "compiler": "go",
           "opt": "noopt",
           "binary": "binaries/go/patterns_go_noopt.exe",
-          "addr": "0x140083bf0",
+          "addr": "0x140072ef0",
           "isa": "x86_64",
           "format": "pe",
           "abi_profile": "windows-x86_64"
@@ -145,7 +145,7 @@
           "compiler": "go",
           "opt": "default",
           "binary": "binaries/go/patterns_go_default.exe",
-          "addr": "0x140077490",
+          "addr": "0x140067b30",
           "isa": "x86_64",
           "format": "pe",
           "abi_profile": "windows-x86_64"
@@ -166,7 +166,7 @@
           "compiler": "go",
           "opt": "noopt",
           "binary": "binaries/go/patterns_go_noopt.exe",
-          "addr": "0x140083c60",
+          "addr": "0x140072f60",
           "isa": "x86_64",
           "format": "pe",
           "abi_profile": "windows-x86_64"
@@ -175,7 +175,7 @@
           "compiler": "go",
           "opt": "default",
           "binary": "binaries/go/patterns_go_default.exe",
-          "addr": "0x140077500",
+          "addr": "0x140067ba0",
           "isa": "x86_64",
           "format": "pe",
           "abi_profile": "windows-x86_64"
@@ -196,7 +196,7 @@
           "compiler": "go",
           "opt": "noopt",
           "binary": "binaries/go/patterns_go_noopt.exe",
-          "addr": "0x140083cc0",
+          "addr": "0x140072fc0",
           "isa": "x86_64",
           "format": "pe",
           "abi_profile": "windows-x86_64"
@@ -205,7 +205,7 @@
           "compiler": "go",
           "opt": "default",
           "binary": "binaries/go/patterns_go_default.exe",
-          "addr": "0x140077560",
+          "addr": "0x140067c00",
           "isa": "x86_64",
           "format": "pe",
           "abi_profile": "windows-x86_64"
@@ -226,7 +226,7 @@
           "compiler": "go",
           "opt": "noopt",
           "binary": "binaries/go/patterns_go_noopt.exe",
-          "addr": "0x140083d20",
+          "addr": "0x140073020",
           "isa": "x86_64",
           "format": "pe",
           "abi_profile": "windows-x86_64"
@@ -235,7 +235,7 @@
           "compiler": "go",
           "opt": "default",
           "binary": "binaries/go/patterns_go_default.exe",
-          "addr": "0x1400775c0",
+          "addr": "0x140067c60",
           "isa": "x86_64",
           "format": "pe",
           "abi_profile": "windows-x86_64"

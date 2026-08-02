@@ -16,7 +16,7 @@
           "compiler": "g++",
           "opt": "-O0",
           "binary": "binaries/cpp/patterns_g++_O0.exe",
-          "addr": "0x1400015c5",
+          "addr": "0x1400016a5",
           "isa": "x86_64",
           "format": "pe",
           "abi_profile": "windows-x86_64"
@@ -25,7 +25,7 @@
           "compiler": "g++",
           "opt": "-O2",
           "binary": "binaries/cpp/patterns_g++_O2.exe",
-          "addr": "0x140001560",
+          "addr": "0x140001630",
           "isa": "x86_64",
           "format": "pe",
           "abi_profile": "windows-x86_64"
@@ -46,7 +46,7 @@
           "compiler": "g++",
           "opt": "-O0",
           "binary": "binaries/cpp/patterns_g++_O0.exe",
-          "addr": "0x1400015d9",
+          "addr": "0x1400016b9",
           "isa": "x86_64",
           "format": "pe",
           "abi_profile": "windows-x86_64"
@@ -55,7 +55,7 @@
           "compiler": "g++",
           "opt": "-O2",
           "binary": "binaries/cpp/patterns_g++_O2.exe",
-          "addr": "0x140001620",
+          "addr": "0x1400016f0",
           "isa": "x86_64",
           "format": "pe",
           "abi_profile": "windows-x86_64"
@@ -76,7 +76,7 @@
           "compiler": "g++",
           "opt": "-O0",
           "binary": "binaries/cpp/patterns_g++_O0.exe",
-          "addr": "0x140001604",
+          "addr": "0x1400016e4",
           "isa": "x86_64",
           "format": "pe",
           "abi_profile": "windows-x86_64"
@@ -85,7 +85,7 @@
           "compiler": "g++",
           "opt": "-O2",
           "binary": "binaries/cpp/patterns_g++_O2.exe",
-          "addr": "0x140001610",
+          "addr": "0x1400016e0",
           "isa": "x86_64",
           "format": "pe",
           "abi_profile": "windows-x86_64"
@@ -106,7 +106,7 @@
           "compiler": "g++",
           "opt": "-O0",
           "binary": "binaries/cpp/patterns_g++_O0.exe",
-          "addr": "0x14000162f",
+          "addr": "0x14000170f",
           "isa": "x86_64",
           "format": "pe",
           "abi_profile": "windows-x86_64"
@@ -115,7 +115,7 @@
           "compiler": "g++",
           "opt": "-O2",
           "binary": "binaries/cpp/patterns_g++_O2.exe",
-          "addr": "0x140001570",
+          "addr": "0x140001640",
           "isa": "x86_64",
           "format": "pe",
           "abi_profile": "windows-x86_64"
@@ -136,7 +136,7 @@
           "compiler": "g++",
           "opt": "-O0",
           "binary": "binaries/cpp/patterns_g++_O0.exe",
-          "addr": "0x14000164a",
+          "addr": "0x14000172a",
           "isa": "x86_64",
           "format": "pe",
           "abi_profile": "windows-x86_64"
@@ -145,7 +145,7 @@
           "compiler": "g++",
           "opt": "-O2",
           "binary": "binaries/cpp/patterns_g++_O2.exe",
-          "addr": "0x140001580",
+          "addr": "0x140001650",
           "isa": "x86_64",
           "format": "pe",
           "abi_profile": "windows-x86_64"
@@ -166,7 +166,7 @@
           "compiler": "g++",
           "opt": "-O0",
           "binary": "binaries/cpp/patterns_g++_O0.exe",
-          "addr": "0x140001691",
+          "addr": "0x140001771",
           "isa": "x86_64",
           "format": "pe",
           "abi_profile": "windows-x86_64"
@@ -175,7 +175,7 @@
           "compiler": "g++",
           "opt": "-O2",
           "binary": "binaries/cpp/patterns_g++_O2.exe",
-          "addr": "0x1400015a0",
+          "addr": "0x140001670",
           "isa": "x86_64",
           "format": "pe",
           "abi_profile": "windows-x86_64"
@@ -196,7 +196,7 @@
           "compiler": "g++",
           "opt": "-O0",
           "binary": "binaries/cpp/patterns_g++_O0.exe",
-          "addr": "0x1400016af",
+          "addr": "0x14000178f",
           "isa": "x86_64",
           "format": "pe",
           "abi_profile": "windows-x86_64"
@@ -205,7 +205,7 @@
           "compiler": "g++",
           "opt": "-O2",
           "binary": "binaries/cpp/patterns_g++_O2.exe",
-          "addr": "0x1400015b0",
+          "addr": "0x140001680",
           "isa": "x86_64",
           "format": "pe",
           "abi_profile": "windows-x86_64"
