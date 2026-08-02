@@ -172,6 +172,11 @@ def build_mvp_by_decompiler(rows: list[Mapping[str, Any]]) -> dict[str, Any]:
         perfect = 0
         no_wrapper = 0
         times: list[float] = []
+        # Type correctness vs DWARF ground truth (diagnostic evidence, not
+        # part of semantic ranking). None = no ground truth for that
+        # function, excluded rather than counted as a miss.
+        type_match_scores: list[float] = []
+        type_match_perfect = 0
 
         for row in tool_rows:
             bucket = row.get("fail_taxonomy") or normalize_fail_taxonomy(row)
@@ -213,6 +218,13 @@ def build_mvp_by_decompiler(rows: list[Mapping[str, Any]]) -> dict[str, Any]:
             if isinstance(time_ms, (int, float)) and time_ms > 0:
                 times.append(float(time_ms))
 
+            type_match = row.get("type_match_score")
+            if type_match is not None:
+                tm_value = float(type_match)
+                type_match_scores.append(tm_value)
+                if tm_value >= 1.0:
+                    type_match_perfect += 1
+
         attempted = len(tool_rows)
         tested = len(semantic_scores)
         # Function-boundary diagnostic breakdown (infra first-class).
@@ -236,6 +248,15 @@ def build_mvp_by_decompiler(rows: list[Mapping[str, Any]]) -> dict[str, Any]:
                 "perfect_rows": perfect,
                 "tested_rows": tested,
                 "oracle_subject": _oracle_subject_for_rows(list(tool_rows)),
+            },
+            "type_match": {
+                "mean_accuracy": (
+                    round(sum(type_match_scores) / len(type_match_scores), 4)
+                    if type_match_scores
+                    else None
+                ),
+                "perfect_rows": type_match_perfect,
+                "tested_rows": len(type_match_scores),
             },
             "coverage": {
                 "attempted": attempted,

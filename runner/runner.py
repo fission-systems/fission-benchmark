@@ -11,7 +11,7 @@ import uuid
 from datetime import datetime, timezone
 from dataclasses import asdict
 from pathlib import Path
-from typing import List
+from typing import Any, List
 
 import httpx
 import typer
@@ -33,6 +33,7 @@ from output_diagnostics import analyze_output_diagnostics, invalid_output_reason
 from run_validity import build_envelope
 from test_wrappers import TEST_WRAPPERS
 from bare_compile import try_bare_compile, classify_track, classify_isa_format
+from type_match import calibrate_binary_shift, compute_type_match, ground_truth_for_binary
 import subprocess
 
 app = typer.Typer(help="Fission decompiler benchmark runner.")
@@ -233,6 +234,25 @@ async def decompile_batch_and_score(
     code_counts = Counter((item.get("code") or "").strip() for item in batch_results if (item.get("code") or "").strip())
     fn_scores = []
 
+    # Type-match ground truth (DWARF) is per-binary, not per-function -- cached
+    # across the whole run since many decompilers/batches share one binary.
+    # The offset-calibration shift is per (binary, decompiler) batch: it needs
+    # every function's decompiled text up front, so it's computed once here
+    # from the raw batch results (same NIR-preferred surface used below) and
+    # reused for every function's compute_type_match call in this batch.
+    gt_types = ground_truth_for_binary(str(binary_path))
+    type_match_shift: int | None = None
+    if gt_types:
+        decompiled_by_function = {}
+        for fn, variant, _ in targets:
+            item = results_by_addr.get(_addr_key(variant.addr))
+            if not item:
+                continue
+            code = item.get("code", "") or ""
+            code_nir = item.get("code_nir") or code or ""
+            decompiled_by_function[fn.name] = code_nir
+        type_match_shift = calibrate_binary_shift(gt_types, decompiled_by_function)
+
     for fn, variant, function_source in targets:
         variant_label = f"{variant.compiler} {variant.opt}"
         item = results_by_addr.get(_addr_key(variant.addr))
@@ -277,6 +297,16 @@ async def decompile_batch_and_score(
         )
         gotos, depth = structural_score(semantic_code) if not error else (0, 0)
         uses_intrin = check_uses_intrinsics(semantic_code) if semantic_code else False
+        # Type correctness vs DWARF ground truth (None = no debug info / no GT
+        # vars for this function, not a 0 score -- distinct from a real miss).
+        type_match_metadata: dict[str, Any] = {}
+        type_match_score: float | None = None
+        gt_vars = gt_types.get(fn.name) if gt_types else None
+        if gt_vars and semantic_code and not error:
+            type_match_metadata = compute_type_match(
+                gt_vars, semantic_code, fn.name, type_match_shift
+            )
+            type_match_score = type_match_metadata.get("accuracy")
         # Primary readability metrics: prefer HIR for Fission dual printers.
         readability_metrics = (
             analyze_readability(readability_code, dname)
@@ -383,6 +413,8 @@ async def decompile_batch_and_score(
             readability_metrics_hir=readability_metrics_hir,
             readability_proxy_score_hir=readability_score_hir,
             ast_similarity=ast_similarity,
+            type_match_score=type_match_score,
+            type_match_metadata=type_match_metadata,
             output_diagnostics=output_diagnostics,
             oracle_evidence=oracle_evidence,
             bare_compile=bare,

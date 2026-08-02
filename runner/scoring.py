@@ -53,6 +53,12 @@ class FunctionScore:
     readability_metrics_hir: dict[str, Any] = field(default_factory=dict)
     readability_proxy_score_hir: float | None = None
     ast_similarity: dict[str, Any] = field(default_factory=dict)
+    # Type correctness vs DWARF ground truth. None = no ground truth
+    # available for this function (no debug info, or DWARF extraction
+    # failed) -- distinct from a real 0.0 (ground truth existed, nothing
+    # matched). Diagnostic evidence only, not part of semantic ranking.
+    type_match_score: float | None = None
+    type_match_metadata: dict[str, Any] = field(default_factory=dict)
     output_diagnostics: dict[str, Any] = field(default_factory=dict)
     oracle_evidence: dict[str, Any] = field(default_factory=dict)
     # Stable exclusive fail bucket for standard-set reporting (see standard_summary).
