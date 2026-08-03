@@ -3,14 +3,14 @@
   "publishable": true,
   "reasons": [],
   "dev": {
-    "run_id": "36b128a1-7e36-4530-8eb9-c8f20ceddcd3",
-    "envelope_sha256": "f8957b5ac075f093f5cbdab111b0d8d2216f289f4c31735f569871307ab492d6",
+    "run_id": "2328cd60-ee30-4352-928b-ba87b3826cf3",
+    "envelope_sha256": "f1d0368255e3e6aeaa509cdf5de0f083483f4e8126243750405a903a6576dde8",
     "manifest_sha256": "f1f4c55a2670d497c100defd10ce8687952f5acdcf33780738aea3943a1d17b6"
   },
   "holdout": {
-    "run_id": "9328eba2-5167-4c62-897a-441ea86500fe",
-    "envelope_sha256": "1c76024252f4bc30eab916ae74a0c1d0b2d54678a5d27ec4387e511a861cb119",
+    "run_id": "a007e79e-1852-4f7d-804a-fc8a0f359a58",
+    "envelope_sha256": "6133167f3f14d9b48acecff1c9ecaadf08b95432d317bf44237d0ae4c0078948",
     "manifest_sha256": "3f2983c36f1532783b29c50bc44ba4cf435b6e209c076eff55fe45c81d3f8a88"
   },
-  "overfitting_sha256": "911d06143105740559a77d6869e8c0eaa5ff2370df32769400d5806d67f8cc59"
+  "overfitting_sha256": "617938588c2026ecb7030a81a71290880f3e0cd5c22a563e307f5cc11792557e"
 }

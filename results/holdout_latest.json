@@ -1,11 +1,11 @@
 {
   "schema_version": 2,
   "run": {
-    "run_id": "9328eba2-5167-4c62-897a-441ea86500fe",
-    "started_at": "2026-08-02T11:44:25.987654Z",
-    "finished_at": "2026-08-02T11:48:00.282570Z",
-    "duration_ms": 214295,
-    "runner_commit": "6913904b162fca54741666e2891f351c25e6816c",
+    "run_id": "a007e79e-1852-4f7d-804a-fc8a0f359a58",
+    "started_at": "2026-08-03T17:30:50.001219Z",
+    "finished_at": "2026-08-03T17:41:00.498280Z",
+    "duration_ms": 610497,
+    "runner_commit": "ff7afcf2c9e4bb6fcff218b6fbfac0ca96d26c35",
     "corpus": "holdout",
     "corpus_manifest_sha256": "3f2983c36f1532783b29c50bc44ba4cf435b6e209c076eff55fe45c81d3f8a88",
     "official": true,
@@ -24,12 +24,12 @@
     "fission_git_sha": "",
     "fission_source": "release",
     "fission_source_fingerprint": "",
-    "runner_commit": "6913904b162fca54741666e2891f351c25e6816c",
+    "runner_commit": "ff7afcf2c9e4bb6fcff218b6fbfac0ca96d26c35",
     "runner_os": "linux",
     "python_version": "3.11.15",
     "ci": "true",
-    "github_run_id": "30745042128",
-    "github_actor": "github-actions[bot]"
+    "github_run_id": "30831704261",
+    "github_actor": "sjkim1127"
   },
   "matrix": {
     "expected_decompilers": [
@@ -350,9 +350,9 @@
     "compiler": "i686-w64-mingw32-gcc,x86_64-w64-mingw32-gcc",
     "compiler_version": "i686-w64-mingw32-gcc (GCC) 12-win32 | x86_64-w64-mingw32-gcc (GCC) 12-win32",
     "runner": "wine",
-    "wrapper_sha256": "23945033c612fbca9d886e9422412b11fe91a2941486c795300d7f37b301e466",
-    "reference_binary_sha256": "46d82f7a4ae42f46863154e97629f2199ccfb49ff2c835f57dfcfad5e710e4f4",
-    "row_evidence_sha256": "bc6cde5ab5ad686eed6d84a183298334229766971c43c7c0181822040a2955ee",
+    "wrapper_sha256": "4e8c2a6fb9c2f089e132924fbc0954aa5233c65b4e058120a48b094a028ac0cd",
+    "reference_binary_sha256": "8f2f8829a845ccb3925151c1a704f0e0d19b56419215bee0bd696dd02ab29f3e",
+    "row_evidence_sha256": "5cf73caff0c1cf2763dcbb680337f51b0a2abd0667b613e39f2dab4843474110",
     "tested_rows": 60
   },
   "rows": [
@@ -363,7 +363,7 @@
       "source_similarity": 0.0853,
       "goto_count": 8,
       "nesting_depth": 2,
-      "time_ms": 3623,
+      "time_ms": 5347,
       "error": null,
       "semantic_score": 1.0,
       "semantic_error": null,
@@ -515,6 +515,27 @@
           "similarity": 0.5361
         }
       },
+      "type_match_score": 1.0,
+      "type_match_metadata": {
+        "accuracy": 1.0,
+        "tp": 1,
+        "fp": 0,
+        "fn": 0,
+        "gt_vars": 1,
+        "decomp_vars": 6,
+        "calibration_shift": 0,
+        "matched_by_arg": 1,
+        "matched_by_offset": 0,
+        "matched_by_name": 0
+      },
+      "ged_score": 29.0,
+      "ged_metadata": {
+        "source_nodes": 7,
+        "source_edges": 7,
+        "decompiled_nodes": 12,
+        "decompiled_edges": 17,
+        "ged": 29.0
+      },
       "output_diagnostics": {
         "status": "direct_function",
         "issues": [
@@ -544,7 +565,7 @@
         "runner": "wine",
         "runner_version": "wine-8.0 (Debian 8.0~repack-4)",
         "wrapper_sha256": "e610a7902ba4cd0303604858148647faf4f8fc1c770e50ce649c6c094b543d50",
-        "reference_binary_sha256": "08d6385e7df228d5b96489444547b62063e0a9a233d9ea36489703a626a5bb5c",
+        "reference_binary_sha256": "167de0fd6eb74745867f3abd880c37f899a0b418ec02f21d63e1ccf1a335022d",
         "translation_unit_sha256": "cf1e77ea59fa5bbf25f4c763bc7120d3f2fa3f770e2e423b5ad3110a98e0336b",
         "function_addr": "0x14000160b",
         "function_rva": "0x160b"
@@ -573,18 +594,18 @@
       "source_similarity": 0.1667,
       "goto_count": 0,
       "nesting_depth": 3,
-      "time_ms": 27859,
+      "time_ms": 38060,
       "error": null,
-      "semantic_score": 0.2,
-      "semantic_error": "candidate passed 1/5 cases",
-      "fail_category": "assertion_fail",
-      "cases_passed": 1,
-      "cases_total": 5,
+      "semantic_score": 0.0,
+      "semantic_error": "Skipped: decompiled output has harness blockers: register_pseudo_inputs",
+      "fail_category": "oracle_error",
+      "cases_passed": 0,
+      "cases_total": 0,
       "structural_penalty": 0.1,
-      "correctness_score": 0.2,
+      "correctness_score": 0.0,
       "correctness_rank": 2,
       "readability_proxy_score": 0.5744,
-      "composite_score": 0.2,
+      "composite_score": 0.0,
       "consensus_rank": 2,
       "uses_intrinsics": false,
       "decompiled_code": "\n/* WARNING: Unknown calling convention */\n\nint classify_range(int value)\n\n{\n  int iVar1;\n  int in_ECX;\n  \n  if (in_ECX == 10) {\n    return 2;\n  }\n  if (in_ECX < 0xb) {\n    if (in_ECX == 0) {\n      return 0;\n    }\n    if ((-1 < in_ECX) && (in_ECX - 1U < 3)) {\n      return 1;\n    }\n  }\n  if (in_ECX < 0) {\n    iVar1 = -1;\n  }\n  else {\n    iVar1 = 3;\n  }\n  return iVar1;\n}\n\n",
@@ -669,6 +690,27 @@
           "similarity": 0.6788
         }
       },
+      "type_match_score": 1.0,
+      "type_match_metadata": {
+        "accuracy": 1.0,
+        "tp": 1,
+        "fp": 0,
+        "fn": 0,
+        "gt_vars": 1,
+        "decomp_vars": 3,
+        "calibration_shift": 0,
+        "matched_by_arg": 1,
+        "matched_by_offset": 0,
+        "matched_by_name": 0
+      },
+      "ged_score": 26.0,
+      "ged_metadata": {
+        "source_nodes": 7,
+        "source_edges": 7,
+        "decompiled_nodes": 13,
+        "decompiled_edges": 15,
+        "ged": 26.0
+      },
       "output_diagnostics": {
         "status": "needs_normalization",
         "issues": [
@@ -693,22 +735,8 @@
         "decompiler": "ghidra",
         "boundary_contract": "addr_or_name_single_function"
       },
-      "oracle_evidence": {
-        "mode": "differential",
-        "valid": true,
-        "oracle_subject": "original_binary",
-        "target_abi": "windows-x86_64",
-        "compiler": "x86_64-w64-mingw32-gcc",
-        "compiler_version": "x86_64-w64-mingw32-gcc (GCC) 12-win32",
-        "runner": "wine",
-        "runner_version": "wine-8.0 (Debian 8.0~repack-4)",
-        "wrapper_sha256": "e610a7902ba4cd0303604858148647faf4f8fc1c770e50ce649c6c094b543d50",
-        "reference_binary_sha256": "08d6385e7df228d5b96489444547b62063e0a9a233d9ea36489703a626a5bb5c",
-        "translation_unit_sha256": "a460cbbc610be0d8475fd98625893bb18c7bef3572600bab42abba652d7c4647",
-        "function_addr": "0x14000160b",
-        "function_rva": "0x160b"
-      },
-      "fail_taxonomy": "assertion_fail",
+      "oracle_evidence": {},
+      "fail_taxonomy": "oracle_error",
       "bare_compile": {
         "ok": true,
         "category": "ok",
@@ -732,7 +760,7 @@
       "source_similarity": 0.0761,
       "goto_count": 0,
       "nesting_depth": 4,
-      "time_ms": 3563,
+      "time_ms": 5626,
       "error": null,
       "semantic_score": 1.0,
       "semantic_error": null,
@@ -884,6 +912,27 @@
           "similarity": 0.299
         }
       },
+      "type_match_score": 1.0,
+      "type_match_metadata": {
+        "accuracy": 1.0,
+        "tp": 1,
+        "fp": 0,
+        "fn": 0,
+        "gt_vars": 1,
+        "decomp_vars": 11,
+        "calibration_shift": 0,
+        "matched_by_arg": 1,
+        "matched_by_offset": 0,
+        "matched_by_name": 0
+      },
+      "ged_score": 7.0,
+      "ged_metadata": {
+        "source_nodes": 7,
+        "source_edges": 7,
+        "decompiled_nodes": 8,
+        "decompiled_edges": 8,
+        "ged": 7.0
+      },
       "output_diagnostics": {
         "status": "direct_function",
         "issues": [
@@ -913,7 +962,7 @@
         "runner": "wine",
         "runner_version": "wine-8.0 (Debian 8.0~repack-4)",
         "wrapper_sha256": "e610a7902ba4cd0303604858148647faf4f8fc1c770e50ce649c6c094b543d50",
-        "reference_binary_sha256": "ad036ee9d9d15d040d890e639b4dce93fed0530614fd69bb0915023d2a89e9d6",
+        "reference_binary_sha256": "795c2a3cb399ff5aba4ae6adfc0f8a2ec698f2528268ad95705b3ab145aa1d74",
         "translation_unit_sha256": "0792f0d65892298a5658e7dce1bb3f614824c9ad1405256cd8ebc00163cdd48b",
         "function_addr": "0x1400015b0",
         "function_rva": "0x15b0"
@@ -942,7 +991,7 @@
       "source_similarity": 0.486,
       "goto_count": 0,
       "nesting_depth": 3,
-      "time_ms": 30412,
+      "time_ms": 39098,
       "error": null,
       "semantic_score": 1.0,
       "semantic_error": null,
@@ -1038,6 +1087,27 @@
           "similarity": 0.7179
         }
       },
+      "type_match_score": 1.0,
+      "type_match_metadata": {
+        "accuracy": 1.0,
+        "tp": 1,
+        "fp": 0,
+        "fn": 0,
+        "gt_vars": 1,
+        "decomp_vars": 2,
+        "calibration_shift": 0,
+        "matched_by_arg": 1,
+        "matched_by_offset": 0,
+        "matched_by_name": 0
+      },
+      "ged_score": 6.0,
+      "ged_metadata": {
+        "source_nodes": 7,
+        "source_edges": 7,
+        "decompiled_nodes": 5,
+        "decompiled_edges": 5,
+        "ged": 6.0
+      },
       "output_diagnostics": {
         "status": "direct_function",
         "issues": [
@@ -1067,7 +1137,7 @@
         "runner": "wine",
         "runner_version": "wine-8.0 (Debian 8.0~repack-4)",
         "wrapper_sha256": "e610a7902ba4cd0303604858148647faf4f8fc1c770e50ce649c6c094b543d50",
-        "reference_binary_sha256": "ad036ee9d9d15d040d890e639b4dce93fed0530614fd69bb0915023d2a89e9d6",
+        "reference_binary_sha256": "795c2a3cb399ff5aba4ae6adfc0f8a2ec698f2528268ad95705b3ab145aa1d74",
         "translation_unit_sha256": "c0e9a6b96844b9b6ac999e491fab9f258fc7008f882828def80da49dcba0d874",
         "function_addr": "0x1400015b0",
         "function_rva": "0x15b0"
@@ -1096,7 +1166,7 @@
       "source_similarity": 0.1306,
       "goto_count": 5,
       "nesting_depth": 3,
-      "time_ms": 4359,
+      "time_ms": 5976,
       "error": null,
       "semantic_score": 1.0,
       "semantic_error": null,
@@ -1248,6 +1318,21 @@
           "similarity": 0.6164
         }
       },
+      "type_match_score": 0.0,
+      "type_match_metadata": {
+        "accuracy": 0.0,
+        "tp": 0,
+        "fp": 0,
+        "fn": 1,
+        "gt_vars": 1,
+        "decomp_vars": 2,
+        "calibration_shift": 0,
+        "matched_by_arg": 0,
+        "matched_by_offset": 0,
+        "matched_by_name": 0
+      },
+      "ged_score": null,
+      "ged_metadata": {},
       "output_diagnostics": {
         "status": "direct_function",
         "issues": [
@@ -1277,7 +1362,7 @@
         "runner": "wine",
         "runner_version": "wine-8.0 (Debian 8.0~repack-4)",
         "wrapper_sha256": "e610a7902ba4cd0303604858148647faf4f8fc1c770e50ce649c6c094b543d50",
-        "reference_binary_sha256": "50c0783f0115fe6fd3ae7282f0d1dd271bd134e14b55ad921465c40346b9a513",
+        "reference_binary_sha256": "4cb059895ed7a957bf06fcabb4817f53f60aeacb8ec8216dd8f33dd2239f2631",
         "translation_unit_sha256": "03770bfdf25b237d3c92abea5a578533bbf90abaff04499d4b71816bac4e3058",
         "function_addr": "0x40165e",
         "function_rva": "0x165e"
@@ -1306,7 +1391,7 @@
       "source_similarity": 0.1741,
       "goto_count": 0,
       "nesting_depth": 3,
-      "time_ms": 24611,
+      "time_ms": 37057,
       "error": null,
       "semantic_score": 1.0,
       "semantic_error": null,
@@ -1402,6 +1487,27 @@
           "similarity": 0.7015
         }
       },
+      "type_match_score": 1.0,
+      "type_match_metadata": {
+        "accuracy": 1.0,
+        "tp": 1,
+        "fp": 0,
+        "fn": 0,
+        "gt_vars": 1,
+        "decomp_vars": 2,
+        "calibration_shift": 0,
+        "matched_by_arg": 1,
+        "matched_by_offset": 0,
+        "matched_by_name": 0
+      },
+      "ged_score": 26.0,
+      "ged_metadata": {
+        "source_nodes": 7,
+        "source_edges": 7,
+        "decompiled_nodes": 13,
+        "decompiled_edges": 15,
+        "ged": 26.0
+      },
       "output_diagnostics": {
         "status": "direct_function",
         "issues": [
@@ -1431,7 +1537,7 @@
         "runner": "wine",
         "runner_version": "wine-8.0 (Debian 8.0~repack-4)",
         "wrapper_sha256": "e610a7902ba4cd0303604858148647faf4f8fc1c770e50ce649c6c094b543d50",
-        "reference_binary_sha256": "50c0783f0115fe6fd3ae7282f0d1dd271bd134e14b55ad921465c40346b9a513",
+        "reference_binary_sha256": "4cb059895ed7a957bf06fcabb4817f53f60aeacb8ec8216dd8f33dd2239f2631",
         "translation_unit_sha256": "1faae856be1bc2d1389ddea33da86ef4ea51d405b12732a4252094ec9256aa10",
         "function_addr": "0x40165e",
         "function_rva": "0x165e"
@@ -1460,7 +1566,7 @@
       "source_similarity": 0.0747,
       "goto_count": 0,
       "nesting_depth": 4,
-      "time_ms": 3262,
+      "time_ms": 7604,
       "error": null,
       "semantic_score": 1.0,
       "semantic_error": null,
@@ -1612,6 +1718,21 @@
           "similarity": 0.3409
         }
       },
+      "type_match_score": 0.0,
+      "type_match_metadata": {
+        "accuracy": 0.0,
+        "tp": 0,
+        "fp": 0,
+        "fn": 1,
+        "gt_vars": 1,
+        "decomp_vars": 8,
+        "calibration_shift": 0,
+        "matched_by_arg": 0,
+        "matched_by_offset": 0,
+        "matched_by_name": 0
+      },
+      "ged_score": null,
+      "ged_metadata": {},
       "output_diagnostics": {
         "status": "direct_function",
         "issues": [
@@ -1641,7 +1762,7 @@
         "runner": "wine",
         "runner_version": "wine-8.0 (Debian 8.0~repack-4)",
         "wrapper_sha256": "e610a7902ba4cd0303604858148647faf4f8fc1c770e50ce649c6c094b543d50",
-        "reference_binary_sha256": "f3e56aa032b55d490c425c266ed7ad640178e6c189cd5e2aa6ca60762c0b9c20",
+        "reference_binary_sha256": "5ce9d9ca1e1b8d33d6a679091cd2c24c9361499db5ec8f46d1187fc822f363ea",
         "translation_unit_sha256": "135a0cf78392c698f5bc55ece9d494bf7c2d8c22331fc5fa49aaf4992e8e4805",
         "function_addr": "0x401650",
         "function_rva": "0x1650"
@@ -1670,7 +1791,7 @@
       "source_similarity": 0.486,
       "goto_count": 0,
       "nesting_depth": 3,
-      "time_ms": 42282,
+      "time_ms": 41108,
       "error": null,
       "semantic_score": 1.0,
       "semantic_error": null,
@@ -1766,6 +1887,27 @@
           "similarity": 0.7179
         }
       },
+      "type_match_score": 1.0,
+      "type_match_metadata": {
+        "accuracy": 1.0,
+        "tp": 1,
+        "fp": 0,
+        "fn": 0,
+        "gt_vars": 1,
+        "decomp_vars": 2,
+        "calibration_shift": 0,
+        "matched_by_arg": 1,
+        "matched_by_offset": 0,
+        "matched_by_name": 0
+      },
+      "ged_score": 6.0,
+      "ged_metadata": {
+        "source_nodes": 7,
+        "source_edges": 7,
+        "decompiled_nodes": 5,
+        "decompiled_edges": 5,
+        "ged": 6.0
+      },
       "output_diagnostics": {
         "status": "direct_function",
         "issues": [
@@ -1795,7 +1937,7 @@
         "runner": "wine",
         "runner_version": "wine-8.0 (Debian 8.0~repack-4)",
         "wrapper_sha256": "e610a7902ba4cd0303604858148647faf4f8fc1c770e50ce649c6c094b543d50",
-        "reference_binary_sha256": "f3e56aa032b55d490c425c266ed7ad640178e6c189cd5e2aa6ca60762c0b9c20",
+        "reference_binary_sha256": "5ce9d9ca1e1b8d33d6a679091cd2c24c9361499db5ec8f46d1187fc822f363ea",
         "translation_unit_sha256": "210851746910ab939d09a45528ca5fdea6ac9e606fdbc4b26cb6106e38d8ef57",
         "function_addr": "0x401650",
         "function_rva": "0x1650"
@@ -1824,7 +1966,7 @@
       "source_similarity": 0.1029,
       "goto_count": 5,
       "nesting_depth": 3,
-      "time_ms": 3817,
+      "time_ms": 7577,
       "error": null,
       "semantic_score": 0.0,
       "semantic_error": "oracle execution timed out",
@@ -1920,6 +2062,27 @@
           "similarity": 0.4315
         }
       },
+      "type_match_score": 1.0,
+      "type_match_metadata": {
+        "accuracy": 1.0,
+        "tp": 1,
+        "fp": 0,
+        "fn": 0,
+        "gt_vars": 1,
+        "decomp_vars": 11,
+        "calibration_shift": 0,
+        "matched_by_arg": 1,
+        "matched_by_offset": 0,
+        "matched_by_name": 0
+      },
+      "ged_score": 22.0,
+      "ged_metadata": {
+        "source_nodes": 7,
+        "source_edges": 7,
+        "decompiled_nodes": 11,
+        "decompiled_edges": 14,
+        "ged": 22.0
+      },
       "output_diagnostics": {
         "status": "direct_function",
         "issues": [
@@ -1949,7 +2112,7 @@
         "runner": "wine",
         "runner_version": "wine-8.0 (Debian 8.0~repack-4)",
         "wrapper_sha256": "e610a7902ba4cd0303604858148647faf4f8fc1c770e50ce649c6c094b543d50",
-        "reference_binary_sha256": "287cb36f8f77e2d15b4f0a241418fa26898bff73444174ea2eaee02feab4072a",
+        "reference_binary_sha256": "0d21c6c3d39d6bce81413c5f8ab99d7601e69cce817ad39087d094860d50c934",
         "translation_unit_sha256": "ade47091101385719cdcb1543cf6cee109b8e72c6eb0107747da6ab925f21d5e",
         "function_addr": "0x140001670",
         "function_rva": "0x1670"
@@ -1978,7 +2141,7 @@
       "source_similarity": 0.1932,
       "goto_count": 0,
       "nesting_depth": 3,
-      "time_ms": 36009,
+      "time_ms": 42318,
       "error": null,
       "semantic_score": 1.0,
       "semantic_error": null,
@@ -2074,6 +2237,27 @@
           "similarity": 0.6846
         }
       },
+      "type_match_score": 1.0,
+      "type_match_metadata": {
+        "accuracy": 1.0,
+        "tp": 1,
+        "fp": 0,
+        "fn": 0,
+        "gt_vars": 1,
+        "decomp_vars": 3,
+        "calibration_shift": 20,
+        "matched_by_arg": 1,
+        "matched_by_offset": 0,
+        "matched_by_name": 0
+      },
+      "ged_score": 18.0,
+      "ged_metadata": {
+        "source_nodes": 7,
+        "source_edges": 7,
+        "decompiled_nodes": 9,
+        "decompiled_edges": 12,
+        "ged": 18.0
+      },
       "output_diagnostics": {
         "status": "direct_function",
         "issues": [
@@ -2103,7 +2287,7 @@
         "runner": "wine",
         "runner_version": "wine-8.0 (Debian 8.0~repack-4)",
         "wrapper_sha256": "e610a7902ba4cd0303604858148647faf4f8fc1c770e50ce649c6c094b543d50",
-        "reference_binary_sha256": "287cb36f8f77e2d15b4f0a241418fa26898bff73444174ea2eaee02feab4072a",
+        "reference_binary_sha256": "0d21c6c3d39d6bce81413c5f8ab99d7601e69cce817ad39087d094860d50c934",
         "translation_unit_sha256": "9b44999085584f248685e7fdf52930ea261fdcd2e8ec8ab6df141f58cc88c8d9",
         "function_addr": "0x140001670",
         "function_rva": "0x1670"
@@ -2132,7 +2316,7 @@
       "source_similarity": 0.0687,
       "goto_count": 0,
       "nesting_depth": 4,
-      "time_ms": 2855,
+      "time_ms": 7320,
       "error": null,
       "semantic_score": 0.2,
       "semantic_error": "candidate passed 1/5 cases",
@@ -2273,6 +2457,27 @@
         "type_erased": null,
         "control_flow_normalized": null
       },
+      "type_match_score": 1.0,
+      "type_match_metadata": {
+        "accuracy": 1.0,
+        "tp": 1,
+        "fp": 0,
+        "fn": 0,
+        "gt_vars": 1,
+        "decomp_vars": 16,
+        "calibration_shift": 0,
+        "matched_by_arg": 1,
+        "matched_by_offset": 0,
+        "matched_by_name": 0
+      },
+      "ged_score": 13.0,
+      "ged_metadata": {
+        "source_nodes": 7,
+        "source_edges": 7,
+        "decompiled_nodes": 6,
+        "decompiled_edges": 7,
+        "ged": 13.0
+      },
       "output_diagnostics": {
         "status": "direct_function",
         "issues": [
@@ -2302,7 +2507,7 @@
         "runner": "wine",
         "runner_version": "wine-8.0 (Debian 8.0~repack-4)",
         "wrapper_sha256": "e610a7902ba4cd0303604858148647faf4f8fc1c770e50ce649c6c094b543d50",
-        "reference_binary_sha256": "7e73b93f8f091aaba46cb4c520b2c395662793241455a2464bd3bac175ce1c63",
+        "reference_binary_sha256": "d51dbd918e175b75f36d5c5ad569cb7aecc8f5245b73a5e35f0c0d3182ac6aef",
         "translation_unit_sha256": "6c180b2020caaa9e2509471cefacdc051022307d8f0c47526fbd9befd8d2b1a0",
         "function_addr": "0x140001610",
         "function_rva": "0x1610"
@@ -2331,10 +2536,10 @@
       "source_similarity": 0.2251,
       "goto_count": 0,
       "nesting_depth": 2,
-      "time_ms": 36806,
+      "time_ms": 42913,
       "error": null,
       "semantic_score": 0.0,
-      "semantic_error": "/tmp/fission-oracle-1geig4eu/oracle.c: In function \u2018oracle_candidate_classify_range\u2019:\n/tmp/fission-oracle-1geig4eu/oracle.c:311:24: error: \u2018DAT_140004008\u2019 undeclared (first use in this function)\n  311 |     uVar1 = *(uint *)(&DAT_140004008 + (longlong)value * 4);\n      |                        ^~~~~~~~~~~~~\n/tmp/fission-oracle-1geig4eu/oracle.c:311:24: note: each undeclared identifier is reported only once for each function it appears in\n",
+      "semantic_error": "/tmp/fission-oracle-t8uygm1n/oracle.c: In function \u2018oracle_candidate_classify_range\u2019:\n/tmp/fission-oracle-t8uygm1n/oracle.c:311:24: error: \u2018DAT_140004008\u2019 undeclared (first use in this function)\n  311 |     uVar1 = *(uint *)(&DAT_140004008 + (longlong)value * 4);\n      |                        ^~~~~~~~~~~~~\n/tmp/fission-oracle-t8uygm1n/oracle.c:311:24: note: each undeclared identifier is reported only once for each function it appears in\n",
       "fail_category": "compile_error",
       "cases_passed": 0,
       "cases_total": 5,
@@ -2416,6 +2621,27 @@
         "type_erased": null,
         "control_flow_normalized": null
       },
+      "type_match_score": 1.0,
+      "type_match_metadata": {
+        "accuracy": 1.0,
+        "tp": 1,
+        "fp": 0,
+        "fn": 0,
+        "gt_vars": 1,
+        "decomp_vars": 2,
+        "calibration_shift": 0,
+        "matched_by_arg": 1,
+        "matched_by_offset": 0,
+        "matched_by_name": 0
+      },
+      "ged_score": 13.0,
+      "ged_metadata": {
+        "source_nodes": 7,
+        "source_edges": 7,
+        "decompiled_nodes": 6,
+        "decompiled_edges": 7,
+        "ged": 13.0
+      },
       "output_diagnostics": {
         "status": "direct_function",
         "issues": [
@@ -2445,7 +2671,7 @@
         "runner": "wine",
         "runner_version": "wine-8.0 (Debian 8.0~repack-4)",
         "wrapper_sha256": "e610a7902ba4cd0303604858148647faf4f8fc1c770e50ce649c6c094b543d50",
-        "reference_binary_sha256": "7e73b93f8f091aaba46cb4c520b2c395662793241455a2464bd3bac175ce1c63",
+        "reference_binary_sha256": "d51dbd918e175b75f36d5c5ad569cb7aecc8f5245b73a5e35f0c0d3182ac6aef",
         "translation_unit_sha256": "0196be4e45398af95e2a32295d4563373fda71b0abbffeb54c18ddf8da3ff083",
         "function_addr": "0x140001610",
         "function_rva": "0x1610"
@@ -2454,7 +2680,7 @@
       "bare_compile": {
         "ok": false,
         "category": "compile_error",
-        "error": "/tmp/tmpuuay3c99/bare.c: In function \u2018classify_range\u2019: /tmp/tmpuuay3c99/bare.c:33:24: error: \u2018DAT_140004008\u2019 undeclared (first use in this function) 33 | uVar1 = *(uint *)(&DAT_140004008 + (longlong)value * 4); | ^~~~~~~~~~~~~ /tmp/tmpuuay3c99/bare.c:33:24: note: each undeclared identifier is reported only once for each function it appears in",
+        "error": "/tmp/tmpnt3zta_j/bare.c: In function \u2018classify_range\u2019: /tmp/tmpnt3zta_j/bare.c:33:24: error: \u2018DAT_140004008\u2019 undeclared (first use in this function) 33 | uVar1 = *(uint *)(&DAT_140004008 + (longlong)value * 4); | ^~~~~~~~~~~~~ /tmp/tmpnt3zta_j/bare.c:33:24: note: each undeclared identifier is reported only once for each function it appears in",
         "compiler": "gcc",
         "mode": "gcc -c -w -O0"
       },
@@ -2474,7 +2700,7 @@
       "source_similarity": 0.123,
       "goto_count": 2,
       "nesting_depth": 3,
-      "time_ms": 773,
+      "time_ms": 2725,
       "error": null,
       "semantic_score": 1.0,
       "semantic_error": null,
@@ -2626,6 +2852,27 @@
           "similarity": 0.4807
         }
       },
+      "type_match_score": 1.0,
+      "type_match_metadata": {
+        "accuracy": 1.0,
+        "tp": 5,
+        "fp": 0,
+        "fn": 0,
+        "gt_vars": 5,
+        "decomp_vars": 11,
+        "calibration_shift": 0,
+        "matched_by_arg": 1,
+        "matched_by_offset": 4,
+        "matched_by_name": 0
+      },
+      "ged_score": 9.0,
+      "ged_metadata": {
+        "source_nodes": 6,
+        "source_edges": 6,
+        "decompiled_nodes": 7,
+        "decompiled_edges": 10,
+        "ged": 9.0
+      },
       "output_diagnostics": {
         "status": "direct_function",
         "issues": [
@@ -2655,7 +2902,7 @@
         "runner": "wine",
         "runner_version": "wine-8.0 (Debian 8.0~repack-4)",
         "wrapper_sha256": "55e74f570b0fee1ee0802f0cee000a982bc21b681d1dbea6f67e8c171e82a9bc",
-        "reference_binary_sha256": "bc6584677c1c106998c87434c57a879d79ecf44afcbf11aa6e813328bb82ea3c",
+        "reference_binary_sha256": "354cff1e1adc8de25fdae9574c9001fe3857ea1d23e39e1b8be998de1b3ce329",
         "translation_unit_sha256": "d74e3cafe8bbcbb1531bc3414d536871edd9ff3108744ee81073585569517e17",
         "function_addr": "0x14000156e",
         "function_rva": "0x156e"
@@ -2684,13 +2931,13 @@
       "source_similarity": 0.48,
       "goto_count": 0,
       "nesting_depth": 3,
-      "time_ms": 15074,
+      "time_ms": 12786,
       "error": null,
       "semantic_score": 0.0,
-      "semantic_error": "candidate passed 0/6 cases",
-      "fail_category": "assertion_fail",
+      "semantic_error": "Skipped: decompiled output has harness blockers: register_pseudo_inputs",
+      "fail_category": "oracle_error",
       "cases_passed": 0,
-      "cases_total": 6,
+      "cases_total": 0,
       "structural_penalty": 0.1,
       "correctness_score": 0.0,
       "correctness_rank": 2,
@@ -2780,6 +3027,27 @@
           "similarity": 0.6738
         }
       },
+      "type_match_score": 1.0,
+      "type_match_metadata": {
+        "accuracy": 1.0,
+        "tp": 5,
+        "fp": 0,
+        "fn": 0,
+        "gt_vars": 5,
+        "decomp_vars": 7,
+        "calibration_shift": 0,
+        "matched_by_arg": 1,
+        "matched_by_offset": 0,
+        "matched_by_name": 4
+      },
+      "ged_score": 7.0,
+      "ged_metadata": {
+        "source_nodes": 6,
+        "source_edges": 6,
+        "decompiled_nodes": 5,
+        "decompiled_edges": 6,
+        "ged": 7.0
+      },
       "output_diagnostics": {
         "status": "needs_normalization",
         "issues": [
@@ -2804,22 +3072,8 @@
         "decompiler": "ghidra",
         "boundary_contract": "addr_or_name_single_function"
       },
-      "oracle_evidence": {
-        "mode": "differential",
-        "valid": true,
-        "oracle_subject": "original_binary",
-        "target_abi": "windows-x86_64",
-        "compiler": "x86_64-w64-mingw32-gcc",
-        "compiler_version": "x86_64-w64-mingw32-gcc (GCC) 12-win32",
-        "runner": "wine",
-        "runner_version": "wine-8.0 (Debian 8.0~repack-4)",
-        "wrapper_sha256": "55e74f570b0fee1ee0802f0cee000a982bc21b681d1dbea6f67e8c171e82a9bc",
-        "reference_binary_sha256": "bc6584677c1c106998c87434c57a879d79ecf44afcbf11aa6e813328bb82ea3c",
-        "translation_unit_sha256": "0cb449a8193f2942bdeae19e3c26aa84eff9d2a0125073e9043b0255efff2308",
-        "function_addr": "0x14000156e",
-        "function_rva": "0x156e"
-      },
-      "fail_taxonomy": "assertion_fail",
+      "oracle_evidence": {},
+      "fail_taxonomy": "oracle_error",
       "bare_compile": {
         "ok": true,
         "category": "ok",
@@ -2843,7 +3097,7 @@
       "source_similarity": 0.2822,
       "goto_count": 0,
       "nesting_depth": 1,
-      "time_ms": 773,
+      "time_ms": 2725,
       "error": null,
       "semantic_score": 1.0,
       "semantic_error": null,
@@ -2995,6 +3249,27 @@
           "similarity": 0.7456
         }
       },
+      "type_match_score": 1.0,
+      "type_match_metadata": {
+        "accuracy": 1.0,
+        "tp": 2,
+        "fp": 0,
+        "fn": 0,
+        "gt_vars": 2,
+        "decomp_vars": 6,
+        "calibration_shift": 0,
+        "matched_by_arg": 2,
+        "matched_by_offset": 0,
+        "matched_by_name": 0
+      },
+      "ged_score": 0.0,
+      "ged_metadata": {
+        "source_nodes": 1,
+        "source_edges": 0,
+        "decompiled_nodes": 1,
+        "decompiled_edges": 0,
+        "ged": 0.0
+      },
       "output_diagnostics": {
         "status": "direct_function",
         "issues": [
@@ -3024,7 +3299,7 @@
         "runner": "wine",
         "runner_version": "wine-8.0 (Debian 8.0~repack-4)",
         "wrapper_sha256": "35c565052763390521c8360b00b6043d31e8bc9751c8b60cf708922083160486",
-        "reference_binary_sha256": "bc6584677c1c106998c87434c57a879d79ecf44afcbf11aa6e813328bb82ea3c",
+        "reference_binary_sha256": "354cff1e1adc8de25fdae9574c9001fe3857ea1d23e39e1b8be998de1b3ce329",
         "translation_unit_sha256": "e6d74dae02d723cfb2bc0e0a23a06c942ddedd9bbb50715c70bbac6a06d192ea",
         "function_addr": "0x1400015c7",
         "function_rva": "0x15c7"
@@ -3053,13 +3328,13 @@
       "source_similarity": 0.4314,
       "goto_count": 0,
       "nesting_depth": 2,
-      "time_ms": 15074,
+      "time_ms": 12786,
       "error": null,
       "semantic_score": 0.0,
-      "semantic_error": "candidate passed 0/6 cases",
-      "fail_category": "assertion_fail",
+      "semantic_error": "Skipped: decompiled output has harness blockers: register_pseudo_inputs",
+      "fail_category": "oracle_error",
       "cases_passed": 0,
-      "cases_total": 6,
+      "cases_total": 0,
       "structural_penalty": 0.1,
       "correctness_score": 0.0,
       "correctness_rank": 2,
@@ -3149,6 +3424,27 @@
           "similarity": 0.8333
         }
       },
+      "type_match_score": 1.0,
+      "type_match_metadata": {
+        "accuracy": 1.0,
+        "tp": 2,
+        "fp": 0,
+        "fn": 0,
+        "gt_vars": 2,
+        "decomp_vars": 4,
+        "calibration_shift": 0,
+        "matched_by_arg": 2,
+        "matched_by_offset": 0,
+        "matched_by_name": 0
+      },
+      "ged_score": 10.0,
+      "ged_metadata": {
+        "source_nodes": 1,
+        "source_edges": 0,
+        "decompiled_nodes": 3,
+        "decompiled_edges": 3,
+        "ged": 10.0
+      },
       "output_diagnostics": {
         "status": "needs_normalization",
         "issues": [
@@ -3174,22 +3470,8 @@
         "decompiler": "ghidra",
         "boundary_contract": "addr_or_name_single_function"
       },
-      "oracle_evidence": {
-        "mode": "differential",
-        "valid": true,
-        "oracle_subject": "original_binary",
-        "target_abi": "windows-x86_64",
-        "compiler": "x86_64-w64-mingw32-gcc",
-        "compiler_version": "x86_64-w64-mingw32-gcc (GCC) 12-win32",
-        "runner": "wine",
-        "runner_version": "wine-8.0 (Debian 8.0~repack-4)",
-        "wrapper_sha256": "35c565052763390521c8360b00b6043d31e8bc9751c8b60cf708922083160486",
-        "reference_binary_sha256": "bc6584677c1c106998c87434c57a879d79ecf44afcbf11aa6e813328bb82ea3c",
-        "translation_unit_sha256": "d20e05460b7a0108a4edbb85a1ba4f5bc835318173b71222df45344b67b36c7a",
-        "function_addr": "0x1400015c7",
-        "function_rva": "0x15c7"
-      },
-      "fail_taxonomy": "assertion_fail",
+      "oracle_evidence": {},
+      "fail_taxonomy": "oracle_error",
       "bare_compile": {
         "ok": true,
         "category": "ok",
@@ -3213,18 +3495,18 @@
       "source_similarity": 0.0807,
       "goto_count": 1,
       "nesting_depth": 3,
-      "time_ms": 773,
+      "time_ms": 2725,
       "error": null,
-      "semantic_score": 1.0,
-      "semantic_error": null,
-      "fail_category": "",
-      "cases_passed": 6,
+      "semantic_score": 0.0,
+      "semantic_error": "",
+      "fail_category": "oracle_error",
+      "cases_passed": 0,
       "cases_total": 6,
       "structural_penalty": 0.24,
-      "correctness_score": 1.0,
+      "correctness_score": 0.0,
       "correctness_rank": 1,
       "readability_proxy_score": 0.4,
-      "composite_score": 1.0,
+      "composite_score": 0.0,
       "consensus_rank": 1,
       "uses_intrinsics": false,
       "decompiled_code": "int binary_search(uint * param_1, uint param_2, int param_3)\n{\n    uint local_c;\n    ulonglong local_8;\n    uint local_4;\n    ulonglong home_0;\n    uint * param_10;\n    uint param_18;\n    int param_20;\n    uint uVar105;\n    uint uVar111;\n    int uVar117;\n    int uVar119;\n    uint uVar15;\n    uint uVar21;\n    int uVar24;\n    int uVar61;\n    uint uVar63;\n    int uVar79;\n    uint uVar9;\n    int uVar98;\n    int * xVar72;\n    int xVar77;\n    longlong xVar89;\n    int * xVar91;\n    int xVar96;\n\n    param_10 = param_1;\n    param_18 = param_2;\n    param_20 = param_3;\n    local_4 = 0;\n    uVar9 = param_18;\n    uVar9--;\n    local_8 = uVar9;\n    while (1) {\n        uVar117 = local_4;\n        uVar119 = local_8;\n        if (uVar119 < uVar117) {\n            break;\n        }\n        uVar15 = local_8;\n        uVar15 -= local_4;\n        uVar21 = uVar15;\n        uVar24 = uVar21 >> 31;\n        uVar15 += uVar24;\n        uVar15 = uVar15 >> 1;\n        uVar61 = uVar15;\n        uVar63 = local_4;\n        uVar63 += uVar61;\n        local_c = uVar63;\n        uVar61 = local_c * 4;\n        xVar72 = param_10;\n        xVar72 = (int *)((ulonglong)(ulonglong)xVar72 + uVar61);\n        xVar77 = *xVar72;\n        uVar79 = param_20;\n        if (uVar79 == xVar77) {\n            return local_c;\n        }\n        xVar89 = local_c * 4;\n        xVar91 = param_10;\n        xVar91 = (int *)((ulonglong)(ulonglong)xVar91 + xVar89);\n        xVar96 = *xVar91;\n        uVar98 = param_20;\n        if (uVar98 <= xVar96) {\n            goto block_1400017a8;\n        }\n        uVar105 = local_c;\n        uVar105++;\n        local_4 = uVar105;\n        continue;\nblock_1400017a8:\n        uVar111 = local_c;\n        uVar111--;\n        local_8 = uVar111;\n    }\n    return -1;\n}\n",
@@ -3354,6 +3636,27 @@
         "type_erased": null,
         "control_flow_normalized": null
       },
+      "type_match_score": 0.6666666666666666,
+      "type_match_metadata": {
+        "accuracy": 0.6666666666666666,
+        "tp": 4,
+        "fp": 2,
+        "fn": 0,
+        "gt_vars": 6,
+        "decomp_vars": 27,
+        "calibration_shift": 0,
+        "matched_by_arg": 3,
+        "matched_by_offset": 3,
+        "matched_by_name": 0
+      },
+      "ged_score": 6.0,
+      "ged_metadata": {
+        "source_nodes": 8,
+        "source_edges": 9,
+        "decompiled_nodes": 8,
+        "decompiled_edges": 12,
+        "ged": 6.0
+      },
       "output_diagnostics": {
         "status": "direct_function",
         "issues": [
@@ -3373,22 +3676,8 @@
         "decompiler": "fission",
         "boundary_contract": "addr_or_name_single_function"
       },
-      "oracle_evidence": {
-        "mode": "differential",
-        "valid": true,
-        "oracle_subject": "original_binary",
-        "target_abi": "windows-x86_64",
-        "compiler": "x86_64-w64-mingw32-gcc",
-        "compiler_version": "x86_64-w64-mingw32-gcc (GCC) 12-win32",
-        "runner": "wine",
-        "runner_version": "wine-8.0 (Debian 8.0~repack-4)",
-        "wrapper_sha256": "e116aac5f1390573854dcb22a111a6e6d2ae872ba67b846be8fcfa28d9936d7f",
-        "reference_binary_sha256": "bc6584677c1c106998c87434c57a879d79ecf44afcbf11aa6e813328bb82ea3c",
-        "translation_unit_sha256": "44be8162bd9ee10a81f02296f396b57e05d41ecbef41728f5d1e42888a706712",
-        "function_addr": "0x140001724",
-        "function_rva": "0x1724"
-      },
-      "fail_taxonomy": "ok",
+      "oracle_evidence": {},
+      "fail_taxonomy": "oracle_error",
       "bare_compile": {
         "ok": true,
         "category": "ok",
@@ -3412,19 +3701,19 @@
       "source_similarity": 0.2424,
       "goto_count": 0,
       "nesting_depth": 3,
-      "time_ms": 15074,
+      "time_ms": 12786,
       "error": null,
-      "semantic_score": 0.3333333333333333,
-      "semantic_error": "candidate passed 2/6 cases",
-      "fail_category": "assertion_fail",
-      "cases_passed": 2,
-      "cases_total": 6,
+      "semantic_score": 0.0,
+      "semantic_error": "Skipped: decompiled output has harness blockers: register_pseudo_inputs",
+      "fail_category": "oracle_error",
+      "cases_passed": 0,
+      "cases_total": 0,
       "structural_penalty": 0.1,
-      "correctness_score": 0.3333,
-      "correctness_rank": 2,
+      "correctness_score": 0.0,
+      "correctness_rank": 1,
       "readability_proxy_score": 0.3167,
-      "composite_score": 0.3333,
-      "consensus_rank": 2,
+      "composite_score": 0.0,
+      "consensus_rank": 1,
       "uses_intrinsics": false,
       "decompiled_code": "\n/* WARNING: Unknown calling convention */\n\nint binary_search(int *arr,int n,int target)\n\n{\n  int iVar1;\n  longlong in_RCX;\n  int in_EDX;\n  int in_R8D;\n  int mid;\n  int hi;\n  int lo;\n  \n  lo = 0;\n  hi = in_EDX + -1;\n  while( true ) {\n    if (hi < lo) {\n      return -1;\n    }\n    iVar1 = lo + (hi - lo) / 2;\n    if (in_R8D == *(int *)(in_RCX + (longlong)iVar1 * 4)) break;\n    if (*(int *)(in_RCX + (longlong)iVar1 * 4) < in_R8D) {\n      lo = iVar1 + 1;\n    }\n    else {\n      hi = iVar1 + -1;\n    }\n  }\n  return iVar1;\n}\n\n",
       "decompiled_code_nir": "\n/* WARNING: Unknown calling convention */\n\nint binary_search(int *arr,int n,int target)\n\n{\n  int iVar1;\n  longlong in_RCX;\n  int in_EDX;\n  int in_R8D;\n  int mid;\n  int hi;\n  int lo;\n  \n  lo = 0;\n  hi = in_EDX + -1;\n  while( true ) {\n    if (hi < lo) {\n      return -1;\n    }\n    iVar1 = lo + (hi - lo) / 2;\n    if (in_R8D == *(int *)(in_RCX + (longlong)iVar1 * 4)) break;\n    if (*(int *)(in_RCX + (longlong)iVar1 * 4) < in_R8D) {\n      lo = iVar1 + 1;\n    }\n    else {\n      hi = iVar1 + -1;\n    }\n  }\n  return iVar1;\n}\n\n",
@@ -3497,6 +3786,27 @@
         "type_erased": null,
         "control_flow_normalized": null
       },
+      "type_match_score": 1.0,
+      "type_match_metadata": {
+        "accuracy": 1.0,
+        "tp": 6,
+        "fp": 0,
+        "fn": 0,
+        "gt_vars": 6,
+        "decomp_vars": 10,
+        "calibration_shift": 0,
+        "matched_by_arg": 3,
+        "matched_by_offset": 0,
+        "matched_by_name": 3
+      },
+      "ged_score": 5.0,
+      "ged_metadata": {
+        "source_nodes": 8,
+        "source_edges": 9,
+        "decompiled_nodes": 9,
+        "decompiled_edges": 11,
+        "ged": 5.0
+      },
       "output_diagnostics": {
         "status": "needs_normalization",
         "issues": [
@@ -3523,22 +3833,8 @@
         "decompiler": "ghidra",
         "boundary_contract": "addr_or_name_single_function"
       },
-      "oracle_evidence": {
-        "mode": "differential",
-        "valid": true,
-        "oracle_subject": "original_binary",
-        "target_abi": "windows-x86_64",
-        "compiler": "x86_64-w64-mingw32-gcc",
-        "compiler_version": "x86_64-w64-mingw32-gcc (GCC) 12-win32",
-        "runner": "wine",
-        "runner_version": "wine-8.0 (Debian 8.0~repack-4)",
-        "wrapper_sha256": "e116aac5f1390573854dcb22a111a6e6d2ae872ba67b846be8fcfa28d9936d7f",
-        "reference_binary_sha256": "bc6584677c1c106998c87434c57a879d79ecf44afcbf11aa6e813328bb82ea3c",
-        "translation_unit_sha256": "8cbca929ab2e38c6ff15a163b3152423a4ccb35dae33c8e4944cd440e56e11a0",
-        "function_addr": "0x140001724",
-        "function_rva": "0x1724"
-      },
-      "fail_taxonomy": "assertion_fail",
+      "oracle_evidence": {},
+      "fail_taxonomy": "oracle_error",
       "bare_compile": {
         "ok": true,
         "category": "ok",
@@ -3562,7 +3858,7 @@
       "source_similarity": 0.2132,
       "goto_count": 0,
       "nesting_depth": 3,
-      "time_ms": 773,
+      "time_ms": 2725,
       "error": null,
       "semantic_score": 1.0,
       "semantic_error": null,
@@ -3703,6 +3999,27 @@
         "type_erased": null,
         "control_flow_normalized": null
       },
+      "type_match_score": 1.0,
+      "type_match_metadata": {
+        "accuracy": 1.0,
+        "tp": 3,
+        "fp": 0,
+        "fn": 0,
+        "gt_vars": 3,
+        "decomp_vars": 7,
+        "calibration_shift": 0,
+        "matched_by_arg": 2,
+        "matched_by_offset": 1,
+        "matched_by_name": 0
+      },
+      "ged_score": 4.0,
+      "ged_metadata": {
+        "source_nodes": 4,
+        "source_edges": 4,
+        "decompiled_nodes": 4,
+        "decompiled_edges": 6,
+        "ged": 4.0
+      },
       "output_diagnostics": {
         "status": "direct_function",
         "issues": [
@@ -3732,7 +4049,7 @@
         "runner": "wine",
         "runner_version": "wine-8.0 (Debian 8.0~repack-4)",
         "wrapper_sha256": "8a78b215c912fb484f85cb6f02c2bb4f5710203489f0be832bb28b403d29d31d",
-        "reference_binary_sha256": "bc6584677c1c106998c87434c57a879d79ecf44afcbf11aa6e813328bb82ea3c",
+        "reference_binary_sha256": "354cff1e1adc8de25fdae9574c9001fe3857ea1d23e39e1b8be998de1b3ce329",
         "translation_unit_sha256": "5612a44b8e70dbc49a50c2a969a4cc3443188a83312a1fe5d9cc19cfb7a7486e",
         "function_addr": "0x1400017fd",
         "function_rva": "0x17fd"
@@ -3761,13 +4078,13 @@
       "source_similarity": 0.5957,
       "goto_count": 0,
       "nesting_depth": 2,
-      "time_ms": 15074,
+      "time_ms": 12786,
       "error": null,
       "semantic_score": 0.0,
-      "semantic_error": "candidate passed 0/6 cases",
-      "fail_category": "assertion_fail",
+      "semantic_error": "Skipped: decompiled output has harness blockers: register_pseudo_inputs",
+      "fail_category": "oracle_error",
       "cases_passed": 0,
-      "cases_total": 6,
+      "cases_total": 0,
       "structural_penalty": 0.0,
       "correctness_score": 0.0,
       "correctness_rank": 2,
@@ -3857,6 +4174,27 @@
           "similarity": 0.7787
         }
       },
+      "type_match_score": 1.0,
+      "type_match_metadata": {
+        "accuracy": 1.0,
+        "tp": 3,
+        "fp": 0,
+        "fn": 0,
+        "gt_vars": 3,
+        "decomp_vars": 6,
+        "calibration_shift": 0,
+        "matched_by_arg": 2,
+        "matched_by_offset": 0,
+        "matched_by_name": 1
+      },
+      "ged_score": 0.0,
+      "ged_metadata": {
+        "source_nodes": 4,
+        "source_edges": 4,
+        "decompiled_nodes": 4,
+        "decompiled_edges": 4,
+        "ged": 0.0
+      },
       "output_diagnostics": {
         "status": "needs_normalization",
         "issues": [
@@ -3882,22 +4220,8 @@
         "decompiler": "ghidra",
         "boundary_contract": "addr_or_name_single_function"
       },
-      "oracle_evidence": {
-        "mode": "differential",
-        "valid": true,
-        "oracle_subject": "original_binary",
-        "target_abi": "windows-x86_64",
-        "compiler": "x86_64-w64-mingw32-gcc",
-        "compiler_version": "x86_64-w64-mingw32-gcc (GCC) 12-win32",
-        "runner": "wine",
-        "runner_version": "wine-8.0 (Debian 8.0~repack-4)",
-        "wrapper_sha256": "8a78b215c912fb484f85cb6f02c2bb4f5710203489f0be832bb28b403d29d31d",
-        "reference_binary_sha256": "bc6584677c1c106998c87434c57a879d79ecf44afcbf11aa6e813328bb82ea3c",
-        "translation_unit_sha256": "e1c00a81587f3aa470f62edf0c2df6871053d16f6c88b2df0ae0eb457e404b54",
-        "function_addr": "0x1400017fd",
-        "function_rva": "0x17fd"
-      },
-      "fail_taxonomy": "assertion_fail",
+      "oracle_evidence": {},
+      "fail_taxonomy": "oracle_error",
       "bare_compile": {
         "ok": true,
         "category": "ok",
@@ -3921,7 +4245,7 @@
       "source_similarity": 0.2658,
       "goto_count": 0,
       "nesting_depth": 2,
-      "time_ms": 590,
+      "time_ms": 2681,
       "error": null,
       "semantic_score": 0.3333333333333333,
       "semantic_error": "candidate passed 2/6 cases",
@@ -4017,6 +4341,27 @@
           "similarity": 0.5789
         }
       },
+      "type_match_score": 0.2,
+      "type_match_metadata": {
+        "accuracy": 0.2,
+        "tp": 1,
+        "fp": 0,
+        "fn": 4,
+        "gt_vars": 5,
+        "decomp_vars": 7,
+        "calibration_shift": 0,
+        "matched_by_arg": 1,
+        "matched_by_offset": 0,
+        "matched_by_name": 0
+      },
+      "ged_score": 6.0,
+      "ged_metadata": {
+        "source_nodes": 6,
+        "source_edges": 6,
+        "decompiled_nodes": 4,
+        "decompiled_edges": 4,
+        "ged": 6.0
+      },
       "output_diagnostics": {
         "status": "direct_function",
         "issues": [
@@ -4046,7 +4391,7 @@
         "runner": "wine",
         "runner_version": "wine-8.0 (Debian 8.0~repack-4)",
         "wrapper_sha256": "55e74f570b0fee1ee0802f0cee000a982bc21b681d1dbea6f67e8c171e82a9bc",
-        "reference_binary_sha256": "b8591e05517a8bf00f482399bc69a64f3650ea322094c2f116865340324a1c60",
+        "reference_binary_sha256": "05095c52eccaf154ffe78724a5eabde84ff0b203dfc2f7ed8c6c63fbe341e156",
         "translation_unit_sha256": "e12b613cfce2dd9ae15ce169b518c41f86e1c991eb121aade84364d4fbfeab4a",
         "function_addr": "0x140001580",
         "function_rva": "0x1580"
@@ -4075,7 +4420,7 @@
       "source_similarity": 0.2408,
       "goto_count": 0,
       "nesting_depth": 3,
-      "time_ms": 14940,
+      "time_ms": 13459,
       "error": null,
       "semantic_score": 1.0,
       "semantic_error": null,
@@ -4171,6 +4516,27 @@
           "similarity": 0.6423
         }
       },
+      "type_match_score": 0.2,
+      "type_match_metadata": {
+        "accuracy": 0.2,
+        "tp": 1,
+        "fp": 0,
+        "fn": 4,
+        "gt_vars": 5,
+        "decomp_vars": 5,
+        "calibration_shift": 0,
+        "matched_by_arg": 1,
+        "matched_by_offset": 0,
+        "matched_by_name": 0
+      },
+      "ged_score": 10.0,
+      "ged_metadata": {
+        "source_nodes": 6,
+        "source_edges": 6,
+        "decompiled_nodes": 4,
+        "decompiled_edges": 5,
+        "ged": 10.0
+      },
       "output_diagnostics": {
         "status": "direct_function",
         "issues": [
@@ -4200,7 +4566,7 @@
         "runner": "wine",
         "runner_version": "wine-8.0 (Debian 8.0~repack-4)",
         "wrapper_sha256": "55e74f570b0fee1ee0802f0cee000a982bc21b681d1dbea6f67e8c171e82a9bc",
-        "reference_binary_sha256": "b8591e05517a8bf00f482399bc69a64f3650ea322094c2f116865340324a1c60",
+        "reference_binary_sha256": "05095c52eccaf154ffe78724a5eabde84ff0b203dfc2f7ed8c6c63fbe341e156",
         "translation_unit_sha256": "4a7ae63cd10d39cf4f3b770aced0a9d621c39ec217aa474f2082a72ebea173eb",
         "function_addr": "0x140001580",
         "function_rva": "0x1580"
@@ -4229,7 +4595,7 @@
       "source_similarity": 0.4024,
       "goto_count": 0,
       "nesting_depth": 1,
-      "time_ms": 590,
+      "time_ms": 2681,
       "error": null,
       "semantic_score": 1.0,
       "semantic_error": null,
@@ -4381,6 +4747,27 @@
           "similarity": 0.8333
         }
       },
+      "type_match_score": 1.0,
+      "type_match_metadata": {
+        "accuracy": 1.0,
+        "tp": 2,
+        "fp": 0,
+        "fn": 0,
+        "gt_vars": 2,
+        "decomp_vars": 4,
+        "calibration_shift": 0,
+        "matched_by_arg": 2,
+        "matched_by_offset": 0,
+        "matched_by_name": 0
+      },
+      "ged_score": 0.0,
+      "ged_metadata": {
+        "source_nodes": 1,
+        "source_edges": 0,
+        "decompiled_nodes": 1,
+        "decompiled_edges": 0,
+        "ged": 0.0
+      },
       "output_diagnostics": {
         "status": "direct_function",
         "issues": [
@@ -4410,7 +4797,7 @@
         "runner": "wine",
         "runner_version": "wine-8.0 (Debian 8.0~repack-4)",
         "wrapper_sha256": "35c565052763390521c8360b00b6043d31e8bc9751c8b60cf708922083160486",
-        "reference_binary_sha256": "b8591e05517a8bf00f482399bc69a64f3650ea322094c2f116865340324a1c60",
+        "reference_binary_sha256": "05095c52eccaf154ffe78724a5eabde84ff0b203dfc2f7ed8c6c63fbe341e156",
         "translation_unit_sha256": "6116bb6db9cada13dcca4bb58d1f4d46818403ded24f3d115dd8128c632affc1",
         "function_addr": "0x1400015c0",
         "function_rva": "0x15c0"
@@ -4439,7 +4826,7 @@
       "source_similarity": 0.6538,
       "goto_count": 0,
       "nesting_depth": 2,
-      "time_ms": 14940,
+      "time_ms": 13459,
       "error": null,
       "semantic_score": 1.0,
       "semantic_error": null,
@@ -4535,6 +4922,27 @@
           "similarity": 0.9271
         }
       },
+      "type_match_score": 1.0,
+      "type_match_metadata": {
+        "accuracy": 1.0,
+        "tp": 2,
+        "fp": 0,
+        "fn": 0,
+        "gt_vars": 2,
+        "decomp_vars": 2,
+        "calibration_shift": 0,
+        "matched_by_arg": 2,
+        "matched_by_offset": 0,
+        "matched_by_name": 0
+      },
+      "ged_score": 10.0,
+      "ged_metadata": {
+        "source_nodes": 1,
+        "source_edges": 0,
+        "decompiled_nodes": 3,
+        "decompiled_edges": 3,
+        "ged": 10.0
+      },
       "output_diagnostics": {
         "status": "direct_function",
         "issues": [
@@ -4564,7 +4972,7 @@
         "runner": "wine",
         "runner_version": "wine-8.0 (Debian 8.0~repack-4)",
         "wrapper_sha256": "35c565052763390521c8360b00b6043d31e8bc9751c8b60cf708922083160486",
-        "reference_binary_sha256": "b8591e05517a8bf00f482399bc69a64f3650ea322094c2f116865340324a1c60",
+        "reference_binary_sha256": "05095c52eccaf154ffe78724a5eabde84ff0b203dfc2f7ed8c6c63fbe341e156",
         "translation_unit_sha256": "0def450543f8b0d30c9f6e30e30f541672a43ce1edc442ec15b2ff0e1dddab4e",
         "function_addr": "0x1400015c0",
         "function_rva": "0x15c0"
@@ -4593,7 +5001,7 @@
       "source_similarity": 0.146,
       "goto_count": 2,
       "nesting_depth": 4,
-      "time_ms": 590,
+      "time_ms": 2681,
       "error": null,
       "semantic_score": 0.0,
       "semantic_error": "oracle execution timed out",
@@ -4602,10 +5010,10 @@
       "cases_total": 6,
       "structural_penalty": 0.48,
       "correctness_score": 0.0,
-      "correctness_rank": 1,
+      "correctness_rank": 2,
       "readability_proxy_score": 0.2,
       "composite_score": 0.0,
-      "consensus_rank": 1,
+      "consensus_rank": 2,
       "uses_intrinsics": false,
       "decompiled_code": "int binary_search(int * param_1, int param_2, int param_3)\n{\n    ulonglong home_0;\n    int iVar28;\n    longlong r9;\n    longlong rdx;\n    int uVar23;\n    int uVar4;\n    int uVar9;\n\n    iVar28 = param_2 - 1;\n    if (iVar28 < 0) {\n        return -1;\n    }\n    r9 = 0;\n    goto block_140001679;\n    uVar4 = param_2;\n    if (r9 <= uVar4) {\n        while (1) {\nblock_140001679:\n            uVar9 = param_2;\n            uVar9 -= r9;\n            uVar9 = uVar9 >> 1;\n            uVar9 += r9;\n            uVar23 = param_1[(longlong)uVar9];\n            if (uVar23 == param_3) {\n                break;\n            }\n            if (uVar23 < param_3) {\n                continue;\n            }\n            iVar28 = (int)(uVar9 - 1);\n            rdx = iVar28;\n            if (rdx < r9) {\n                break;\n            } else {\n                continue;\n            }\n        }\n    }\n    r9 = (int)((uint)(param_2 - r9 >> 1) + r9 + 1);\n    if (r9 <= uVar4) {\n        goto block_140001679;\n    }\n}\n",
       "decompiled_code_nir": "int binary_search(int * param_1, int param_2, int param_3)\n{\n    ulonglong home_0;\n    int iVar28;\n    longlong r9;\n    longlong rdx;\n    int uVar23;\n    int uVar4;\n    int uVar9;\n\n    iVar28 = param_2 - 1;\n    if (iVar28 < 0) {\n        return -1;\n    }\n    r9 = 0;\n    goto block_140001679;\n    uVar4 = param_2;\n    if (r9 <= uVar4) {\n        while (1) {\nblock_140001679:\n            uVar9 = param_2;\n            uVar9 -= r9;\n            uVar9 = uVar9 >> 1;\n            uVar9 += r9;\n            uVar23 = param_1[(longlong)uVar9];\n            if (uVar23 == param_3) {\n                break;\n            }\n            if (uVar23 < param_3) {\n                continue;\n            }\n            iVar28 = (int)(uVar9 - 1);\n            rdx = iVar28;\n            if (rdx < r9) {\n                break;\n            } else {\n                continue;\n            }\n        }\n    }\n    r9 = (int)((uint)(param_2 - r9 >> 1) + r9 + 1);\n    if (r9 <= uVar4) {\n        goto block_140001679;\n    }\n}\n",
@@ -4734,6 +5142,27 @@
         "type_erased": null,
         "control_flow_normalized": null
       },
+      "type_match_score": 0.5,
+      "type_match_metadata": {
+        "accuracy": 0.5,
+        "tp": 3,
+        "fp": 0,
+        "fn": 3,
+        "gt_vars": 6,
+        "decomp_vars": 10,
+        "calibration_shift": 0,
+        "matched_by_arg": 3,
+        "matched_by_offset": 0,
+        "matched_by_name": 0
+      },
+      "ged_score": 10.0,
+      "ged_metadata": {
+        "source_nodes": 8,
+        "source_edges": 9,
+        "decompiled_nodes": 8,
+        "decompiled_edges": 13,
+        "ged": 10.0
+      },
       "output_diagnostics": {
         "status": "direct_function",
         "issues": [
@@ -4763,7 +5192,7 @@
         "runner": "wine",
         "runner_version": "wine-8.0 (Debian 8.0~repack-4)",
         "wrapper_sha256": "e116aac5f1390573854dcb22a111a6e6d2ae872ba67b846be8fcfa28d9936d7f",
-        "reference_binary_sha256": "b8591e05517a8bf00f482399bc69a64f3650ea322094c2f116865340324a1c60",
+        "reference_binary_sha256": "05095c52eccaf154ffe78724a5eabde84ff0b203dfc2f7ed8c6c63fbe341e156",
         "translation_unit_sha256": "ba77eaba9776cacbc64c3eacaaf64b11bf0a2831506e0c5d34881586bf286dd3",
         "function_addr": "0x140001660",
         "function_rva": "0x1660"
@@ -4792,18 +5221,18 @@
       "source_similarity": 0.2388,
       "goto_count": 0,
       "nesting_depth": 5,
-      "time_ms": 14940,
+      "time_ms": 13459,
       "error": null,
-      "semantic_score": 0.0,
-      "semantic_error": "Server disconnected without sending a response.",
-      "fail_category": "oracle_error",
-      "cases_passed": 0,
+      "semantic_score": 1.0,
+      "semantic_error": null,
+      "fail_category": "",
+      "cases_passed": 6,
       "cases_total": 6,
       "structural_penalty": 0.3,
-      "correctness_score": 0.0,
+      "correctness_score": 1.0,
       "correctness_rank": 1,
       "readability_proxy_score": 0.6875,
-      "composite_score": 0.0,
+      "composite_score": 1.0,
       "consensus_rank": 1,
       "uses_intrinsics": false,
       "decompiled_code": "\nint binary_search(int *arr,int n,int target)\n\n{\n  int iVar1;\n  int iVar2;\n  int iVar3;\n  \n                    /* Unresolved local var: int lo@[???]\n                       Unresolved local var: int hi@[DW_OP_breg1(RDX): -1; DW_OP_stack_value] */\n  iVar2 = n + -1;\n  if (-1 < iVar2) {\n    iVar3 = 0;\n    do {\n      while( true ) {\n        iVar1 = (iVar2 - iVar3 >> 1) + iVar3;\n        if (arr[iVar1] == target) {\n          return iVar1;\n        }\n        if (arr[iVar1] < target) break;\n        iVar2 = iVar1 + -1;\n        if (iVar2 < iVar3) {\n          return -1;\n        }\n      }\n                    /* Unresolved local var: int mid@[???] */\n      iVar3 = iVar1 + 1;\n    } while (iVar3 <= iVar2);\n  }\n  return -1;\n}\n\n",
@@ -4888,6 +5317,27 @@
           "similarity": 0.6805
         }
       },
+      "type_match_score": 0.5,
+      "type_match_metadata": {
+        "accuracy": 0.5,
+        "tp": 3,
+        "fp": 0,
+        "fn": 3,
+        "gt_vars": 6,
+        "decomp_vars": 6,
+        "calibration_shift": 0,
+        "matched_by_arg": 3,
+        "matched_by_offset": 0,
+        "matched_by_name": 0
+      },
+      "ged_score": 10.0,
+      "ged_metadata": {
+        "source_nodes": 8,
+        "source_edges": 9,
+        "decompiled_nodes": 10,
+        "decompiled_edges": 13,
+        "ged": 10.0
+      },
       "output_diagnostics": {
         "status": "direct_function",
         "issues": [
@@ -4907,8 +5357,22 @@
         "decompiler": "ghidra",
         "boundary_contract": "addr_or_name_single_function"
       },
-      "oracle_evidence": {},
-      "fail_taxonomy": "oracle_error",
+      "oracle_evidence": {
+        "mode": "differential",
+        "valid": true,
+        "oracle_subject": "original_binary",
+        "target_abi": "windows-x86_64",
+        "compiler": "x86_64-w64-mingw32-gcc",
+        "compiler_version": "x86_64-w64-mingw32-gcc (GCC) 12-win32",
+        "runner": "wine",
+        "runner_version": "wine-8.0 (Debian 8.0~repack-4)",
+        "wrapper_sha256": "e116aac5f1390573854dcb22a111a6e6d2ae872ba67b846be8fcfa28d9936d7f",
+        "reference_binary_sha256": "05095c52eccaf154ffe78724a5eabde84ff0b203dfc2f7ed8c6c63fbe341e156",
+        "translation_unit_sha256": "3cb7d09ef0cf29cfc9760e7a2164e4eb530c47a90e1e7cccb1ec3461d64c7491",
+        "function_addr": "0x140001660",
+        "function_rva": "0x1660"
+      },
+      "fail_taxonomy": "ok",
       "bare_compile": {
         "ok": true,
         "category": "ok",
@@ -4932,10 +5396,10 @@
       "source_similarity": 0.1086,
       "goto_count": 0,
       "nesting_depth": 2,
-      "time_ms": 590,
+      "time_ms": 2681,
       "error": null,
       "semantic_score": 0.0,
-      "semantic_error": "wine: Unhandled division by zero at address 0000000140001F31 (thread 0100), starting debugger...\n",
+      "semantic_error": "wine: Unhandled division by zero at address 0000000140001F31 (thread 0104), starting debugger...\n",
       "fail_category": "runtime_error",
       "cases_passed": 0,
       "cases_total": 6,
@@ -5073,6 +5537,27 @@
         "type_erased": null,
         "control_flow_normalized": null
       },
+      "type_match_score": 0.6666666666666666,
+      "type_match_metadata": {
+        "accuracy": 0.6666666666666666,
+        "tp": 2,
+        "fp": 0,
+        "fn": 1,
+        "gt_vars": 3,
+        "decomp_vars": 8,
+        "calibration_shift": 0,
+        "matched_by_arg": 2,
+        "matched_by_offset": 0,
+        "matched_by_name": 0
+      },
+      "ged_score": 6.0,
+      "ged_metadata": {
+        "source_nodes": 4,
+        "source_edges": 4,
+        "decompiled_nodes": 4,
+        "decompiled_edges": 4,
+        "ged": 6.0
+      },
       "output_diagnostics": {
         "status": "direct_function",
         "issues": [
@@ -5102,7 +5587,7 @@
         "runner": "wine",
         "runner_version": "wine-8.0 (Debian 8.0~repack-4)",
         "wrapper_sha256": "8a78b215c912fb484f85cb6f02c2bb4f5710203489f0be832bb28b403d29d31d",
-        "reference_binary_sha256": "b8591e05517a8bf00f482399bc69a64f3650ea322094c2f116865340324a1c60",
+        "reference_binary_sha256": "05095c52eccaf154ffe78724a5eabde84ff0b203dfc2f7ed8c6c63fbe341e156",
         "translation_unit_sha256": "1a3ae274af95529d119d4dc132d12136c412bbb1da548cd0ddf2e75c328f70dc",
         "function_addr": "0x1400016e0",
         "function_rva": "0x16e0"
@@ -5131,7 +5616,7 @@
       "source_similarity": 0.7778,
       "goto_count": 0,
       "nesting_depth": 2,
-      "time_ms": 14940,
+      "time_ms": 13459,
       "error": null,
       "semantic_score": 1.0,
       "semantic_error": null,
@@ -5227,6 +5712,27 @@
           "similarity": 0.8879
         }
       },
+      "type_match_score": 0.6666666666666666,
+      "type_match_metadata": {
+        "accuracy": 0.6666666666666666,
+        "tp": 2,
+        "fp": 0,
+        "fn": 1,
+        "gt_vars": 3,
+        "decomp_vars": 3,
+        "calibration_shift": 0,
+        "matched_by_arg": 2,
+        "matched_by_offset": 0,
+        "matched_by_name": 0
+      },
+      "ged_score": 0.0,
+      "ged_metadata": {
+        "source_nodes": 4,
+        "source_edges": 4,
+        "decompiled_nodes": 4,
+        "decompiled_edges": 4,
+        "ged": 0.0
+      },
       "output_diagnostics": {
         "status": "direct_function",
         "issues": [
@@ -5256,7 +5762,7 @@
         "runner": "wine",
         "runner_version": "wine-8.0 (Debian 8.0~repack-4)",
         "wrapper_sha256": "8a78b215c912fb484f85cb6f02c2bb4f5710203489f0be832bb28b403d29d31d",
-        "reference_binary_sha256": "b8591e05517a8bf00f482399bc69a64f3650ea322094c2f116865340324a1c60",
+        "reference_binary_sha256": "05095c52eccaf154ffe78724a5eabde84ff0b203dfc2f7ed8c6c63fbe341e156",
         "translation_unit_sha256": "210f4ec37dac2c5ea50c06f1f502e006a1b2c493c82620e1063baadc6c33b3a1",
         "function_addr": "0x1400016e0",
         "function_rva": "0x16e0"
@@ -5285,7 +5791,7 @@
       "source_similarity": 0.2178,
       "goto_count": 0,
       "nesting_depth": 3,
-      "time_ms": 828,
+      "time_ms": 2466,
       "error": null,
       "semantic_score": 1.0,
       "semantic_error": null,
@@ -5437,6 +5943,21 @@
           "similarity": 0.5478
         }
       },
+      "type_match_score": 0.8,
+      "type_match_metadata": {
+        "accuracy": 0.8,
+        "tp": 4,
+        "fp": 0,
+        "fn": 1,
+        "gt_vars": 5,
+        "decomp_vars": 7,
+        "calibration_shift": 8,
+        "matched_by_arg": 0,
+        "matched_by_offset": 4,
+        "matched_by_name": 0
+      },
+      "ged_score": null,
+      "ged_metadata": {},
       "output_diagnostics": {
         "status": "direct_function",
         "issues": [
@@ -5466,7 +5987,7 @@
         "runner": "wine",
         "runner_version": "wine-8.0 (Debian 8.0~repack-4)",
         "wrapper_sha256": "55e74f570b0fee1ee0802f0cee000a982bc21b681d1dbea6f67e8c171e82a9bc",
-        "reference_binary_sha256": "077dedbeccf04f3829d557eb81fb2f4a62e6f1aa7e9f884db6ee6e5c98199acd",
+        "reference_binary_sha256": "c70b2018a7e141805cfde28650f7a43d339b9397e383451f15be22c02d9a05e0",
         "translation_unit_sha256": "56b9f6a902477397a28f0aae2974d754bedd5f52e67d8cb23a19e72010ecda03",
         "function_addr": "0x4015e7",
         "function_rva": "0x15e7"
@@ -5495,7 +6016,7 @@
       "source_similarity": 0.7183,
       "goto_count": 0,
       "nesting_depth": 3,
-      "time_ms": 12499,
+      "time_ms": 13399,
       "error": null,
       "semantic_score": 1.0,
       "semantic_error": null,
@@ -5591,6 +6112,27 @@
           "similarity": 0.6957
         }
       },
+      "type_match_score": 1.0,
+      "type_match_metadata": {
+        "accuracy": 1.0,
+        "tp": 5,
+        "fp": 0,
+        "fn": 0,
+        "gt_vars": 5,
+        "decomp_vars": 6,
+        "calibration_shift": 0,
+        "matched_by_arg": 1,
+        "matched_by_offset": 0,
+        "matched_by_name": 4
+      },
+      "ged_score": 7.0,
+      "ged_metadata": {
+        "source_nodes": 6,
+        "source_edges": 6,
+        "decompiled_nodes": 5,
+        "decompiled_edges": 6,
+        "ged": 7.0
+      },
       "output_diagnostics": {
         "status": "direct_function",
         "issues": [
@@ -5620,7 +6162,7 @@
         "runner": "wine",
         "runner_version": "wine-8.0 (Debian 8.0~repack-4)",
         "wrapper_sha256": "55e74f570b0fee1ee0802f0cee000a982bc21b681d1dbea6f67e8c171e82a9bc",
-        "reference_binary_sha256": "077dedbeccf04f3829d557eb81fb2f4a62e6f1aa7e9f884db6ee6e5c98199acd",
+        "reference_binary_sha256": "c70b2018a7e141805cfde28650f7a43d339b9397e383451f15be22c02d9a05e0",
         "translation_unit_sha256": "b08b770893fbc865d4e5e8d1225f7963f3f2020c94598b6b8653061a85411190",
         "function_addr": "0x4015e7",
         "function_rva": "0x15e7"
@@ -5649,7 +6191,7 @@
       "source_similarity": 0.535,
       "goto_count": 0,
       "nesting_depth": 1,
-      "time_ms": 828,
+      "time_ms": 2466,
       "error": null,
       "semantic_score": 1.0,
       "semantic_error": null,
@@ -5801,6 +6343,21 @@
           "similarity": 0.8333
         }
       },
+      "type_match_score": 0.0,
+      "type_match_metadata": {
+        "accuracy": 0.0,
+        "tp": 0,
+        "fp": 0,
+        "fn": 2,
+        "gt_vars": 2,
+        "decomp_vars": 2,
+        "calibration_shift": 8,
+        "matched_by_arg": 0,
+        "matched_by_offset": 0,
+        "matched_by_name": 0
+      },
+      "ged_score": null,
+      "ged_metadata": {},
       "output_diagnostics": {
         "status": "direct_function",
         "issues": [
@@ -5830,7 +6387,7 @@
         "runner": "wine",
         "runner_version": "wine-8.0 (Debian 8.0~repack-4)",
         "wrapper_sha256": "35c565052763390521c8360b00b6043d31e8bc9751c8b60cf708922083160486",
-        "reference_binary_sha256": "077dedbeccf04f3829d557eb81fb2f4a62e6f1aa7e9f884db6ee6e5c98199acd",
+        "reference_binary_sha256": "c70b2018a7e141805cfde28650f7a43d339b9397e383451f15be22c02d9a05e0",
         "translation_unit_sha256": "a4a4d77a8512adbe089e63936cf3f9e340316591fda4dbce615e8f7e9e2b6747",
         "function_addr": "0x401637",
         "function_rva": "0x1637"
@@ -5859,7 +6416,7 @@
       "source_similarity": 0.6538,
       "goto_count": 0,
       "nesting_depth": 2,
-      "time_ms": 12499,
+      "time_ms": 13399,
       "error": null,
       "semantic_score": 1.0,
       "semantic_error": null,
@@ -5955,6 +6512,27 @@
           "similarity": 0.9271
         }
       },
+      "type_match_score": 1.0,
+      "type_match_metadata": {
+        "accuracy": 1.0,
+        "tp": 2,
+        "fp": 0,
+        "fn": 0,
+        "gt_vars": 2,
+        "decomp_vars": 2,
+        "calibration_shift": 0,
+        "matched_by_arg": 2,
+        "matched_by_offset": 0,
+        "matched_by_name": 0
+      },
+      "ged_score": 10.0,
+      "ged_metadata": {
+        "source_nodes": 1,
+        "source_edges": 0,
+        "decompiled_nodes": 3,
+        "decompiled_edges": 3,
+        "ged": 10.0
+      },
       "output_diagnostics": {
         "status": "direct_function",
         "issues": [
@@ -5984,7 +6562,7 @@
         "runner": "wine",
         "runner_version": "wine-8.0 (Debian 8.0~repack-4)",
         "wrapper_sha256": "35c565052763390521c8360b00b6043d31e8bc9751c8b60cf708922083160486",
-        "reference_binary_sha256": "077dedbeccf04f3829d557eb81fb2f4a62e6f1aa7e9f884db6ee6e5c98199acd",
+        "reference_binary_sha256": "c70b2018a7e141805cfde28650f7a43d339b9397e383451f15be22c02d9a05e0",
         "translation_unit_sha256": "4043f59f73173b4126cc5a2f86cddfaac8f0fe3b7166c2025e1b3dd072be10eb",
         "function_addr": "0x401637",
         "function_rva": "0x1637"
@@ -6013,7 +6591,7 @@
       "source_similarity": 0.0951,
       "goto_count": 1,
       "nesting_depth": 3,
-      "time_ms": 828,
+      "time_ms": 2466,
       "error": null,
       "semantic_score": 1.0,
       "semantic_error": null,
@@ -6165,6 +6743,21 @@
           "similarity": 0.3177
         }
       },
+      "type_match_score": 0.5,
+      "type_match_metadata": {
+        "accuracy": 0.5,
+        "tp": 3,
+        "fp": 0,
+        "fn": 3,
+        "gt_vars": 6,
+        "decomp_vars": 17,
+        "calibration_shift": 8,
+        "matched_by_arg": 0,
+        "matched_by_offset": 3,
+        "matched_by_name": 0
+      },
+      "ged_score": null,
+      "ged_metadata": {},
       "output_diagnostics": {
         "status": "direct_function",
         "issues": [
@@ -6194,7 +6787,7 @@
         "runner": "wine",
         "runner_version": "wine-8.0 (Debian 8.0~repack-4)",
         "wrapper_sha256": "e116aac5f1390573854dcb22a111a6e6d2ae872ba67b846be8fcfa28d9936d7f",
-        "reference_binary_sha256": "077dedbeccf04f3829d557eb81fb2f4a62e6f1aa7e9f884db6ee6e5c98199acd",
+        "reference_binary_sha256": "c70b2018a7e141805cfde28650f7a43d339b9397e383451f15be22c02d9a05e0",
         "translation_unit_sha256": "c9c24ad4a74a845679941d6846fba84d48cea11d7df2592fd201cab9641563f3",
         "function_addr": "0x401745",
         "function_rva": "0x1745"
@@ -6223,7 +6816,7 @@
       "source_similarity": 0.4381,
       "goto_count": 0,
       "nesting_depth": 3,
-      "time_ms": 12499,
+      "time_ms": 13399,
       "error": null,
       "semantic_score": 1.0,
       "semantic_error": null,
@@ -6319,6 +6912,27 @@
           "similarity": 0.7233
         }
       },
+      "type_match_score": 1.0,
+      "type_match_metadata": {
+        "accuracy": 1.0,
+        "tp": 6,
+        "fp": 0,
+        "fn": 0,
+        "gt_vars": 6,
+        "decomp_vars": 7,
+        "calibration_shift": 0,
+        "matched_by_arg": 3,
+        "matched_by_offset": 0,
+        "matched_by_name": 3
+      },
+      "ged_score": 5.0,
+      "ged_metadata": {
+        "source_nodes": 8,
+        "source_edges": 9,
+        "decompiled_nodes": 9,
+        "decompiled_edges": 11,
+        "ged": 5.0
+      },
       "output_diagnostics": {
         "status": "direct_function",
         "issues": [
@@ -6348,7 +6962,7 @@
         "runner": "wine",
         "runner_version": "wine-8.0 (Debian 8.0~repack-4)",
         "wrapper_sha256": "e116aac5f1390573854dcb22a111a6e6d2ae872ba67b846be8fcfa28d9936d7f",
-        "reference_binary_sha256": "077dedbeccf04f3829d557eb81fb2f4a62e6f1aa7e9f884db6ee6e5c98199acd",
+        "reference_binary_sha256": "c70b2018a7e141805cfde28650f7a43d339b9397e383451f15be22c02d9a05e0",
         "translation_unit_sha256": "263bf3e633d2c62640b4c297c1b4ea44aa204596739fcdeddd46869165d13cb4",
         "function_addr": "0x401745",
         "function_rva": "0x1745"
@@ -6377,7 +6991,7 @@
       "source_similarity": 0.2217,
       "goto_count": 0,
       "nesting_depth": 3,
-      "time_ms": 828,
+      "time_ms": 2466,
       "error": null,
       "semantic_score": 0.3333333333333333,
       "semantic_error": "candidate passed 2/6 cases",
@@ -6518,6 +7132,21 @@
         "type_erased": null,
         "control_flow_normalized": null
       },
+      "type_match_score": 0.3333333333333333,
+      "type_match_metadata": {
+        "accuracy": 0.3333333333333333,
+        "tp": 1,
+        "fp": 0,
+        "fn": 2,
+        "gt_vars": 3,
+        "decomp_vars": 3,
+        "calibration_shift": 8,
+        "matched_by_arg": 0,
+        "matched_by_offset": 1,
+        "matched_by_name": 0
+      },
+      "ged_score": null,
+      "ged_metadata": {},
       "output_diagnostics": {
         "status": "direct_function",
         "issues": [
@@ -6547,7 +7176,7 @@
         "runner": "wine",
         "runner_version": "wine-8.0 (Debian 8.0~repack-4)",
         "wrapper_sha256": "8a78b215c912fb484f85cb6f02c2bb4f5710203489f0be832bb28b403d29d31d",
-        "reference_binary_sha256": "077dedbeccf04f3829d557eb81fb2f4a62e6f1aa7e9f884db6ee6e5c98199acd",
+        "reference_binary_sha256": "c70b2018a7e141805cfde28650f7a43d339b9397e383451f15be22c02d9a05e0",
         "translation_unit_sha256": "1b5c9a189ca8914fc0d2ba378cf06f73107d4bfa7e79324f7f79c8da42011acd",
         "function_addr": "0x401817",
         "function_rva": "0x1817"
@@ -6576,7 +7205,7 @@
       "source_similarity": 0.7487,
       "goto_count": 0,
       "nesting_depth": 2,
-      "time_ms": 12499,
+      "time_ms": 13399,
       "error": null,
       "semantic_score": 1.0,
       "semantic_error": null,
@@ -6672,6 +7301,27 @@
           "similarity": 0.8636
         }
       },
+      "type_match_score": 1.0,
+      "type_match_metadata": {
+        "accuracy": 1.0,
+        "tp": 3,
+        "fp": 0,
+        "fn": 0,
+        "gt_vars": 3,
+        "decomp_vars": 4,
+        "calibration_shift": 0,
+        "matched_by_arg": 2,
+        "matched_by_offset": 0,
+        "matched_by_name": 1
+      },
+      "ged_score": 0.0,
+      "ged_metadata": {
+        "source_nodes": 4,
+        "source_edges": 4,
+        "decompiled_nodes": 4,
+        "decompiled_edges": 4,
+        "ged": 0.0
+      },
       "output_diagnostics": {
         "status": "direct_function",
         "issues": [
@@ -6701,7 +7351,7 @@
         "runner": "wine",
         "runner_version": "wine-8.0 (Debian 8.0~repack-4)",
         "wrapper_sha256": "8a78b215c912fb484f85cb6f02c2bb4f5710203489f0be832bb28b403d29d31d",
-        "reference_binary_sha256": "077dedbeccf04f3829d557eb81fb2f4a62e6f1aa7e9f884db6ee6e5c98199acd",
+        "reference_binary_sha256": "c70b2018a7e141805cfde28650f7a43d339b9397e383451f15be22c02d9a05e0",
         "translation_unit_sha256": "3d859a7714d865256c52a39657c08ba2f23aa11cadd76d72239b54dd62d1d31d",
         "function_addr": "0x401817",
         "function_rva": "0x1817"
@@ -6730,7 +7380,7 @@
       "source_similarity": 0.2513,
       "goto_count": 0,
       "nesting_depth": 2,
-      "time_ms": 1070,
+      "time_ms": 2616,
       "error": null,
       "semantic_score": 0.5,
       "semantic_error": "candidate passed 3/6 cases",
@@ -6826,6 +7476,21 @@
           "similarity": 0.6058
         }
       },
+      "type_match_score": 0.0,
+      "type_match_metadata": {
+        "accuracy": 0.0,
+        "tp": 0,
+        "fp": 0,
+        "fn": 5,
+        "gt_vars": 5,
+        "decomp_vars": 5,
+        "calibration_shift": 0,
+        "matched_by_arg": 0,
+        "matched_by_offset": 0,
+        "matched_by_name": 0
+      },
+      "ged_score": null,
+      "ged_metadata": {},
       "output_diagnostics": {
         "status": "direct_function",
         "issues": [
@@ -6855,7 +7520,7 @@
         "runner": "wine",
         "runner_version": "wine-8.0 (Debian 8.0~repack-4)",
         "wrapper_sha256": "55e74f570b0fee1ee0802f0cee000a982bc21b681d1dbea6f67e8c171e82a9bc",
-        "reference_binary_sha256": "e745d312231a0bc7797ac39edc77c9d464fa06e470320c68cad8b4e6a2ef3454",
+        "reference_binary_sha256": "bc6042c761d59dca769339feb7eed714c3ebea0d322aa7577db5ab0df9be3678",
         "translation_unit_sha256": "99adb6ba6d5f2cf209b069761592ce6dd11ed716f922e2fa68e4fcd311f3b708",
         "function_addr": "0x4015f0",
         "function_rva": "0x15f0"
@@ -6884,7 +7549,7 @@
       "source_similarity": 0.2434,
       "goto_count": 0,
       "nesting_depth": 3,
-      "time_ms": 12655,
+      "time_ms": 10388,
       "error": null,
       "semantic_score": 1.0,
       "semantic_error": null,
@@ -6980,6 +7645,27 @@
           "similarity": 0.6423
         }
       },
+      "type_match_score": 0.2,
+      "type_match_metadata": {
+        "accuracy": 0.2,
+        "tp": 1,
+        "fp": 0,
+        "fn": 4,
+        "gt_vars": 5,
+        "decomp_vars": 5,
+        "calibration_shift": 0,
+        "matched_by_arg": 1,
+        "matched_by_offset": 0,
+        "matched_by_name": 0
+      },
+      "ged_score": 10.0,
+      "ged_metadata": {
+        "source_nodes": 6,
+        "source_edges": 6,
+        "decompiled_nodes": 4,
+        "decompiled_edges": 5,
+        "ged": 10.0
+      },
       "output_diagnostics": {
         "status": "direct_function",
         "issues": [
@@ -7009,7 +7695,7 @@
         "runner": "wine",
         "runner_version": "wine-8.0 (Debian 8.0~repack-4)",
         "wrapper_sha256": "55e74f570b0fee1ee0802f0cee000a982bc21b681d1dbea6f67e8c171e82a9bc",
-        "reference_binary_sha256": "e745d312231a0bc7797ac39edc77c9d464fa06e470320c68cad8b4e6a2ef3454",
+        "reference_binary_sha256": "bc6042c761d59dca769339feb7eed714c3ebea0d322aa7577db5ab0df9be3678",
         "translation_unit_sha256": "e780948cecb900231f9419c7a0ab2de32b437374ec9a0a7c60777ccc38221c2f",
         "function_addr": "0x4015f0",
         "function_rva": "0x15f0"
@@ -7038,7 +7724,7 @@
       "source_similarity": 0.3676,
       "goto_count": 0,
       "nesting_depth": 2,
-      "time_ms": 1070,
+      "time_ms": 2616,
       "error": null,
       "semantic_score": 1.0,
       "semantic_error": null,
@@ -7190,6 +7876,21 @@
           "similarity": 0.7593
         }
       },
+      "type_match_score": 0.0,
+      "type_match_metadata": {
+        "accuracy": 0.0,
+        "tp": 0,
+        "fp": 0,
+        "fn": 2,
+        "gt_vars": 2,
+        "decomp_vars": 2,
+        "calibration_shift": 0,
+        "matched_by_arg": 0,
+        "matched_by_offset": 0,
+        "matched_by_name": 0
+      },
+      "ged_score": null,
+      "ged_metadata": {},
       "output_diagnostics": {
         "status": "direct_function",
         "issues": [
@@ -7219,7 +7920,7 @@
         "runner": "wine",
         "runner_version": "wine-8.0 (Debian 8.0~repack-4)",
         "wrapper_sha256": "35c565052763390521c8360b00b6043d31e8bc9751c8b60cf708922083160486",
-        "reference_binary_sha256": "e745d312231a0bc7797ac39edc77c9d464fa06e470320c68cad8b4e6a2ef3454",
+        "reference_binary_sha256": "bc6042c761d59dca769339feb7eed714c3ebea0d322aa7577db5ab0df9be3678",
         "translation_unit_sha256": "b5886e3d52240b8528859c579cb5ffd9d5ec182626ce2b90a2733861f0446d35",
         "function_addr": "0x401630",
         "function_rva": "0x1630"
@@ -7248,19 +7949,19 @@
       "source_similarity": 0.6602,
       "goto_count": 0,
       "nesting_depth": 2,
-      "time_ms": 12655,
+      "time_ms": 10388,
       "error": null,
-      "semantic_score": 1.0,
-      "semantic_error": null,
-      "fail_category": "",
-      "cases_passed": 6,
+      "semantic_score": 0.0,
+      "semantic_error": "",
+      "fail_category": "oracle_error",
+      "cases_passed": 0,
       "cases_total": 6,
       "structural_penalty": 0.1,
-      "correctness_score": 1.0,
-      "correctness_rank": 1,
+      "correctness_score": 0.0,
+      "correctness_rank": 2,
       "readability_proxy_score": 0.885,
-      "composite_score": 1.0,
-      "consensus_rank": 1,
+      "composite_score": 0.0,
+      "consensus_rank": 2,
       "uses_intrinsics": false,
       "decompiled_code": "\n/* WARNING: Unknown calling convention */\n\nint max(int a,int b)\n\n{\n  if (b < a) {\n    b = a;\n  }\n  return b;\n}\n\n",
       "decompiled_code_nir": "\n/* WARNING: Unknown calling convention */\n\nint max(int a,int b)\n\n{\n  if (b < a) {\n    b = a;\n  }\n  return b;\n}\n\n",
@@ -7344,6 +8045,27 @@
           "similarity": 0.9062
         }
       },
+      "type_match_score": 1.0,
+      "type_match_metadata": {
+        "accuracy": 1.0,
+        "tp": 2,
+        "fp": 0,
+        "fn": 0,
+        "gt_vars": 2,
+        "decomp_vars": 2,
+        "calibration_shift": 0,
+        "matched_by_arg": 2,
+        "matched_by_offset": 0,
+        "matched_by_name": 0
+      },
+      "ged_score": 10.0,
+      "ged_metadata": {
+        "source_nodes": 1,
+        "source_edges": 0,
+        "decompiled_nodes": 3,
+        "decompiled_edges": 3,
+        "ged": 10.0
+      },
       "output_diagnostics": {
         "status": "direct_function",
         "issues": [
@@ -7363,22 +8085,8 @@
         "decompiler": "ghidra",
         "boundary_contract": "addr_or_name_single_function"
       },
-      "oracle_evidence": {
-        "mode": "differential",
-        "valid": true,
-        "oracle_subject": "original_binary",
-        "target_abi": "windows-x86",
-        "compiler": "i686-w64-mingw32-gcc",
-        "compiler_version": "i686-w64-mingw32-gcc (GCC) 12-win32",
-        "runner": "wine",
-        "runner_version": "wine-8.0 (Debian 8.0~repack-4)",
-        "wrapper_sha256": "35c565052763390521c8360b00b6043d31e8bc9751c8b60cf708922083160486",
-        "reference_binary_sha256": "e745d312231a0bc7797ac39edc77c9d464fa06e470320c68cad8b4e6a2ef3454",
-        "translation_unit_sha256": "c528ab614b464366bbf44bb92e5266cfa83f43eb9cac52ce640478ec0cf4921c",
-        "function_addr": "0x401630",
-        "function_rva": "0x1630"
-      },
-      "fail_taxonomy": "ok",
+      "oracle_evidence": {},
+      "fail_taxonomy": "oracle_error",
       "bare_compile": {
         "ok": true,
         "category": "ok",
@@ -7402,7 +8110,7 @@
       "source_similarity": 0.1682,
       "goto_count": 2,
       "nesting_depth": 4,
-      "time_ms": 1070,
+      "time_ms": 2616,
       "error": null,
       "semantic_score": 0.0,
       "semantic_error": "wine: Unhandled page fault on read access to 012BFABC at address 00401ED7 (thread 0024), starting debugger...\n",
@@ -7411,10 +8119,10 @@
       "cases_total": 6,
       "structural_penalty": 0.48,
       "correctness_score": 0.0,
-      "correctness_rank": 1,
+      "correctness_rank": 2,
       "readability_proxy_score": 0.7692,
       "composite_score": 0.0,
-      "consensus_rank": 1,
+      "consensus_rank": 2,
       "uses_intrinsics": false,
       "decompiled_code": "int _binary_search(int * param_1, int param_2, int param_3)\n{\n    int ecx;\n    int edx;\n    int uVar23;\n    int uVar30;\n    int uVar34;\n    int uVar9;\n\n    uVar30 = param_2;\n    uVar34 = param_3;\n    uVar30--;\n    if (uVar30 < 0) {\n        goto block_40170d;\n    }\n    edx = 0;\n    goto block_4016f7;\n    if (edx <= uVar30) {\n        while (1) {\nblock_4016f7:\n            uVar9 = ecx;\n            uVar9 -= edx;\n            uVar9 = uVar9 >> 1;\n            uVar9 += edx;\n            uVar23 = param_1[uVar9];\n            if (uVar23 == uVar34) {\n                break;\n            }\n            if (uVar23 < uVar34) {\n                continue;\n            }\n            ecx = uVar9 - 1;\n            if (ecx < edx) {\n                break;\n            } else {\n                continue;\n            }\n        }\n    }\nblock_40170d:\n    return -1;\n}\n",
       "decompiled_code_nir": "int _binary_search(int * param_1, int param_2, int param_3)\n{\n    int ecx;\n    int edx;\n    int uVar23;\n    int uVar30;\n    int uVar34;\n    int uVar9;\n\n    uVar30 = param_2;\n    uVar34 = param_3;\n    uVar30--;\n    if (uVar30 < 0) {\n        goto block_40170d;\n    }\n    edx = 0;\n    goto block_4016f7;\n    if (edx <= uVar30) {\n        while (1) {\nblock_4016f7:\n            uVar9 = ecx;\n            uVar9 -= edx;\n            uVar9 = uVar9 >> 1;\n            uVar9 += edx;\n            uVar23 = param_1[uVar9];\n            if (uVar23 == uVar34) {\n                break;\n            }\n            if (uVar23 < uVar34) {\n                continue;\n            }\n            ecx = uVar9 - 1;\n            if (ecx < edx) {\n                break;\n            } else {\n                continue;\n            }\n        }\n    }\nblock_40170d:\n    return -1;\n}\n",
@@ -7498,6 +8206,21 @@
           "similarity": 0.5027
         }
       },
+      "type_match_score": 0.0,
+      "type_match_metadata": {
+        "accuracy": 0.0,
+        "tp": 0,
+        "fp": 0,
+        "fn": 6,
+        "gt_vars": 6,
+        "decomp_vars": 6,
+        "calibration_shift": 0,
+        "matched_by_arg": 0,
+        "matched_by_offset": 0,
+        "matched_by_name": 0
+      },
+      "ged_score": null,
+      "ged_metadata": {},
       "output_diagnostics": {
         "status": "direct_function",
         "issues": [
@@ -7527,7 +8250,7 @@
         "runner": "wine",
         "runner_version": "wine-8.0 (Debian 8.0~repack-4)",
         "wrapper_sha256": "e116aac5f1390573854dcb22a111a6e6d2ae872ba67b846be8fcfa28d9936d7f",
-        "reference_binary_sha256": "e745d312231a0bc7797ac39edc77c9d464fa06e470320c68cad8b4e6a2ef3454",
+        "reference_binary_sha256": "bc6042c761d59dca769339feb7eed714c3ebea0d322aa7577db5ab0df9be3678",
         "translation_unit_sha256": "b8e7443bde9fa8ebb008d74e5d9ae0aef1085b56619a2171d057cad497fffda9",
         "function_addr": "0x4016d0",
         "function_rva": "0x16d0"
@@ -7556,18 +8279,18 @@
       "source_similarity": 0.2388,
       "goto_count": 0,
       "nesting_depth": 5,
-      "time_ms": 12655,
+      "time_ms": 10388,
       "error": null,
-      "semantic_score": 0.0,
-      "semantic_error": "Server disconnected without sending a response.",
-      "fail_category": "oracle_error",
-      "cases_passed": 0,
+      "semantic_score": 1.0,
+      "semantic_error": null,
+      "fail_category": "",
+      "cases_passed": 6,
       "cases_total": 6,
       "structural_penalty": 0.3,
-      "correctness_score": 0.0,
+      "correctness_score": 1.0,
       "correctness_rank": 1,
       "readability_proxy_score": 0.7042,
-      "composite_score": 0.0,
+      "composite_score": 1.0,
       "consensus_rank": 1,
       "uses_intrinsics": false,
       "decompiled_code": "\n/* WARNING: Unknown calling convention */\n\nint binary_search(int *arr,int n,int target)\n\n{\n  int iVar1;\n  int iVar2;\n  int iVar3;\n  \n                    /* Unresolved local var: int lo@[???]\n                       Unresolved local var: int hi@[???] */\n  iVar2 = n + -1;\n  if (-1 < iVar2) {\n    iVar3 = 0;\n    do {\n      while( true ) {\n        iVar1 = (iVar2 - iVar3 >> 1) + iVar3;\n        if (arr[iVar1] == target) {\n          return iVar1;\n        }\n        if (arr[iVar1] < target) break;\n        iVar2 = iVar1 + -1;\n        if (iVar2 < iVar3) {\n          return -1;\n        }\n      }\n                    /* Unresolved local var: int mid@[???] */\n      iVar3 = iVar1 + 1;\n    } while (iVar3 <= iVar2);\n  }\n  return -1;\n}\n\n",
@@ -7652,6 +8375,27 @@
           "similarity": 0.6805
         }
       },
+      "type_match_score": 0.5,
+      "type_match_metadata": {
+        "accuracy": 0.5,
+        "tp": 3,
+        "fp": 0,
+        "fn": 3,
+        "gt_vars": 6,
+        "decomp_vars": 6,
+        "calibration_shift": 0,
+        "matched_by_arg": 3,
+        "matched_by_offset": 0,
+        "matched_by_name": 0
+      },
+      "ged_score": 10.0,
+      "ged_metadata": {
+        "source_nodes": 8,
+        "source_edges": 9,
+        "decompiled_nodes": 10,
+        "decompiled_edges": 13,
+        "ged": 10.0
+      },
       "output_diagnostics": {
         "status": "direct_function",
         "issues": [
@@ -7671,8 +8415,22 @@
         "decompiler": "ghidra",
         "boundary_contract": "addr_or_name_single_function"
       },
-      "oracle_evidence": {},
-      "fail_taxonomy": "oracle_error",
+      "oracle_evidence": {
+        "mode": "differential",
+        "valid": true,
+        "oracle_subject": "original_binary",
+        "target_abi": "windows-x86",
+        "compiler": "i686-w64-mingw32-gcc",
+        "compiler_version": "i686-w64-mingw32-gcc (GCC) 12-win32",
+        "runner": "wine",
+        "runner_version": "wine-8.0 (Debian 8.0~repack-4)",
+        "wrapper_sha256": "e116aac5f1390573854dcb22a111a6e6d2ae872ba67b846be8fcfa28d9936d7f",
+        "reference_binary_sha256": "bc6042c761d59dca769339feb7eed714c3ebea0d322aa7577db5ab0df9be3678",
+        "translation_unit_sha256": "570aa49a920c81b7fc7e4202870d0b1c477023e025e42cc2323ede37d2ccf51c",
+        "function_addr": "0x4016d0",
+        "function_rva": "0x16d0"
+      },
+      "fail_taxonomy": "ok",
       "bare_compile": {
         "ok": true,
         "category": "ok",
@@ -7696,7 +8454,7 @@
       "source_similarity": 0.1944,
       "goto_count": 0,
       "nesting_depth": 3,
-      "time_ms": 1070,
+      "time_ms": 2616,
       "error": null,
       "semantic_score": 0.0,
       "semantic_error": "oracle execution timed out",
@@ -7781,6 +8539,21 @@
         "type_erased": null,
         "control_flow_normalized": null
       },
+      "type_match_score": 0.0,
+      "type_match_metadata": {
+        "accuracy": 0.0,
+        "tp": 0,
+        "fp": 0,
+        "fn": 3,
+        "gt_vars": 3,
+        "decomp_vars": 1,
+        "calibration_shift": 0,
+        "matched_by_arg": 0,
+        "matched_by_offset": 0,
+        "matched_by_name": 0
+      },
+      "ged_score": null,
+      "ged_metadata": {},
       "output_diagnostics": {
         "status": "direct_function",
         "issues": [
@@ -7810,7 +8583,7 @@
         "runner": "wine",
         "runner_version": "wine-8.0 (Debian 8.0~repack-4)",
         "wrapper_sha256": "8a78b215c912fb484f85cb6f02c2bb4f5710203489f0be832bb28b403d29d31d",
-        "reference_binary_sha256": "e745d312231a0bc7797ac39edc77c9d464fa06e470320c68cad8b4e6a2ef3454",
+        "reference_binary_sha256": "bc6042c761d59dca769339feb7eed714c3ebea0d322aa7577db5ab0df9be3678",
         "translation_unit_sha256": "26fa67ddbfe9bba26fec08942072615f47e530dcff920edc33681568c0f38ecf",
         "function_addr": "0x4017a0",
         "function_rva": "0x17a0"
@@ -7839,7 +8612,7 @@
       "source_similarity": 0.5138,
       "goto_count": 0,
       "nesting_depth": 3,
-      "time_ms": 12655,
+      "time_ms": 10388,
       "error": null,
       "semantic_score": 1.0,
       "semantic_error": null,
@@ -7935,6 +8708,27 @@
           "similarity": 0.8684
         }
       },
+      "type_match_score": 0.6666666666666666,
+      "type_match_metadata": {
+        "accuracy": 0.6666666666666666,
+        "tp": 2,
+        "fp": 0,
+        "fn": 1,
+        "gt_vars": 3,
+        "decomp_vars": 3,
+        "calibration_shift": 0,
+        "matched_by_arg": 2,
+        "matched_by_offset": 0,
+        "matched_by_name": 0
+      },
+      "ged_score": 6.0,
+      "ged_metadata": {
+        "source_nodes": 4,
+        "source_edges": 4,
+        "decompiled_nodes": 4,
+        "decompiled_edges": 4,
+        "ged": 6.0
+      },
       "output_diagnostics": {
         "status": "direct_function",
         "issues": [
@@ -7964,7 +8758,7 @@
         "runner": "wine",
         "runner_version": "wine-8.0 (Debian 8.0~repack-4)",
         "wrapper_sha256": "8a78b215c912fb484f85cb6f02c2bb4f5710203489f0be832bb28b403d29d31d",
-        "reference_binary_sha256": "e745d312231a0bc7797ac39edc77c9d464fa06e470320c68cad8b4e6a2ef3454",
+        "reference_binary_sha256": "bc6042c761d59dca769339feb7eed714c3ebea0d322aa7577db5ab0df9be3678",
         "translation_unit_sha256": "4f4a42a753b18da2f1b770b518a4e526fd1e550bef2db644c14e2c7bc3767d34",
         "function_addr": "0x4017a0",
         "function_rva": "0x17a0"
@@ -7993,7 +8787,7 @@
       "source_similarity": 0.1459,
       "goto_count": 1,
       "nesting_depth": 3,
-      "time_ms": 1197,
+      "time_ms": 2711,
       "error": null,
       "semantic_score": 1.0,
       "semantic_error": null,
@@ -8145,6 +8939,27 @@
           "similarity": 0.5181
         }
       },
+      "type_match_score": 1.0,
+      "type_match_metadata": {
+        "accuracy": 1.0,
+        "tp": 5,
+        "fp": 0,
+        "fn": 0,
+        "gt_vars": 5,
+        "decomp_vars": 9,
+        "calibration_shift": 20,
+        "matched_by_arg": 1,
+        "matched_by_offset": 4,
+        "matched_by_name": 0
+      },
+      "ged_score": 9.0,
+      "ged_metadata": {
+        "source_nodes": 6,
+        "source_edges": 6,
+        "decompiled_nodes": 7,
+        "decompiled_edges": 10,
+        "ged": 9.0
+      },
       "output_diagnostics": {
         "status": "direct_function",
         "issues": [
@@ -8174,7 +8989,7 @@
         "runner": "wine",
         "runner_version": "wine-8.0 (Debian 8.0~repack-4)",
         "wrapper_sha256": "55e74f570b0fee1ee0802f0cee000a982bc21b681d1dbea6f67e8c171e82a9bc",
-        "reference_binary_sha256": "8808a8af59be792406c7a4d1e11c6122ee71d3f29204f16d5b0dc00b22f1de32",
+        "reference_binary_sha256": "a15a18c519f0a51c32f74454ed49674d9d75c01dcf77868a9be37d0b9dadbb0a",
         "translation_unit_sha256": "a5595b6c7dae3486b9d9b39f893f0e60e02b48568fbac12f2d7c4170fb8e69d3",
         "function_addr": "0x140001560",
         "function_rva": "0x1560"
@@ -8203,7 +9018,7 @@
       "source_similarity": 0.2347,
       "goto_count": 0,
       "nesting_depth": 3,
-      "time_ms": 12822,
+      "time_ms": 11143,
       "error": null,
       "semantic_score": 1.0,
       "semantic_error": null,
@@ -8299,6 +9114,27 @@
           "similarity": 0.619
         }
       },
+      "type_match_score": 1.0,
+      "type_match_metadata": {
+        "accuracy": 1.0,
+        "tp": 5,
+        "fp": 0,
+        "fn": 0,
+        "gt_vars": 5,
+        "decomp_vars": 8,
+        "calibration_shift": 28,
+        "matched_by_arg": 1,
+        "matched_by_offset": 1,
+        "matched_by_name": 3
+      },
+      "ged_score": 6.0,
+      "ged_metadata": {
+        "source_nodes": 6,
+        "source_edges": 6,
+        "decompiled_nodes": 6,
+        "decompiled_edges": 7,
+        "ged": 6.0
+      },
       "output_diagnostics": {
         "status": "direct_function",
         "issues": [
@@ -8328,7 +9164,7 @@
         "runner": "wine",
         "runner_version": "wine-8.0 (Debian 8.0~repack-4)",
         "wrapper_sha256": "55e74f570b0fee1ee0802f0cee000a982bc21b681d1dbea6f67e8c171e82a9bc",
-        "reference_binary_sha256": "8808a8af59be792406c7a4d1e11c6122ee71d3f29204f16d5b0dc00b22f1de32",
+        "reference_binary_sha256": "a15a18c519f0a51c32f74454ed49674d9d75c01dcf77868a9be37d0b9dadbb0a",
         "translation_unit_sha256": "ec4c8f91681fe3847bfda9c27e96e8b03e91a43fb3037ce95b08275a0ab49cf0",
         "function_addr": "0x140001560",
         "function_rva": "0x1560"
@@ -8357,7 +9193,7 @@
       "source_similarity": 0.1154,
       "goto_count": 0,
       "nesting_depth": 3,
-      "time_ms": 1197,
+      "time_ms": 2711,
       "error": null,
       "semantic_score": 1.0,
       "semantic_error": null,
@@ -8453,6 +9289,27 @@
           "similarity": 0.4526
         }
       },
+      "type_match_score": 1.0,
+      "type_match_metadata": {
+        "accuracy": 1.0,
+        "tp": 2,
+        "fp": 0,
+        "fn": 0,
+        "gt_vars": 2,
+        "decomp_vars": 15,
+        "calibration_shift": 20,
+        "matched_by_arg": 2,
+        "matched_by_offset": 0,
+        "matched_by_name": 0
+      },
+      "ged_score": 13.0,
+      "ged_metadata": {
+        "source_nodes": 1,
+        "source_edges": 0,
+        "decompiled_nodes": 4,
+        "decompiled_edges": 4,
+        "ged": 13.0
+      },
       "output_diagnostics": {
         "status": "direct_function",
         "issues": [
@@ -8482,7 +9339,7 @@
         "runner": "wine",
         "runner_version": "wine-8.0 (Debian 8.0~repack-4)",
         "wrapper_sha256": "35c565052763390521c8360b00b6043d31e8bc9751c8b60cf708922083160486",
-        "reference_binary_sha256": "8808a8af59be792406c7a4d1e11c6122ee71d3f29204f16d5b0dc00b22f1de32",
+        "reference_binary_sha256": "a15a18c519f0a51c32f74454ed49674d9d75c01dcf77868a9be37d0b9dadbb0a",
         "translation_unit_sha256": "239c28d7c150b5b1d49ac8dfdd6b8da79626eab11f589d483d158939bde84da0",
         "function_addr": "0x1400015e0",
         "function_rva": "0x15e0"
@@ -8511,7 +9368,7 @@
       "source_similarity": 0.3977,
       "goto_count": 0,
       "nesting_depth": 2,
-      "time_ms": 12822,
+      "time_ms": 11143,
       "error": null,
       "semantic_score": 1.0,
       "semantic_error": null,
@@ -8607,6 +9464,27 @@
           "similarity": 0.7963
         }
       },
+      "type_match_score": 1.0,
+      "type_match_metadata": {
+        "accuracy": 1.0,
+        "tp": 2,
+        "fp": 0,
+        "fn": 0,
+        "gt_vars": 2,
+        "decomp_vars": 5,
+        "calibration_shift": 28,
+        "matched_by_arg": 2,
+        "matched_by_offset": 0,
+        "matched_by_name": 0
+      },
+      "ged_score": 10.0,
+      "ged_metadata": {
+        "source_nodes": 1,
+        "source_edges": 0,
+        "decompiled_nodes": 3,
+        "decompiled_edges": 3,
+        "ged": 10.0
+      },
       "output_diagnostics": {
         "status": "direct_function",
         "issues": [
@@ -8636,7 +9514,7 @@
         "runner": "wine",
         "runner_version": "wine-8.0 (Debian 8.0~repack-4)",
         "wrapper_sha256": "35c565052763390521c8360b00b6043d31e8bc9751c8b60cf708922083160486",
-        "reference_binary_sha256": "8808a8af59be792406c7a4d1e11c6122ee71d3f29204f16d5b0dc00b22f1de32",
+        "reference_binary_sha256": "a15a18c519f0a51c32f74454ed49674d9d75c01dcf77868a9be37d0b9dadbb0a",
         "translation_unit_sha256": "82a123eed1e292bb4f20e70dabc102da8d72c3bb9de466dbc67ed387d802cda8",
         "function_addr": "0x1400015e0",
         "function_rva": "0x15e0"
@@ -8665,7 +9543,7 @@
       "source_similarity": 0.103,
       "goto_count": 3,
       "nesting_depth": 3,
-      "time_ms": 1197,
+      "time_ms": 2711,
       "error": null,
       "semantic_score": 1.0,
       "semantic_error": null,
@@ -8806,6 +9684,27 @@
         "type_erased": null,
         "control_flow_normalized": null
       },
+      "type_match_score": 0.6666666666666666,
+      "type_match_metadata": {
+        "accuracy": 0.6666666666666666,
+        "tp": 4,
+        "fp": 2,
+        "fn": 0,
+        "gt_vars": 6,
+        "decomp_vars": 20,
+        "calibration_shift": 20,
+        "matched_by_arg": 3,
+        "matched_by_offset": 3,
+        "matched_by_name": 0
+      },
+      "ged_score": 5.0,
+      "ged_metadata": {
+        "source_nodes": 8,
+        "source_edges": 9,
+        "decompiled_nodes": 9,
+        "decompiled_edges": 11,
+        "ged": 5.0
+      },
       "output_diagnostics": {
         "status": "direct_function",
         "issues": [
@@ -8835,7 +9734,7 @@
         "runner": "wine",
         "runner_version": "wine-8.0 (Debian 8.0~repack-4)",
         "wrapper_sha256": "e116aac5f1390573854dcb22a111a6e6d2ae872ba67b846be8fcfa28d9936d7f",
-        "reference_binary_sha256": "8808a8af59be792406c7a4d1e11c6122ee71d3f29204f16d5b0dc00b22f1de32",
+        "reference_binary_sha256": "a15a18c519f0a51c32f74454ed49674d9d75c01dcf77868a9be37d0b9dadbb0a",
         "translation_unit_sha256": "01ccc55a85ed183fb2ef42d75c3918e6a88e54359faefe8c9b31943106ea0ff6",
         "function_addr": "0x140001760",
         "function_rva": "0x1760"
@@ -8864,7 +9763,7 @@
       "source_similarity": 0.3545,
       "goto_count": 0,
       "nesting_depth": 3,
-      "time_ms": 12822,
+      "time_ms": 11143,
       "error": null,
       "semantic_score": 1.0,
       "semantic_error": null,
@@ -8960,6 +9859,27 @@
           "similarity": 0.6512
         }
       },
+      "type_match_score": 1.0,
+      "type_match_metadata": {
+        "accuracy": 1.0,
+        "tp": 6,
+        "fp": 0,
+        "fn": 0,
+        "gt_vars": 6,
+        "decomp_vars": 10,
+        "calibration_shift": 28,
+        "matched_by_arg": 3,
+        "matched_by_offset": 1,
+        "matched_by_name": 2
+      },
+      "ged_score": 5.0,
+      "ged_metadata": {
+        "source_nodes": 8,
+        "source_edges": 9,
+        "decompiled_nodes": 9,
+        "decompiled_edges": 11,
+        "ged": 5.0
+      },
       "output_diagnostics": {
         "status": "direct_function",
         "issues": [
@@ -8989,7 +9909,7 @@
         "runner": "wine",
         "runner_version": "wine-8.0 (Debian 8.0~repack-4)",
         "wrapper_sha256": "e116aac5f1390573854dcb22a111a6e6d2ae872ba67b846be8fcfa28d9936d7f",
-        "reference_binary_sha256": "8808a8af59be792406c7a4d1e11c6122ee71d3f29204f16d5b0dc00b22f1de32",
+        "reference_binary_sha256": "a15a18c519f0a51c32f74454ed49674d9d75c01dcf77868a9be37d0b9dadbb0a",
         "translation_unit_sha256": "d6d7ff9b1c87cec41d45f985b6107a73a537b5c7078f53d236b6d0e6f014eff7",
         "function_addr": "0x140001760",
         "function_rva": "0x1760"
@@ -9018,7 +9938,7 @@
       "source_similarity": 0.2191,
       "goto_count": 0,
       "nesting_depth": 3,
-      "time_ms": 1197,
+      "time_ms": 2711,
       "error": null,
       "semantic_score": 1.0,
       "semantic_error": null,
@@ -9159,6 +10079,27 @@
         "type_erased": null,
         "control_flow_normalized": null
       },
+      "type_match_score": 0.6666666666666666,
+      "type_match_metadata": {
+        "accuracy": 0.6666666666666666,
+        "tp": 2,
+        "fp": 0,
+        "fn": 1,
+        "gt_vars": 3,
+        "decomp_vars": 7,
+        "calibration_shift": 20,
+        "matched_by_arg": 2,
+        "matched_by_offset": 0,
+        "matched_by_name": 0
+      },
+      "ged_score": 4.0,
+      "ged_metadata": {
+        "source_nodes": 4,
+        "source_edges": 4,
+        "decompiled_nodes": 4,
+        "decompiled_edges": 6,
+        "ged": 4.0
+      },
       "output_diagnostics": {
         "status": "direct_function",
         "issues": [
@@ -9188,7 +10129,7 @@
         "runner": "wine",
         "runner_version": "wine-8.0 (Debian 8.0~repack-4)",
         "wrapper_sha256": "8a78b215c912fb484f85cb6f02c2bb4f5710203489f0be832bb28b403d29d31d",
-        "reference_binary_sha256": "8808a8af59be792406c7a4d1e11c6122ee71d3f29204f16d5b0dc00b22f1de32",
+        "reference_binary_sha256": "a15a18c519f0a51c32f74454ed49674d9d75c01dcf77868a9be37d0b9dadbb0a",
         "translation_unit_sha256": "7d8064d10b913496da6aa5aac224a3064cb6ac05aed3e410109765e323617c0d",
         "function_addr": "0x140001860",
         "function_rva": "0x1860"
@@ -9217,7 +10158,7 @@
       "source_similarity": 0.484,
       "goto_count": 0,
       "nesting_depth": 2,
-      "time_ms": 12822,
+      "time_ms": 11143,
       "error": null,
       "semantic_score": 1.0,
       "semantic_error": null,
@@ -9313,6 +10254,27 @@
           "similarity": 0.7377
         }
       },
+      "type_match_score": 1.0,
+      "type_match_metadata": {
+        "accuracy": 1.0,
+        "tp": 3,
+        "fp": 0,
+        "fn": 0,
+        "gt_vars": 3,
+        "decomp_vars": 6,
+        "calibration_shift": 28,
+        "matched_by_arg": 2,
+        "matched_by_offset": 0,
+        "matched_by_name": 1
+      },
+      "ged_score": 0.0,
+      "ged_metadata": {
+        "source_nodes": 4,
+        "source_edges": 4,
+        "decompiled_nodes": 4,
+        "decompiled_edges": 4,
+        "ged": 0.0
+      },
       "output_diagnostics": {
         "status": "direct_function",
         "issues": [
@@ -9342,7 +10304,7 @@
         "runner": "wine",
         "runner_version": "wine-8.0 (Debian 8.0~repack-4)",
         "wrapper_sha256": "8a78b215c912fb484f85cb6f02c2bb4f5710203489f0be832bb28b403d29d31d",
-        "reference_binary_sha256": "8808a8af59be792406c7a4d1e11c6122ee71d3f29204f16d5b0dc00b22f1de32",
+        "reference_binary_sha256": "a15a18c519f0a51c32f74454ed49674d9d75c01dcf77868a9be37d0b9dadbb0a",
         "translation_unit_sha256": "93473723bdef0e492d3692fa92eadba0068201dab9335ea1e4ba735047b91162",
         "function_addr": "0x140001860",
         "function_rva": "0x1860"
@@ -9371,10 +10333,10 @@
       "source_similarity": 0.1213,
       "goto_count": 1,
       "nesting_depth": 3,
-      "time_ms": 738,
+      "time_ms": 2741,
       "error": null,
       "semantic_score": 0.0,
-      "semantic_error": "/tmp/fission-oracle-jrhmd_kb/oracle.c: In function \u2018oracle_case_candidate_0\u2019:\n/tmp/fission-oracle-jrhmd_kb/oracle.c:357:48: error: too few arguments to function \u2018oracle_candidate_fibonacci_iter\u2019\n  357 | static int oracle_case_candidate_0(void) { if (oracle_candidate_fibonacci_iter(0) != 0) return 1; return 0; }\n      |                                                ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n/tmp/fission-oracle-jrhmd_kb/oracle.c:304:5: note: declared here\n  304 | int oracle_candidate_fibonacci_iter(int param_1, int param_2)\n      |     ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n/tmp/fission-oracle-jrhmd_kb/oracle.c: In function \u2018oracle_case_candidate_1\u2019:\n/tmp/fission-oracle-jrhmd_kb/oracle.c:363:48: error: too few arguments to function \u2018oracle_candidate_fibonacci_iter\u2019\n  363 | static int oracle_case_candidate_1(void) { if (oracle_candidate_fibonacci_iter(1) != 1) return 1; return 0; }\n      |                                                ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n/tmp/fission-oracle-jrhmd_kb/oracle.c:304:5: note: declared here\n  304 | int oracle_candidate_fibonacci_iter(int param_1, int param_2)\n      |     ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n/tmp/fission-oracle-jrhmd_kb/oracle.c: In function \u2018oracle_case_candidate_2\u2019:\n/tmp/fission-oracle-jrhmd_kb/oracle.c:369:48: error: too few arguments to function \u2018oracle_candidate_fibonacci_iter\u2019\n  369 | static int oracle_case_candidate_2(void) { if (oracle_candidate_fibonacci_iter(5) != 5) return 1; return 0; }\n      |                                                ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n/tmp/fission-oracle-jrhmd_kb/oracle.c:304:5: note: declared here\n  304 | int oracle_candidate_fibonacci_iter(int param_1, int param_2)\n      |     ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n/tmp/fission-oracle-jrhmd_kb/oracle.c: In function \u2018oracle_case_candidate_3\u2019:\n/tmp/fission-oracle-jrhmd_kb/oracle.c:375:48: error: too few arguments to function \u2018oracle_candidate_fibonacci_iter\u2019\n  375 | static int oracle_case_candidate_3(void) { if (oracle_candidate_fibonacci_iter(10) != 55) return 1; return 0; }\n      |                                                ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n/tmp/fission-oracle-jrhmd_kb/oracle.c:304:5: note: declared here\n  304 | int oracle_candidate_fibonacci_iter(int param_1, int param_2)\n      |     ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n/tmp/fission-oracle-jrhmd_kb/oracle.c: In function \u2018oracle_case_candidate_4\u2019:\n/tmp/fission-oracle-jrhmd_kb/oracle.c:381:48: error: too few arguments to function \u2018oracle_candidate_fibonacci_iter\u2019\n  381 | static int oracle_case_candidate_4(void) { if (oracle_candidate_fibonacci_iter(2) != 1) return 1; return 0; }\n      |                                                ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n/tmp/fission-oracle-jrhmd_kb/oracle.c:304:5: note: declared here\n  304 | int oracle_candidate_fibonacci_iter(int param_1, int param_2)\n      |     ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n/tmp/fission-oracle-jrhmd_kb/oracle.c: In function \u2018oracle_case_candidate_5\u2019:\n/tmp/fission-oracle-jrhmd_kb/oracle.c:387:48: error: too few arguments to function \u2018oracle_candidate_fibonacci_iter\u2019\n  387 | static int oracle_case_candidate_5(void) { if (oracle_candidate_fibonacci_iter(15) != 610) return 1; return 0; }\n      |                                                ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n/tmp/fission-oracle-jrhmd_kb/oracle.c:304:5: note: declared here\n  304 | int oracle_candidate_fibonacci_iter(int param_1, int param_2)\n      |     ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n",
+      "semantic_error": "/tmp/fission-oracle-ie1hp4xr/oracle.c: In function \u2018oracle_case_candidate_0\u2019:\n/tmp/fission-oracle-ie1hp4xr/oracle.c:357:48: error: too few arguments to function \u2018oracle_candidate_fibonacci_iter\u2019\n  357 | static int oracle_case_candidate_0(void) { if (oracle_candidate_fibonacci_iter(0) != 0) return 1; return 0; }\n      |                                                ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n/tmp/fission-oracle-ie1hp4xr/oracle.c:304:5: note: declared here\n  304 | int oracle_candidate_fibonacci_iter(int param_1, int param_2)\n      |     ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n/tmp/fission-oracle-ie1hp4xr/oracle.c: In function \u2018oracle_case_candidate_1\u2019:\n/tmp/fission-oracle-ie1hp4xr/oracle.c:363:48: error: too few arguments to function \u2018oracle_candidate_fibonacci_iter\u2019\n  363 | static int oracle_case_candidate_1(void) { if (oracle_candidate_fibonacci_iter(1) != 1) return 1; return 0; }\n      |                                                ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n/tmp/fission-oracle-ie1hp4xr/oracle.c:304:5: note: declared here\n  304 | int oracle_candidate_fibonacci_iter(int param_1, int param_2)\n      |     ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n/tmp/fission-oracle-ie1hp4xr/oracle.c: In function \u2018oracle_case_candidate_2\u2019:\n/tmp/fission-oracle-ie1hp4xr/oracle.c:369:48: error: too few arguments to function \u2018oracle_candidate_fibonacci_iter\u2019\n  369 | static int oracle_case_candidate_2(void) { if (oracle_candidate_fibonacci_iter(5) != 5) return 1; return 0; }\n      |                                                ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n/tmp/fission-oracle-ie1hp4xr/oracle.c:304:5: note: declared here\n  304 | int oracle_candidate_fibonacci_iter(int param_1, int param_2)\n      |     ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n/tmp/fission-oracle-ie1hp4xr/oracle.c: In function \u2018oracle_case_candidate_3\u2019:\n/tmp/fission-oracle-ie1hp4xr/oracle.c:375:48: error: too few arguments to function \u2018oracle_candidate_fibonacci_iter\u2019\n  375 | static int oracle_case_candidate_3(void) { if (oracle_candidate_fibonacci_iter(10) != 55) return 1; return 0; }\n      |                                                ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n/tmp/fission-oracle-ie1hp4xr/oracle.c:304:5: note: declared here\n  304 | int oracle_candidate_fibonacci_iter(int param_1, int param_2)\n      |     ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n/tmp/fission-oracle-ie1hp4xr/oracle.c: In function \u2018oracle_case_candidate_4\u2019:\n/tmp/fission-oracle-ie1hp4xr/oracle.c:381:48: error: too few arguments to function \u2018oracle_candidate_fibonacci_iter\u2019\n  381 | static int oracle_case_candidate_4(void) { if (oracle_candidate_fibonacci_iter(2) != 1) return 1; return 0; }\n      |                                                ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n/tmp/fission-oracle-ie1hp4xr/oracle.c:304:5: note: declared here\n  304 | int oracle_candidate_fibonacci_iter(int param_1, int param_2)\n      |     ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n/tmp/fission-oracle-ie1hp4xr/oracle.c: In function \u2018oracle_case_candidate_5\u2019:\n/tmp/fission-oracle-ie1hp4xr/oracle.c:387:48: error: too few arguments to function \u2018oracle_candidate_fibonacci_iter\u2019\n  387 | static int oracle_case_candidate_5(void) { if (oracle_candidate_fibonacci_iter(15) != 610) return 1; return 0; }\n      |                                                ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n/tmp/fission-oracle-ie1hp4xr/oracle.c:304:5: note: declared here\n  304 | int oracle_candidate_fibonacci_iter(int param_1, int param_2)\n      |     ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n",
       "fail_category": "compile_error",
       "cases_passed": 0,
       "cases_total": 6,
@@ -9523,6 +10485,27 @@
           "similarity": 0.3224
         }
       },
+      "type_match_score": 0.25,
+      "type_match_metadata": {
+        "accuracy": 0.25,
+        "tp": 1,
+        "fp": 0,
+        "fn": 3,
+        "gt_vars": 4,
+        "decomp_vars": 9,
+        "calibration_shift": 0,
+        "matched_by_arg": 1,
+        "matched_by_offset": 0,
+        "matched_by_name": 0
+      },
+      "ged_score": 10.0,
+      "ged_metadata": {
+        "source_nodes": 6,
+        "source_edges": 6,
+        "decompiled_nodes": 8,
+        "decompiled_edges": 10,
+        "ged": 10.0
+      },
       "output_diagnostics": {
         "status": "direct_function",
         "issues": [
@@ -9552,7 +10535,7 @@
         "runner": "wine",
         "runner_version": "wine-8.0 (Debian 8.0~repack-4)",
         "wrapper_sha256": "55e74f570b0fee1ee0802f0cee000a982bc21b681d1dbea6f67e8c171e82a9bc",
-        "reference_binary_sha256": "294f051e712908c4ac3d66366e3f8eba5b251248f58163d0fe0f418f3339f956",
+        "reference_binary_sha256": "a8dba6db9c200e39e6f5c80694a4b98c40c8fa096f48044fffbdab31ebecad1b",
         "translation_unit_sha256": "21229efe248f274ec037f443514cdf85f4d106381ae9e85971117fd61deaa511",
         "function_addr": "0x140001550",
         "function_rva": "0x1550"
@@ -9581,7 +10564,7 @@
       "source_similarity": 0.1922,
       "goto_count": 0,
       "nesting_depth": 4,
-      "time_ms": 9444,
+      "time_ms": 11179,
       "error": null,
       "semantic_score": 1.0,
       "semantic_error": null,
@@ -9677,6 +10660,27 @@
           "similarity": 0.4417
         }
       },
+      "type_match_score": 0.25,
+      "type_match_metadata": {
+        "accuracy": 0.25,
+        "tp": 1,
+        "fp": 0,
+        "fn": 3,
+        "gt_vars": 4,
+        "decomp_vars": 5,
+        "calibration_shift": 0,
+        "matched_by_arg": 1,
+        "matched_by_offset": 0,
+        "matched_by_name": 0
+      },
+      "ged_score": 12.0,
+      "ged_metadata": {
+        "source_nodes": 6,
+        "source_edges": 6,
+        "decompiled_nodes": 8,
+        "decompiled_edges": 11,
+        "ged": 12.0
+      },
       "output_diagnostics": {
         "status": "direct_function",
         "issues": [
@@ -9706,7 +10710,7 @@
         "runner": "wine",
         "runner_version": "wine-8.0 (Debian 8.0~repack-4)",
         "wrapper_sha256": "55e74f570b0fee1ee0802f0cee000a982bc21b681d1dbea6f67e8c171e82a9bc",
-        "reference_binary_sha256": "294f051e712908c4ac3d66366e3f8eba5b251248f58163d0fe0f418f3339f956",
+        "reference_binary_sha256": "a8dba6db9c200e39e6f5c80694a4b98c40c8fa096f48044fffbdab31ebecad1b",
         "translation_unit_sha256": "3304b11589e59ec81da6251d50fe38b81897631b8a762005401e604a73f93a0b",
         "function_addr": "0x140001550",
         "function_rva": "0x1550"
@@ -9735,7 +10739,7 @@
       "source_similarity": 0.1746,
       "goto_count": 0,
       "nesting_depth": 2,
-      "time_ms": 738,
+      "time_ms": 2741,
       "error": null,
       "semantic_score": 1.0,
       "semantic_error": null,
@@ -9887,6 +10891,27 @@
           "similarity": 0.543
         }
       },
+      "type_match_score": 1.0,
+      "type_match_metadata": {
+        "accuracy": 1.0,
+        "tp": 2,
+        "fp": 0,
+        "fn": 0,
+        "gt_vars": 2,
+        "decomp_vars": 9,
+        "calibration_shift": 0,
+        "matched_by_arg": 2,
+        "matched_by_offset": 0,
+        "matched_by_name": 0
+      },
+      "ged_score": 18.0,
+      "ged_metadata": {
+        "source_nodes": 1,
+        "source_edges": 0,
+        "decompiled_nodes": 5,
+        "decompiled_edges": 6,
+        "ged": 18.0
+      },
       "output_diagnostics": {
         "status": "direct_function",
         "issues": [
@@ -9916,7 +10941,7 @@
         "runner": "wine",
         "runner_version": "wine-8.0 (Debian 8.0~repack-4)",
         "wrapper_sha256": "35c565052763390521c8360b00b6043d31e8bc9751c8b60cf708922083160486",
-        "reference_binary_sha256": "294f051e712908c4ac3d66366e3f8eba5b251248f58163d0fe0f418f3339f956",
+        "reference_binary_sha256": "a8dba6db9c200e39e6f5c80694a4b98c40c8fa096f48044fffbdab31ebecad1b",
         "translation_unit_sha256": "6f3c562030cbc01a9571cb1297500c1d1708eb4300669789e09edc1992e855a4",
         "function_addr": "0x1400015b0",
         "function_rva": "0x15b0"
@@ -9945,7 +10970,7 @@
       "source_similarity": 0.6602,
       "goto_count": 0,
       "nesting_depth": 2,
-      "time_ms": 9444,
+      "time_ms": 11179,
       "error": null,
       "semantic_score": 1.0,
       "semantic_error": null,
@@ -10041,6 +11066,27 @@
           "similarity": 0.9062
         }
       },
+      "type_match_score": 1.0,
+      "type_match_metadata": {
+        "accuracy": 1.0,
+        "tp": 2,
+        "fp": 0,
+        "fn": 0,
+        "gt_vars": 2,
+        "decomp_vars": 2,
+        "calibration_shift": 0,
+        "matched_by_arg": 2,
+        "matched_by_offset": 0,
+        "matched_by_name": 0
+      },
+      "ged_score": 10.0,
+      "ged_metadata": {
+        "source_nodes": 1,
+        "source_edges": 0,
+        "decompiled_nodes": 3,
+        "decompiled_edges": 3,
+        "ged": 10.0
+      },
       "output_diagnostics": {
         "status": "direct_function",
         "issues": [
@@ -10070,7 +11116,7 @@
         "runner": "wine",
         "runner_version": "wine-8.0 (Debian 8.0~repack-4)",
         "wrapper_sha256": "35c565052763390521c8360b00b6043d31e8bc9751c8b60cf708922083160486",
-        "reference_binary_sha256": "294f051e712908c4ac3d66366e3f8eba5b251248f58163d0fe0f418f3339f956",
+        "reference_binary_sha256": "a8dba6db9c200e39e6f5c80694a4b98c40c8fa096f48044fffbdab31ebecad1b",
         "translation_unit_sha256": "c1787b21e1117fc76d5e343bc1ab69fdfdb5b12f51c55d12f324f3c2d06d5ea2",
         "function_addr": "0x1400015b0",
         "function_rva": "0x15b0"
@@ -10099,7 +11145,7 @@
       "source_similarity": 0.1705,
       "goto_count": 3,
       "nesting_depth": 3,
-      "time_ms": 738,
+      "time_ms": 2741,
       "error": null,
       "semantic_score": 0.8333333333333334,
       "semantic_error": "candidate passed 5/6 cases",
@@ -10240,6 +11286,27 @@
         "type_erased": null,
         "control_flow_normalized": null
       },
+      "type_match_score": 0.5,
+      "type_match_metadata": {
+        "accuracy": 0.5,
+        "tp": 3,
+        "fp": 0,
+        "fn": 3,
+        "gt_vars": 6,
+        "decomp_vars": 11,
+        "calibration_shift": 0,
+        "matched_by_arg": 3,
+        "matched_by_offset": 0,
+        "matched_by_name": 0
+      },
+      "ged_score": 11.0,
+      "ged_metadata": {
+        "source_nodes": 8,
+        "source_edges": 9,
+        "decompiled_nodes": 7,
+        "decompiled_edges": 10,
+        "ged": 11.0
+      },
       "output_diagnostics": {
         "status": "direct_function",
         "issues": [
@@ -10269,7 +11336,7 @@
         "runner": "wine",
         "runner_version": "wine-8.0 (Debian 8.0~repack-4)",
         "wrapper_sha256": "e116aac5f1390573854dcb22a111a6e6d2ae872ba67b846be8fcfa28d9936d7f",
-        "reference_binary_sha256": "294f051e712908c4ac3d66366e3f8eba5b251248f58163d0fe0f418f3339f956",
+        "reference_binary_sha256": "a8dba6db9c200e39e6f5c80694a4b98c40c8fa096f48044fffbdab31ebecad1b",
         "translation_unit_sha256": "4988e8226eddcf4cd25ee056792efd24b6d5efdab4c1446507df1e40fc48eb0a",
         "function_addr": "0x1400016c0",
         "function_rva": "0x16c0"
@@ -10298,7 +11365,7 @@
       "source_similarity": 0.2408,
       "goto_count": 0,
       "nesting_depth": 5,
-      "time_ms": 9444,
+      "time_ms": 11179,
       "error": null,
       "semantic_score": 1.0,
       "semantic_error": null,
@@ -10394,6 +11461,27 @@
           "similarity": 0.6786
         }
       },
+      "type_match_score": 0.5,
+      "type_match_metadata": {
+        "accuracy": 0.5,
+        "tp": 3,
+        "fp": 0,
+        "fn": 3,
+        "gt_vars": 6,
+        "decomp_vars": 6,
+        "calibration_shift": 0,
+        "matched_by_arg": 3,
+        "matched_by_offset": 0,
+        "matched_by_name": 0
+      },
+      "ged_score": 10.0,
+      "ged_metadata": {
+        "source_nodes": 8,
+        "source_edges": 9,
+        "decompiled_nodes": 10,
+        "decompiled_edges": 13,
+        "ged": 10.0
+      },
       "output_diagnostics": {
         "status": "direct_function",
         "issues": [
@@ -10423,7 +11511,7 @@
         "runner": "wine",
         "runner_version": "wine-8.0 (Debian 8.0~repack-4)",
         "wrapper_sha256": "e116aac5f1390573854dcb22a111a6e6d2ae872ba67b846be8fcfa28d9936d7f",
-        "reference_binary_sha256": "294f051e712908c4ac3d66366e3f8eba5b251248f58163d0fe0f418f3339f956",
+        "reference_binary_sha256": "a8dba6db9c200e39e6f5c80694a4b98c40c8fa096f48044fffbdab31ebecad1b",
         "translation_unit_sha256": "bfb00224969782bef693638648efcf09c208bb8ac04d26ef0cc3e16913f936b5",
         "function_addr": "0x1400016c0",
         "function_rva": "0x16c0"
@@ -10452,7 +11540,7 @@
       "source_similarity": 0.1556,
       "goto_count": 0,
       "nesting_depth": 3,
-      "time_ms": 738,
+      "time_ms": 2741,
       "error": null,
       "semantic_score": 0.0,
       "semantic_error": "wine: Unhandled division by zero at address 0000000140001F43 (thread 0104), starting debugger...\n",
@@ -10593,6 +11681,27 @@
         "type_erased": null,
         "control_flow_normalized": null
       },
+      "type_match_score": 0.6666666666666666,
+      "type_match_metadata": {
+        "accuracy": 0.6666666666666666,
+        "tp": 2,
+        "fp": 0,
+        "fn": 1,
+        "gt_vars": 3,
+        "decomp_vars": 8,
+        "calibration_shift": 0,
+        "matched_by_arg": 2,
+        "matched_by_offset": 0,
+        "matched_by_name": 0
+      },
+      "ged_score": 6.0,
+      "ged_metadata": {
+        "source_nodes": 4,
+        "source_edges": 4,
+        "decompiled_nodes": 4,
+        "decompiled_edges": 4,
+        "ged": 6.0
+      },
       "output_diagnostics": {
         "status": "direct_function",
         "issues": [
@@ -10622,7 +11731,7 @@
         "runner": "wine",
         "runner_version": "wine-8.0 (Debian 8.0~repack-4)",
         "wrapper_sha256": "8a78b215c912fb484f85cb6f02c2bb4f5710203489f0be832bb28b403d29d31d",
-        "reference_binary_sha256": "294f051e712908c4ac3d66366e3f8eba5b251248f58163d0fe0f418f3339f956",
+        "reference_binary_sha256": "a8dba6db9c200e39e6f5c80694a4b98c40c8fa096f48044fffbdab31ebecad1b",
         "translation_unit_sha256": "63790b94669b338d34a2b505c207a2b3d82b5c491a9b9be22a847476ceb3fb7b",
         "function_addr": "0x140001770",
         "function_rva": "0x1770"
@@ -10651,7 +11760,7 @@
       "source_similarity": 0.7778,
       "goto_count": 0,
       "nesting_depth": 2,
-      "time_ms": 9444,
+      "time_ms": 11179,
       "error": null,
       "semantic_score": 1.0,
       "semantic_error": null,
@@ -10747,6 +11856,27 @@
           "similarity": 0.8879
         }
       },
+      "type_match_score": 0.6666666666666666,
+      "type_match_metadata": {
+        "accuracy": 0.6666666666666666,
+        "tp": 2,
+        "fp": 0,
+        "fn": 1,
+        "gt_vars": 3,
+        "decomp_vars": 3,
+        "calibration_shift": 0,
+        "matched_by_arg": 2,
+        "matched_by_offset": 0,
+        "matched_by_name": 0
+      },
+      "ged_score": 0.0,
+      "ged_metadata": {
+        "source_nodes": 4,
+        "source_edges": 4,
+        "decompiled_nodes": 4,
+        "decompiled_edges": 4,
+        "ged": 0.0
+      },
       "output_diagnostics": {
         "status": "direct_function",
         "issues": [
@@ -10776,7 +11906,7 @@
         "runner": "wine",
         "runner_version": "wine-8.0 (Debian 8.0~repack-4)",
         "wrapper_sha256": "8a78b215c912fb484f85cb6f02c2bb4f5710203489f0be832bb28b403d29d31d",
-        "reference_binary_sha256": "294f051e712908c4ac3d66366e3f8eba5b251248f58163d0fe0f418f3339f956",
+        "reference_binary_sha256": "a8dba6db9c200e39e6f5c80694a4b98c40c8fa096f48044fffbdab31ebecad1b",
         "translation_unit_sha256": "7f7e0393fd76d37ad30587496f0f408dcfd51ab2348450361988b2b0a6f836b4",
         "function_addr": "0x140001770",
         "function_rva": "0x1770"
@@ -10979,10 +12109,20 @@
       "by_decompiler": {
         "fission": {
           "semantic": {
-            "mean_pass_rate": 0.6733,
-            "perfect_rows": 18,
+            "mean_pass_rate": 0.64,
+            "perfect_rows": 17,
             "tested_rows": 30,
             "oracle_subject": "original_binary"
+          },
+          "type_match": {
+            "mean_accuracy": 0.5806,
+            "perfect_rows": 11,
+            "tested_rows": 30
+          },
+          "ged": {
+            "mean_ged": 9.4,
+            "perfect_rows": 2,
+            "tested_rows": 20
           },
           "coverage": {
             "attempted": 30,
@@ -11008,22 +12148,32 @@
             "timeout": 3,
             "assertion_fail": 5,
             "fixture_error": 0,
-            "oracle_error": 0,
+            "oracle_error": 1,
             "no_wrapper": 0,
-            "ok": 18,
+            "ok": 17,
             "other": 0
           },
           "runtime": {
-            "mean_ms": 1408.77,
+            "mean_ms": 3440.33,
             "rows_with_time": 30
           }
         },
         "ghidra": {
           "semantic": {
-            "mean_pass_rate": 0.7511,
-            "perfect_rows": 22,
+            "mean_pass_rate": 0.7667,
+            "perfect_rows": 23,
             "tested_rows": 30,
             "oracle_subject": "original_binary"
+          },
+          "type_match": {
+            "mean_accuracy": 0.8383,
+            "perfect_rows": 21,
+            "tested_rows": 30
+          },
+          "ged": {
+            "mean_ged": 8.6,
+            "perfect_rows": 5,
+            "tested_rows": 30
           },
           "coverage": {
             "attempted": 30,
@@ -11048,15 +12198,15 @@
             "compile_error": 1,
             "runtime_error": 0,
             "timeout": 0,
-            "assertion_fail": 5,
+            "assertion_fail": 0,
             "fixture_error": 0,
-            "oracle_error": 2,
+            "oracle_error": 6,
             "no_wrapper": 0,
-            "ok": 22,
+            "ok": 23,
             "other": 0
           },
           "runtime": {
-            "mean_ms": 16923.83,
+            "mean_ms": 17665.67,
             "rows_with_time": 30
           }
         }
@@ -11104,8 +12254,8 @@
               "compiler": "gcc",
               "opt": "-O0",
               "tested_rows": 5,
-              "mean_pass_rate": 1.0,
-              "perfect_rows": 5
+              "mean_pass_rate": 0.8,
+              "perfect_rows": 4
             },
             {
               "compiler_variant": "gcc -O2",
@@ -11154,7 +12304,7 @@
               "compiler": "gcc",
               "opt": "-O0",
               "tested_rows": 5,
-              "mean_pass_rate": 0.1067,
+              "mean_pass_rate": 0.0,
               "perfect_rows": 0
             },
             {
@@ -11162,8 +12312,8 @@
               "compiler": "gcc",
               "opt": "-O2",
               "tested_rows": 5,
-              "mean_pass_rate": 0.8,
-              "perfect_rows": 4
+              "mean_pass_rate": 1.0,
+              "perfect_rows": 5
             },
             {
               "compiler_variant": "gcc-m32 -O0",
@@ -11233,14 +12383,14 @@
           "holdout": {
             "rows": 60,
             "semantic_tested": 60,
-            "mean_pass_rate": 0.7122,
+            "mean_pass_rate": 0.7033,
             "perfect_rows": 40,
             "timeout_rows": 3,
             "fail_taxonomy": {
-              "assertion_fail": 10,
+              "assertion_fail": 5,
               "compile_error": 2,
               "ok": 40,
-              "oracle_error": 2,
+              "oracle_error": 7,
               "runtime_error": 3,
               "timeout": 3
             }
@@ -11250,14 +12400,14 @@
           "c": {
             "rows": 60,
             "semantic_tested": 60,
-            "mean_pass_rate": 0.7122,
+            "mean_pass_rate": 0.7033,
             "perfect_rows": 40,
             "timeout_rows": 3,
             "fail_taxonomy": {
-              "assertion_fail": 10,
+              "assertion_fail": 5,
               "compile_error": 2,
               "ok": 40,
-              "oracle_error": 2,
+              "oracle_error": 7,
               "runtime_error": 3,
               "timeout": 3
             }
@@ -11281,14 +12431,14 @@
           "x86_64": {
             "rows": 40,
             "semantic_tested": 40,
-            "mean_pass_rate": 0.6725,
+            "mean_pass_rate": 0.6592,
             "perfect_rows": 25,
             "timeout_rows": 2,
             "fail_taxonomy": {
-              "assertion_fail": 8,
+              "assertion_fail": 3,
               "compile_error": 2,
               "ok": 25,
-              "oracle_error": 1,
+              "oracle_error": 6,
               "runtime_error": 2,
               "timeout": 2
             }
@@ -11298,14 +12448,14 @@
           "pe": {
             "rows": 60,
             "semantic_tested": 60,
-            "mean_pass_rate": 0.7122,
+            "mean_pass_rate": 0.7033,
             "perfect_rows": 40,
             "timeout_rows": 3,
             "fail_taxonomy": {
-              "assertion_fail": 10,
+              "assertion_fail": 5,
               "compile_error": 2,
               "ok": 40,
-              "oracle_error": 2,
+              "oracle_error": 7,
               "runtime_error": 3,
               "timeout": 3
             }
@@ -11315,26 +12465,27 @@
           "-O0": {
             "rows": 30,
             "semantic_tested": 30,
-            "mean_pass_rate": 0.7956,
-            "perfect_rows": 23,
+            "mean_pass_rate": 0.7444,
+            "perfect_rows": 22,
             "timeout_rows": 1,
             "fail_taxonomy": {
-              "assertion_fail": 6,
-              "ok": 23,
+              "assertion_fail": 1,
+              "ok": 22,
+              "oracle_error": 6,
               "timeout": 1
             }
           },
           "-O2": {
             "rows": 30,
             "semantic_tested": 30,
-            "mean_pass_rate": 0.6289,
-            "perfect_rows": 17,
+            "mean_pass_rate": 0.6622,
+            "perfect_rows": 18,
             "timeout_rows": 2,
             "fail_taxonomy": {
               "assertion_fail": 4,
               "compile_error": 2,
-              "ok": 17,
-              "oracle_error": 2,
+              "ok": 18,
+              "oracle_error": 1,
               "runtime_error": 3,
               "timeout": 2
             }
@@ -11351,238 +12502,238 @@
           "by_decompiler": {
             "fission": {
               "n": 30,
-              "mean_ms": 1408.767,
-              "p50_ms": 828.0,
-              "p95_ms": 3729.7,
-              "min_ms": 590.0,
-              "max_ms": 4359.0,
-              "sum_ms": 42263.0
+              "mean_ms": 3440.333,
+              "p50_ms": 2711.0,
+              "p95_ms": 7461.35,
+              "min_ms": 2466.0,
+              "max_ms": 7604.0,
+              "sum_ms": 103210.0
             },
             "ghidra": {
               "n": 30,
-              "mean_ms": 16923.833,
-              "p50_ms": 12822.0,
-              "p95_ms": 36447.35,
-              "min_ms": 9444.0,
-              "max_ms": 42282.0,
-              "sum_ms": 507715.0
+              "mean_ms": 17665.667,
+              "p50_ms": 12786.0,
+              "p95_ms": 41773.5,
+              "min_ms": 10388.0,
+              "max_ms": 42913.0,
+              "sum_ms": 529970.0
             }
           },
           "fission_vs_ghidra": {
             "paired_n": 30,
-            "median_speedup": 12.7967,
-            "geometric_mean_speedup": 13.6935,
+            "median_speedup": 4.6921,
+            "geometric_mean_speedup": 4.8071,
             "fission_faster_share": 1.0,
             "pairs_head": [
               {
                 "function_name": "classify_range",
-                "compiler_variant": "gcc-m32 -O0",
-                "fission_ms": 4359.0,
-                "ghidra_ms": 24611.0,
-                "speedup": 5.646
+                "compiler_variant": "gcc-m32 -O2",
+                "fission_ms": 7604.0,
+                "ghidra_ms": 41108.0,
+                "speedup": 5.4061
               },
               {
                 "function_name": "classify_range",
                 "compiler_variant": "clang -O0",
-                "fission_ms": 3817.0,
-                "ghidra_ms": 36009.0,
-                "speedup": 9.4338
-              },
-              {
-                "function_name": "classify_range",
-                "compiler_variant": "gcc -O0",
-                "fission_ms": 3623.0,
-                "ghidra_ms": 27859.0,
-                "speedup": 7.6895
-              },
-              {
-                "function_name": "classify_range",
-                "compiler_variant": "gcc -O2",
-                "fission_ms": 3563.0,
-                "ghidra_ms": 30412.0,
-                "speedup": 8.5355
-              },
-              {
-                "function_name": "classify_range",
-                "compiler_variant": "gcc-m32 -O2",
-                "fission_ms": 3262.0,
-                "ghidra_ms": 42282.0,
-                "speedup": 12.962
+                "fission_ms": 7577.0,
+                "ghidra_ms": 42318.0,
+                "speedup": 5.5851
               },
               {
                 "function_name": "classify_range",
                 "compiler_variant": "clang -O2",
-                "fission_ms": 2855.0,
-                "ghidra_ms": 36806.0,
-                "speedup": 12.8918
+                "fission_ms": 7320.0,
+                "ghidra_ms": 42913.0,
+                "speedup": 5.8624
               },
               {
-                "function_name": "fibonacci_iter",
-                "compiler_variant": "clang -O0",
-                "fission_ms": 1197.0,
-                "ghidra_ms": 12822.0,
-                "speedup": 10.7118
-              },
-              {
-                "function_name": "max",
-                "compiler_variant": "clang -O0",
-                "fission_ms": 1197.0,
-                "ghidra_ms": 12822.0,
-                "speedup": 10.7118
-              },
-              {
-                "function_name": "binary_search",
-                "compiler_variant": "clang -O0",
-                "fission_ms": 1197.0,
-                "ghidra_ms": 12822.0,
-                "speedup": 10.7118
-              },
-              {
-                "function_name": "gcd",
-                "compiler_variant": "clang -O0",
-                "fission_ms": 1197.0,
-                "ghidra_ms": 12822.0,
-                "speedup": 10.7118
-              },
-              {
-                "function_name": "fibonacci_iter",
-                "compiler_variant": "gcc-m32 -O2",
-                "fission_ms": 1070.0,
-                "ghidra_ms": 12655.0,
-                "speedup": 11.8271
-              },
-              {
-                "function_name": "max",
-                "compiler_variant": "gcc-m32 -O2",
-                "fission_ms": 1070.0,
-                "ghidra_ms": 12655.0,
-                "speedup": 11.8271
-              },
-              {
-                "function_name": "binary_search",
-                "compiler_variant": "gcc-m32 -O2",
-                "fission_ms": 1070.0,
-                "ghidra_ms": 12655.0,
-                "speedup": 11.8271
-              },
-              {
-                "function_name": "gcd",
-                "compiler_variant": "gcc-m32 -O2",
-                "fission_ms": 1070.0,
-                "ghidra_ms": 12655.0,
-                "speedup": 11.8271
-              },
-              {
-                "function_name": "fibonacci_iter",
+                "function_name": "classify_range",
                 "compiler_variant": "gcc-m32 -O0",
-                "fission_ms": 828.0,
-                "ghidra_ms": 12499.0,
-                "speedup": 15.0954
+                "fission_ms": 5976.0,
+                "ghidra_ms": 37057.0,
+                "speedup": 6.201
               },
               {
-                "function_name": "max",
-                "compiler_variant": "gcc-m32 -O0",
-                "fission_ms": 828.0,
-                "ghidra_ms": 12499.0,
-                "speedup": 15.0954
+                "function_name": "classify_range",
+                "compiler_variant": "gcc -O2",
+                "fission_ms": 5626.0,
+                "ghidra_ms": 39098.0,
+                "speedup": 6.9495
               },
               {
-                "function_name": "binary_search",
-                "compiler_variant": "gcc-m32 -O0",
-                "fission_ms": 828.0,
-                "ghidra_ms": 12499.0,
-                "speedup": 15.0954
-              },
-              {
-                "function_name": "gcd",
-                "compiler_variant": "gcc-m32 -O0",
-                "fission_ms": 828.0,
-                "ghidra_ms": 12499.0,
-                "speedup": 15.0954
-              },
-              {
-                "function_name": "fibonacci_iter",
+                "function_name": "classify_range",
                 "compiler_variant": "gcc -O0",
-                "fission_ms": 773.0,
-                "ghidra_ms": 15074.0,
-                "speedup": 19.5006
-              },
-              {
-                "function_name": "max",
-                "compiler_variant": "gcc -O0",
-                "fission_ms": 773.0,
-                "ghidra_ms": 15074.0,
-                "speedup": 19.5006
-              },
-              {
-                "function_name": "binary_search",
-                "compiler_variant": "gcc -O0",
-                "fission_ms": 773.0,
-                "ghidra_ms": 15074.0,
-                "speedup": 19.5006
-              },
-              {
-                "function_name": "gcd",
-                "compiler_variant": "gcc -O0",
-                "fission_ms": 773.0,
-                "ghidra_ms": 15074.0,
-                "speedup": 19.5006
+                "fission_ms": 5347.0,
+                "ghidra_ms": 38060.0,
+                "speedup": 7.118
               },
               {
                 "function_name": "fibonacci_iter",
                 "compiler_variant": "clang -O2",
-                "fission_ms": 738.0,
-                "ghidra_ms": 9444.0,
-                "speedup": 12.7967
+                "fission_ms": 2741.0,
+                "ghidra_ms": 11179.0,
+                "speedup": 4.0784
               },
               {
                 "function_name": "max",
                 "compiler_variant": "clang -O2",
-                "fission_ms": 738.0,
-                "ghidra_ms": 9444.0,
-                "speedup": 12.7967
+                "fission_ms": 2741.0,
+                "ghidra_ms": 11179.0,
+                "speedup": 4.0784
               },
               {
                 "function_name": "binary_search",
                 "compiler_variant": "clang -O2",
-                "fission_ms": 738.0,
-                "ghidra_ms": 9444.0,
-                "speedup": 12.7967
+                "fission_ms": 2741.0,
+                "ghidra_ms": 11179.0,
+                "speedup": 4.0784
               },
               {
                 "function_name": "gcd",
                 "compiler_variant": "clang -O2",
-                "fission_ms": 738.0,
-                "ghidra_ms": 9444.0,
-                "speedup": 12.7967
+                "fission_ms": 2741.0,
+                "ghidra_ms": 11179.0,
+                "speedup": 4.0784
+              },
+              {
+                "function_name": "fibonacci_iter",
+                "compiler_variant": "gcc -O0",
+                "fission_ms": 2725.0,
+                "ghidra_ms": 12786.0,
+                "speedup": 4.6921
+              },
+              {
+                "function_name": "max",
+                "compiler_variant": "gcc -O0",
+                "fission_ms": 2725.0,
+                "ghidra_ms": 12786.0,
+                "speedup": 4.6921
+              },
+              {
+                "function_name": "binary_search",
+                "compiler_variant": "gcc -O0",
+                "fission_ms": 2725.0,
+                "ghidra_ms": 12786.0,
+                "speedup": 4.6921
+              },
+              {
+                "function_name": "gcd",
+                "compiler_variant": "gcc -O0",
+                "fission_ms": 2725.0,
+                "ghidra_ms": 12786.0,
+                "speedup": 4.6921
+              },
+              {
+                "function_name": "fibonacci_iter",
+                "compiler_variant": "clang -O0",
+                "fission_ms": 2711.0,
+                "ghidra_ms": 11143.0,
+                "speedup": 4.1103
+              },
+              {
+                "function_name": "max",
+                "compiler_variant": "clang -O0",
+                "fission_ms": 2711.0,
+                "ghidra_ms": 11143.0,
+                "speedup": 4.1103
+              },
+              {
+                "function_name": "binary_search",
+                "compiler_variant": "clang -O0",
+                "fission_ms": 2711.0,
+                "ghidra_ms": 11143.0,
+                "speedup": 4.1103
+              },
+              {
+                "function_name": "gcd",
+                "compiler_variant": "clang -O0",
+                "fission_ms": 2711.0,
+                "ghidra_ms": 11143.0,
+                "speedup": 4.1103
               },
               {
                 "function_name": "fibonacci_iter",
                 "compiler_variant": "gcc -O2",
-                "fission_ms": 590.0,
-                "ghidra_ms": 14940.0,
-                "speedup": 25.322
+                "fission_ms": 2681.0,
+                "ghidra_ms": 13459.0,
+                "speedup": 5.0201
               },
               {
                 "function_name": "max",
                 "compiler_variant": "gcc -O2",
-                "fission_ms": 590.0,
-                "ghidra_ms": 14940.0,
-                "speedup": 25.322
+                "fission_ms": 2681.0,
+                "ghidra_ms": 13459.0,
+                "speedup": 5.0201
               },
               {
                 "function_name": "binary_search",
                 "compiler_variant": "gcc -O2",
-                "fission_ms": 590.0,
-                "ghidra_ms": 14940.0,
-                "speedup": 25.322
+                "fission_ms": 2681.0,
+                "ghidra_ms": 13459.0,
+                "speedup": 5.0201
               },
               {
                 "function_name": "gcd",
                 "compiler_variant": "gcc -O2",
-                "fission_ms": 590.0,
-                "ghidra_ms": 14940.0,
-                "speedup": 25.322
+                "fission_ms": 2681.0,
+                "ghidra_ms": 13459.0,
+                "speedup": 5.0201
+              },
+              {
+                "function_name": "fibonacci_iter",
+                "compiler_variant": "gcc-m32 -O2",
+                "fission_ms": 2616.0,
+                "ghidra_ms": 10388.0,
+                "speedup": 3.9709
+              },
+              {
+                "function_name": "max",
+                "compiler_variant": "gcc-m32 -O2",
+                "fission_ms": 2616.0,
+                "ghidra_ms": 10388.0,
+                "speedup": 3.9709
+              },
+              {
+                "function_name": "binary_search",
+                "compiler_variant": "gcc-m32 -O2",
+                "fission_ms": 2616.0,
+                "ghidra_ms": 10388.0,
+                "speedup": 3.9709
+              },
+              {
+                "function_name": "gcd",
+                "compiler_variant": "gcc-m32 -O2",
+                "fission_ms": 2616.0,
+                "ghidra_ms": 10388.0,
+                "speedup": 3.9709
+              },
+              {
+                "function_name": "fibonacci_iter",
+                "compiler_variant": "gcc-m32 -O0",
+                "fission_ms": 2466.0,
+                "ghidra_ms": 13399.0,
+                "speedup": 5.4335
+              },
+              {
+                "function_name": "max",
+                "compiler_variant": "gcc-m32 -O0",
+                "fission_ms": 2466.0,
+                "ghidra_ms": 13399.0,
+                "speedup": 5.4335
+              },
+              {
+                "function_name": "binary_search",
+                "compiler_variant": "gcc-m32 -O0",
+                "fission_ms": 2466.0,
+                "ghidra_ms": 13399.0,
+                "speedup": 5.4335
+              },
+              {
+                "function_name": "gcd",
+                "compiler_variant": "gcc-m32 -O0",
+                "fission_ms": 2466.0,
+                "ghidra_ms": 13399.0,
+                "speedup": 5.4335
               }
             ]
           }
@@ -11641,14 +12792,14 @@
           "holdout": {
             "rows": 60,
             "semantic_tested": 60,
-            "mean_pass_rate": 0.7122,
+            "mean_pass_rate": 0.7033,
             "perfect_rows": 40,
             "timeout_rows": 3,
             "fail_taxonomy": {
-              "assertion_fail": 10,
+              "assertion_fail": 5,
               "compile_error": 2,
               "ok": 40,
-              "oracle_error": 2,
+              "oracle_error": 7,
               "runtime_error": 3,
               "timeout": 3
             }
@@ -11658,14 +12809,14 @@
           "c": {
             "rows": 60,
             "semantic_tested": 60,
-            "mean_pass_rate": 0.7122,
+            "mean_pass_rate": 0.7033,
             "perfect_rows": 40,
             "timeout_rows": 3,
             "fail_taxonomy": {
-              "assertion_fail": 10,
+              "assertion_fail": 5,
               "compile_error": 2,
               "ok": 40,
-              "oracle_error": 2,
+              "oracle_error": 7,
               "runtime_error": 3,
               "timeout": 3
             }
@@ -11689,14 +12840,14 @@
           "x86_64": {
             "rows": 40,
             "semantic_tested": 40,
-            "mean_pass_rate": 0.6725,
+            "mean_pass_rate": 0.6592,
             "perfect_rows": 25,
             "timeout_rows": 2,
             "fail_taxonomy": {
-              "assertion_fail": 8,
+              "assertion_fail": 3,
               "compile_error": 2,
               "ok": 25,
-              "oracle_error": 1,
+              "oracle_error": 6,
               "runtime_error": 2,
               "timeout": 2
             }
@@ -11706,14 +12857,14 @@
           "pe": {
             "rows": 60,
             "semantic_tested": 60,
-            "mean_pass_rate": 0.7122,
+            "mean_pass_rate": 0.7033,
             "perfect_rows": 40,
             "timeout_rows": 3,
             "fail_taxonomy": {
-              "assertion_fail": 10,
+              "assertion_fail": 5,
               "compile_error": 2,
               "ok": 40,
-              "oracle_error": 2,
+              "oracle_error": 7,
               "runtime_error": 3,
               "timeout": 3
             }
@@ -11723,26 +12874,27 @@
           "-O0": {
             "rows": 30,
             "semantic_tested": 30,
-            "mean_pass_rate": 0.7956,
-            "perfect_rows": 23,
+            "mean_pass_rate": 0.7444,
+            "perfect_rows": 22,
             "timeout_rows": 1,
             "fail_taxonomy": {
-              "assertion_fail": 6,
-              "ok": 23,
+              "assertion_fail": 1,
+              "ok": 22,
+              "oracle_error": 6,
               "timeout": 1
             }
           },
           "-O2": {
             "rows": 30,
             "semantic_tested": 30,
-            "mean_pass_rate": 0.6289,
-            "perfect_rows": 17,
+            "mean_pass_rate": 0.6622,
+            "perfect_rows": 18,
             "timeout_rows": 2,
             "fail_taxonomy": {
               "assertion_fail": 4,
               "compile_error": 2,
-              "ok": 17,
-              "oracle_error": 2,
+              "ok": 18,
+              "oracle_error": 1,
               "runtime_error": 3,
               "timeout": 2
             }
@@ -11759,238 +12911,238 @@
           "by_decompiler": {
             "fission": {
               "n": 30,
-              "mean_ms": 1408.767,
-              "p50_ms": 828.0,
-              "p95_ms": 3729.7,
-              "min_ms": 590.0,
-              "max_ms": 4359.0,
-              "sum_ms": 42263.0
+              "mean_ms": 3440.333,
+              "p50_ms": 2711.0,
+              "p95_ms": 7461.35,
+              "min_ms": 2466.0,
+              "max_ms": 7604.0,
+              "sum_ms": 103210.0
             },
             "ghidra": {
               "n": 30,
-              "mean_ms": 16923.833,
-              "p50_ms": 12822.0,
-              "p95_ms": 36447.35,
-              "min_ms": 9444.0,
-              "max_ms": 42282.0,
-              "sum_ms": 507715.0
+              "mean_ms": 17665.667,
+              "p50_ms": 12786.0,
+              "p95_ms": 41773.5,
+              "min_ms": 10388.0,
+              "max_ms": 42913.0,
+              "sum_ms": 529970.0
             }
           },
           "fission_vs_ghidra": {
             "paired_n": 30,
-            "median_speedup": 12.7967,
-            "geometric_mean_speedup": 13.6935,
+            "median_speedup": 4.6921,
+            "geometric_mean_speedup": 4.8071,
             "fission_faster_share": 1.0,
             "pairs_head": [
               {
                 "function_name": "classify_range",
-                "compiler_variant": "gcc-m32 -O0",
-                "fission_ms": 4359.0,
-                "ghidra_ms": 24611.0,
-                "speedup": 5.646
+                "compiler_variant": "gcc-m32 -O2",
+                "fission_ms": 7604.0,
+                "ghidra_ms": 41108.0,
+                "speedup": 5.4061
               },
               {
                 "function_name": "classify_range",
                 "compiler_variant": "clang -O0",
-                "fission_ms": 3817.0,
-                "ghidra_ms": 36009.0,
-                "speedup": 9.4338
-              },
-              {
-                "function_name": "classify_range",
-                "compiler_variant": "gcc -O0",
-                "fission_ms": 3623.0,
-                "ghidra_ms": 27859.0,
-                "speedup": 7.6895
-              },
-              {
-                "function_name": "classify_range",
-                "compiler_variant": "gcc -O2",
-                "fission_ms": 3563.0,
-                "ghidra_ms": 30412.0,
-                "speedup": 8.5355
-              },
-              {
-                "function_name": "classify_range",
-                "compiler_variant": "gcc-m32 -O2",
-                "fission_ms": 3262.0,
-                "ghidra_ms": 42282.0,
-                "speedup": 12.962
+                "fission_ms": 7577.0,
+                "ghidra_ms": 42318.0,
+                "speedup": 5.5851
               },
               {
                 "function_name": "classify_range",
                 "compiler_variant": "clang -O2",
-                "fission_ms": 2855.0,
-                "ghidra_ms": 36806.0,
-                "speedup": 12.8918
+                "fission_ms": 7320.0,
+                "ghidra_ms": 42913.0,
+                "speedup": 5.8624
               },
               {
-                "function_name": "fibonacci_iter",
-                "compiler_variant": "clang -O0",
-                "fission_ms": 1197.0,
-                "ghidra_ms": 12822.0,
-                "speedup": 10.7118
-              },
-              {
-                "function_name": "max",
-                "compiler_variant": "clang -O0",
-                "fission_ms": 1197.0,
-                "ghidra_ms": 12822.0,
-                "speedup": 10.7118
-              },
-              {
-                "function_name": "binary_search",
-                "compiler_variant": "clang -O0",
-                "fission_ms": 1197.0,
-                "ghidra_ms": 12822.0,
-                "speedup": 10.7118
-              },
-              {
-                "function_name": "gcd",
-                "compiler_variant": "clang -O0",
-                "fission_ms": 1197.0,
-                "ghidra_ms": 12822.0,
-                "speedup": 10.7118
-              },
-              {
-                "function_name": "fibonacci_iter",
-                "compiler_variant": "gcc-m32 -O2",
-                "fission_ms": 1070.0,
-                "ghidra_ms": 12655.0,
-                "speedup": 11.8271
-              },
-              {
-                "function_name": "max",
-                "compiler_variant": "gcc-m32 -O2",
-                "fission_ms": 1070.0,
-                "ghidra_ms": 12655.0,
-                "speedup": 11.8271
-              },
-              {
-                "function_name": "binary_search",
-                "compiler_variant": "gcc-m32 -O2",
-                "fission_ms": 1070.0,
-                "ghidra_ms": 12655.0,
-                "speedup": 11.8271
-              },
-              {
-                "function_name": "gcd",
-                "compiler_variant": "gcc-m32 -O2",
-                "fission_ms": 1070.0,
-                "ghidra_ms": 12655.0,
-                "speedup": 11.8271
-              },
-              {
-                "function_name": "fibonacci_iter",
+                "function_name": "classify_range",
                 "compiler_variant": "gcc-m32 -O0",
-                "fission_ms": 828.0,
-                "ghidra_ms": 12499.0,
-                "speedup": 15.0954
+                "fission_ms": 5976.0,
+                "ghidra_ms": 37057.0,
+                "speedup": 6.201
               },
               {
-                "function_name": "max",
-                "compiler_variant": "gcc-m32 -O0",
-                "fission_ms": 828.0,
-                "ghidra_ms": 12499.0,
-                "speedup": 15.0954
+                "function_name": "classify_range",
+                "compiler_variant": "gcc -O2",
+                "fission_ms": 5626.0,
+                "ghidra_ms": 39098.0,
+                "speedup": 6.9495
               },
               {
-                "function_name": "binary_search",
-                "compiler_variant": "gcc-m32 -O0",
-                "fission_ms": 828.0,
-                "ghidra_ms": 12499.0,
-                "speedup": 15.0954
-              },
-              {
-                "function_name": "gcd",
-                "compiler_variant": "gcc-m32 -O0",
-                "fission_ms": 828.0,
-                "ghidra_ms": 12499.0,
-                "speedup": 15.0954
-              },
-              {
-                "function_name": "fibonacci_iter",
+                "function_name": "classify_range",
                 "compiler_variant": "gcc -O0",
-                "fission_ms": 773.0,
-                "ghidra_ms": 15074.0,
-                "speedup": 19.5006
-              },
-              {
-                "function_name": "max",
-                "compiler_variant": "gcc -O0",
-                "fission_ms": 773.0,
-                "ghidra_ms": 15074.0,
-                "speedup": 19.5006
-              },
-              {
-                "function_name": "binary_search",
-                "compiler_variant": "gcc -O0",
-                "fission_ms": 773.0,
-                "ghidra_ms": 15074.0,
-                "speedup": 19.5006
-              },
-              {
-                "function_name": "gcd",
-                "compiler_variant": "gcc -O0",
-                "fission_ms": 773.0,
-                "ghidra_ms": 15074.0,
-                "speedup": 19.5006
+                "fission_ms": 5347.0,
+                "ghidra_ms": 38060.0,
+                "speedup": 7.118
               },
               {
                 "function_name": "fibonacci_iter",
                 "compiler_variant": "clang -O2",
-                "fission_ms": 738.0,
-                "ghidra_ms": 9444.0,
-                "speedup": 12.7967
+                "fission_ms": 2741.0,
+                "ghidra_ms": 11179.0,
+                "speedup": 4.0784
               },
               {
                 "function_name": "max",
                 "compiler_variant": "clang -O2",
-                "fission_ms": 738.0,
-                "ghidra_ms": 9444.0,
-                "speedup": 12.7967
+                "fission_ms": 2741.0,
+                "ghidra_ms": 11179.0,
+                "speedup": 4.0784
               },
               {
                 "function_name": "binary_search",
                 "compiler_variant": "clang -O2",
-                "fission_ms": 738.0,
-                "ghidra_ms": 9444.0,
-                "speedup": 12.7967
+                "fission_ms": 2741.0,
+                "ghidra_ms": 11179.0,
+                "speedup": 4.0784
               },
               {
                 "function_name": "gcd",
                 "compiler_variant": "clang -O2",
-                "fission_ms": 738.0,
-                "ghidra_ms": 9444.0,
-                "speedup": 12.7967
+                "fission_ms": 2741.0,
+                "ghidra_ms": 11179.0,
+                "speedup": 4.0784
+              },
+              {
+                "function_name": "fibonacci_iter",
+                "compiler_variant": "gcc -O0",
+                "fission_ms": 2725.0,
+                "ghidra_ms": 12786.0,
+                "speedup": 4.6921
+              },
+              {
+                "function_name": "max",
+                "compiler_variant": "gcc -O0",
+                "fission_ms": 2725.0,
+                "ghidra_ms": 12786.0,
+                "speedup": 4.6921
+              },
+              {
+                "function_name": "binary_search",
+                "compiler_variant": "gcc -O0",
+                "fission_ms": 2725.0,
+                "ghidra_ms": 12786.0,
+                "speedup": 4.6921
+              },
+              {
+                "function_name": "gcd",
+                "compiler_variant": "gcc -O0",
+                "fission_ms": 2725.0,
+                "ghidra_ms": 12786.0,
+                "speedup": 4.6921
+              },
+              {
+                "function_name": "fibonacci_iter",
+                "compiler_variant": "clang -O0",
+                "fission_ms": 2711.0,
+                "ghidra_ms": 11143.0,
+                "speedup": 4.1103
+              },
+              {
+                "function_name": "max",
+                "compiler_variant": "clang -O0",
+                "fission_ms": 2711.0,
+                "ghidra_ms": 11143.0,
+                "speedup": 4.1103
+              },
+              {
+                "function_name": "binary_search",
+                "compiler_variant": "clang -O0",
+                "fission_ms": 2711.0,
+                "ghidra_ms": 11143.0,
+                "speedup": 4.1103
+              },
+              {
+                "function_name": "gcd",
+                "compiler_variant": "clang -O0",
+                "fission_ms": 2711.0,
+                "ghidra_ms": 11143.0,
+                "speedup": 4.1103
               },
               {
                 "function_name": "fibonacci_iter",
                 "compiler_variant": "gcc -O2",
-                "fission_ms": 590.0,
-                "ghidra_ms": 14940.0,
-                "speedup": 25.322
+                "fission_ms": 2681.0,
+                "ghidra_ms": 13459.0,
+                "speedup": 5.0201
               },
               {
                 "function_name": "max",
                 "compiler_variant": "gcc -O2",
-                "fission_ms": 590.0,
-                "ghidra_ms": 14940.0,
-                "speedup": 25.322
+                "fission_ms": 2681.0,
+                "ghidra_ms": 13459.0,
+                "speedup": 5.0201
               },
               {
                 "function_name": "binary_search",
                 "compiler_variant": "gcc -O2",
-                "fission_ms": 590.0,
-                "ghidra_ms": 14940.0,
-                "speedup": 25.322
+                "fission_ms": 2681.0,
+                "ghidra_ms": 13459.0,
+                "speedup": 5.0201
               },
               {
                 "function_name": "gcd",
                 "compiler_variant": "gcc -O2",
-                "fission_ms": 590.0,
-                "ghidra_ms": 14940.0,
-                "speedup": 25.322
+                "fission_ms": 2681.0,
+                "ghidra_ms": 13459.0,
+                "speedup": 5.0201
+              },
+              {
+                "function_name": "fibonacci_iter",
+                "compiler_variant": "gcc-m32 -O2",
+                "fission_ms": 2616.0,
+                "ghidra_ms": 10388.0,
+                "speedup": 3.9709
+              },
+              {
+                "function_name": "max",
+                "compiler_variant": "gcc-m32 -O2",
+                "fission_ms": 2616.0,
+                "ghidra_ms": 10388.0,
+                "speedup": 3.9709
+              },
+              {
+                "function_name": "binary_search",
+                "compiler_variant": "gcc-m32 -O2",
+                "fission_ms": 2616.0,
+                "ghidra_ms": 10388.0,
+                "speedup": 3.9709
+              },
+              {
+                "function_name": "gcd",
+                "compiler_variant": "gcc-m32 -O2",
+                "fission_ms": 2616.0,
+                "ghidra_ms": 10388.0,
+                "speedup": 3.9709
+              },
+              {
+                "function_name": "fibonacci_iter",
+                "compiler_variant": "gcc-m32 -O0",
+                "fission_ms": 2466.0,
+                "ghidra_ms": 13399.0,
+                "speedup": 5.4335
+              },
+              {
+                "function_name": "max",
+                "compiler_variant": "gcc-m32 -O0",
+                "fission_ms": 2466.0,
+                "ghidra_ms": 13399.0,
+                "speedup": 5.4335
+              },
+              {
+                "function_name": "binary_search",
+                "compiler_variant": "gcc-m32 -O0",
+                "fission_ms": 2466.0,
+                "ghidra_ms": 13399.0,
+                "speedup": 5.4335
+              },
+              {
+                "function_name": "gcd",
+                "compiler_variant": "gcc-m32 -O0",
+                "fission_ms": 2466.0,
+                "ghidra_ms": 13399.0,
+                "speedup": 5.4335
               }
             ]
           }
@@ -12024,5 +13176,5 @@
       "final_publication_gate_required"
     ]
   },
-  "rendered_at": "2026-08-02T11:48:00Z"
+  "rendered_at": "2026-08-03T17:41:00Z"
 }
