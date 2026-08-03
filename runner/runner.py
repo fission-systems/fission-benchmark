@@ -353,7 +353,27 @@ async def decompile_batch_and_score(
         var_fmt = getattr(variant, "format", None) or ""
         var_isa = getattr(variant, "isa", None) or ""
         var_abi = getattr(variant, "abi_profile", None) or ""
-        if not error and oracle_endpoint and fn.name in TEST_WRAPPERS:
+        harness_blockers = output_diagnostics.get("harness_blockers") or []
+        if harness_blockers:
+            # Known-unrunnable output (e.g. Ghidra "Unknown calling convention"
+            # dumps that declare named params but read raw `in_RCX`-style
+            # register pseudo-locals in the body instead): naively compiling
+            # and executing this as C reads uninitialized memory through
+            # whatever garbage lands in those locals, which crashes the
+            # oracle harness (a real wine page fault, not a semantic mismatch)
+            # and poisons the whole envelope's oracle.valid aggregate. Skip
+            # the compile-and-run attempt entirely; reuse the same
+            # oracle_error + empty-evidence shape that
+            # `_row_is_oracle_infra_failure_without_evidence` already
+            # excludes from that aggregate.
+            sem_score, sem_err, fail_cat, cases_passed, cases_total = (
+                0.0,
+                f"Skipped: decompiled output has harness blockers: {', '.join(harness_blockers)}",
+                "oracle_error",
+                0,
+                0,
+            )
+        elif not error and oracle_endpoint and fn.name in TEST_WRAPPERS:
             binary_bytes = binary_path.read_bytes()
             differential = await verify_with_oracle(
                 client,
