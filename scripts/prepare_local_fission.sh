@@ -55,6 +55,19 @@ fi
 mkdir -p "$BUNDLE"
 GIT_SHA="$(git -C "$FISSION_ROOT" rev-parse --short HEAD 2>/dev/null || echo unknown)"
 
+# GIT_SHA alone silently mislabels a bundle built from a dirty working tree
+# as the clean HEAD commit (the exact confusion that prompted this check --
+# a build run between `git stash pop` and the matching commit looked
+# "stale" even though its content was current). Flag it using the same
+# build-input scope as source_fingerprint() below, so the label and the
+# fingerprint never disagree about whether uncommitted changes are in play.
+if [[ -n "$(git -C "$FISSION_ROOT" diff --name-only HEAD -- \
+      Cargo.toml Cargo.lock build.rs rust-toolchain rust-toolchain.toml .cargo crates 2>/dev/null)" \
+   || -n "$(git -C "$FISSION_ROOT" ls-files --others --exclude-standard -- \
+      Cargo.toml Cargo.lock build.rs rust-toolchain rust-toolchain.toml .cargo crates 2>/dev/null)" ]]; then
+  GIT_SHA="${GIT_SHA}-dirty"
+fi
+
 hash_stdin() {
   if command -v sha256sum >/dev/null 2>&1; then
     sha256sum | awk '{print $1}'
