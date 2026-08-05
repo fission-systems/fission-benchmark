@@ -137,6 +137,7 @@ jobs:
     outputs:
       is_current: ${{ steps.current.outputs.is_current }}
       should_publish: ${{ steps.publish-mode.outputs.should_publish }}
+      release_version: ${{ steps.fission-version.outputs.version }}
     runs-on: ubuntu-latest
     # full_matrix fan-out needs headroom; smoke/core stay well under this.
     timeout-minutes: ${{ (github.event.inputs.matrix_profile == 'full_matrix' || github.event_name == 'schedule') && 360 || 150 }}
@@ -163,14 +164,23 @@ jobs:
         run: |
           set -euo pipefail
           requested="${FISSION_VERSION:-latest}"
+          latest="$(gh api repos/fission-systems/Fission/releases/latest --jq .tag_name)"
           if [ "$requested" = "latest" ]; then
-            resolved="$(gh api repos/fission-systems/Fission/releases/latest --jq .tag_name)"
+            resolved="$latest"
           else
             resolved="$requested"
           fi
           echo "Resolved Fission version: $resolved"
+          echo "Latest Fission release: $latest"
           echo "FISSION_VERSION=$resolved" >> "$GITHUB_ENV"
           echo "version=$resolved" >> "$GITHUB_OUTPUT"
+          if [ "$resolved" = "$latest" ]; then
+            echo "IS_LATEST_RELEASE=true" >> "$GITHUB_ENV"
+            echo "is_latest=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "IS_LATEST_RELEASE=false" >> "$GITHUB_ENV"
+            echo "is_latest=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -503,7 +513,7 @@ jobs:
         id: publish-mode
         if: always()
         run: |
-          if [ "$PUBLISH_RESULTS" = "true" ] && [ "$MEASUREMENT_VALID" = "true" ] && [ "$RUN_PUBLISHABLE" = "true" ]; then
+          if [ "$PUBLISH_RESULTS" = "true" ] && [ "$MEASUREMENT_VALID" = "true" ] && [ "$RUN_PUBLISHABLE" = "true" ] && [ "$IS_LATEST_RELEASE" = "true" ]; then
             echo "should_publish=true" >> "$GITHUB_OUTPUT"
           else
             echo "should_publish=false" >> "$GITHUB_OUTPUT"
@@ -526,6 +536,9 @@ jobs:
             echo "Preserved multi-lang merge as results/dev_full_matrix.json"
           fi
           python -c 'from pathlib import Path; from runner.artifact_integrity import verify_artifact_manifest; verify_artifact_manifest(Path("."))'
+          # Preserve the canonical publication by Fission release. This is the
+          # release-channel anchor used to reject older dashboard fallbacks.
+          python scripts/archive_benchmark_history.py --input results/latest.json
 
       - name: Run parity benchmarks (Ghidra reference)
         id: parity
@@ -582,6 +595,9 @@ jobs:
           # equals the number of unique binaries in the run, not PARITY_LIMIT.
           python scripts/check_parity_smoke.py results/telemetry/latest.json \
             --require-strict \
+            --require-provenance \
+            --max-age-hours 1 \
+            --max-source-age-hours 1 \
             --min-comparable 5 \
             --min-comparable-fd 1 \
             --min-usable-coverage 0.90 \
@@ -627,6 +643,7 @@ jobs:
           path: |
             results/telemetry/latest.json
             public/parity-telemetry.json
+            public/parity-history/
             results/assembly_parity/latest.jsonl
             results/pcode_parity/latest.jsonl
             results/cfg_parity/latest.jsonl
@@ -650,7 +667,7 @@ jobs:
             --local-paths public/benchmark-latest.json \
             --remote-paths \
               https://raw.githubusercontent.com/fission-systems/fission-benchmark/main/public/benchmark-latest.json \
-              https://raw.githubusercontent.com/fission-systems/fission-benchmark/main/results/dev_latest.json
+              https://raw.githubusercontent.com/fission-systems/fission-benchmark/main/results/latest.json
           # This-run structural sanity (not the multi-decomp UI contract).
           # Validity/publishability is owned by "Validate Fission coverage gate".
           if [ -f results/dev_latest.json ]; then
@@ -717,7 +734,7 @@ jobs:
       # -----------------------------------------------------------------------
       # Dashboard display envelope — always refresh multi-decomp UI data when
       # measurement is valid, even if not fully publishable. This is what Vercel
-      # loads (results/dev_latest.json fallback). Without this step operators
+      # loads when its Fission version matches results/latest.json. Without this step operators
       # must manually re-run multi-decomp and force-add the JSON.
       # -----------------------------------------------------------------------
       - name: Update dashboard multi-decomp envelope
@@ -731,6 +748,12 @@ jobs:
         run: |
           set -euo pipefail
           test -f results/dev_latest.json
+
+          if [ "$IS_LATEST_RELEASE" != "true" ]; then
+            echo "SKIP dashboard latest refresh: $FISSION_VERSION is not the latest Fission release"
+            echo "committed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
 
           # Ranking-only runs (fission+ghidra) must not clobber multi-tool UI data.
           tool_count="$(python - <<'PY'
@@ -797,7 +820,8 @@ jobs:
             --require-valid \
             --require-local
 
-          # Archive this envelope under public/benchmark-history/<fission_version>.json
+          # Archive only an official, valid, publishable release envelope.
+          # Dashboard smoke envelopes are intentionally skipped.
           # (keyed by toolchain.fission_version) so the dashboard's release-comparison
           # panel has a permanent, independently-fetchable "previous release" snapshot
           # instead of relying on git history (the deployed dashboard fetches over
@@ -817,13 +841,15 @@ jobs:
           # happened for real on 2026-08-02: results/dev_latest.json landed
           # on main with unresolved conflict markers, breaking every JSON
           # consumer). Refuse rather than commit garbage.
-          CONFLICTED="$(grep -rlE '^(<<<<<<< |>>>>>>> )' results/dev_latest.json public/benchmark-latest.json public/benchmark-history/ 2>/dev/null || true)"
+          CONFLICTED="$(grep -rlE '^(<<<<<<< |>>>>>>> )' results/dev_latest.json results/telemetry/latest.json public/benchmark-latest.json public/benchmark-history/ public/parity-telemetry.json public/parity-history/ 2>/dev/null || true)"
           if [ -n "$CONFLICTED" ]; then
             echo "::error::Unresolved conflict markers after autostash pop in: $CONFLICTED" >&2
             echo "::error::A concurrent workflow run likely raced this commit. Not committing -- re-run this job." >&2
             exit 1
           fi
-          git add -f results/dev_latest.json public/benchmark-latest.json public/benchmark-history/
+          git add -f results/dev_latest.json results/telemetry/latest.json \
+            public/benchmark-latest.json public/benchmark-history/ \
+            public/parity-telemetry.json public/parity-history/
           if git diff --staged --quiet; then
             echo "Dashboard envelope unchanged — no commit"
             echo "committed=false" >> "$GITHUB_OUTPUT"
@@ -849,13 +875,15 @@ jobs:
           # autostash re-apply can conflict without failing `git pull`
           # itself, and committing anyway bakes conflict markers straight
           # into these JSON files.
-          CONFLICTED="$(grep -rlE '^(<<<<<<< |>>>>>>> )' results/ docs/ public/parity-telemetry.json public/benchmark-latest.json 2>/dev/null || true)"
+          CONFLICTED="$(grep -rlE '^(<<<<<<< |>>>>>>> )' results/ docs/ public/parity-telemetry.json public/parity-history/ public/benchmark-latest.json public/benchmark-history/ 2>/dev/null || true)"
           if [ -n "$CONFLICTED" ]; then
             echo "::error::Unresolved conflict markers after autostash pop in: $CONFLICTED" >&2
             echo "::error::A concurrent workflow run likely raced this commit. Not committing -- re-run this job." >&2
             exit 1
           fi
-          git add -f results/ docs/ public/parity-telemetry.json public/benchmark-latest.json
+          git add -f results/ docs/ public/parity-telemetry.json \
+            public/parity-history/ public/benchmark-latest.json \
+            public/benchmark-history/
           git diff --staged --quiet || git commit -m "chore: update benchmark results [skip ci]"
           git push
 
@@ -881,6 +909,20 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: main  # Pull latest commit (includes committed results)
+
+      - name: Verify latest release channel
+        env:
+          EXPECTED_FISSION_VERSION: ${{ needs.run-benchmark.outputs.release_version }}
+        run: |
+          python scripts/check_dashboard_data.py \
+            --local-paths results/latest.json \
+            --min-rows 1 \
+            --min-decompilers 2 \
+            --require-valid \
+            --require-release \
+            --require-official \
+            --require-publishable \
+            --expected-fission-version "$EXPECTED_FISSION_VERSION"
 
       - name: Install Vercel CLI
         run: npm install -g vercel@latest

@@ -11,7 +11,11 @@ from benchmark.decode_parity.run import compare_decode
 from benchmark.function_discovery.run import compare_functions
 from benchmark.ir_invariants.run import compare_invariants
 from benchmark.pcode_parity.run import compare_pcode
-from benchmark.telemetry.aggregate import aggregate_rows
+from benchmark.telemetry.aggregate import (
+    aggregate_rows,
+    archive_release_telemetry,
+    build_provenance,
+)
 
 
 def subject() -> BenchmarkSubject:
@@ -372,7 +376,7 @@ def test_telemetry_aggregate_counts_stage_status_and_variant() -> None:
     summary = aggregate_rows(rows)
 
     assert summary["total_rows"] == 2
-    assert summary["schema"] == "parity-telemetry-v2"
+    assert summary["schema"] == "parity-telemetry-v3"
     assert "reliability" in summary
     assert "match_rate_attempted" in summary["stages"]["assembly_parity"]
     assert summary["by_stage"] == {"assembly_parity": 1, "pcode_parity": 1}
@@ -381,3 +385,38 @@ def test_telemetry_aggregate_counts_stage_status_and_variant() -> None:
     assert summary["by_variant"] == {"gcc -O2": 2}
     assert summary["stages"]["assembly_parity"]["match_rate"] == 1.0
     assert summary["stages"]["pcode_parity"]["mismatch_rate"] == 1.0
+
+
+def test_telemetry_provenance_fingerprints_sources(tmp_path, monkeypatch) -> None:
+    source = tmp_path / "cfg_parity" / "latest.jsonl"
+    source.parent.mkdir()
+    source.write_text('{"stage":"cfg_parity"}\n', encoding="utf-8")
+    monkeypatch.setenv("GITHUB_SHA", "abc123")
+    monkeypatch.setenv("FISSION_VERSION", "1.2.3")
+
+    provenance = build_provenance([source])
+
+    assert provenance["generated_at"].endswith("Z")
+    assert provenance["runner_commit"] == "abc123"
+    assert provenance["tool_versions"]["fission"] == "1.2.3"
+    assert provenance["sources"][0]["rows"] == 1
+    assert len(provenance["sources"][0]["sha256"]) == 64
+    assert provenance["sources"][0]["modified_at"].endswith("Z")
+
+
+def test_parity_history_is_keyed_by_fission_release(tmp_path) -> None:
+    summary = {
+        "schema": "parity-telemetry-v3",
+        "provenance": {"tool_versions": {"fission": "v1.2.3"}},
+    }
+
+    assert archive_release_telemetry(summary, tmp_path) == "v1.2.3"
+    assert (tmp_path / "v1.2.3.json").is_file()
+    assert (tmp_path / "index.json").read_text().strip() == '[\n  "v1.2.3"\n]'
+
+
+def test_parity_history_rejects_unversioned_snapshot(tmp_path) -> None:
+    summary = {"provenance": {"tool_versions": {"fission": None}}}
+
+    assert archive_release_telemetry(summary, tmp_path) is None
+    assert list(tmp_path.iterdir()) == []

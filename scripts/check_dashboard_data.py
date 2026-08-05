@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 """CI gate: multi-decomp dashboard must have non-empty display data.
 
-The Vercel/Next dashboard loads (in order):
-  1. public/benchmark-latest.json  (optional local/public seed)
-  2. BENCHMARK_LATEST_URL          (optional env override)
-  3. results/latest.json           (publication artifact)
-  4. results/dev_latest.json       (tracked fallback on main)
+The Vercel/Next dashboard accepts only release-channel artifacts:
+  1. public/benchmark-latest.json  (multi-decompiler snapshot)
+  2. BENCHMARK_LATEST_URL          (optional release-bound override)
+  3. results/latest.json           (canonical publication anchor)
 
 Empty UI is a release failure. This script fails when no candidate source
 has a parseable envelope with enough rows.
@@ -30,12 +29,11 @@ ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_LOCAL = (
     "public/benchmark-latest.json",
     "results/latest.json",
-    "results/dev_latest.json",
 )
 
 DEFAULT_REMOTE = (
+    "https://raw.githubusercontent.com/fission-systems/fission-benchmark/main/public/benchmark-latest.json",
     "https://raw.githubusercontent.com/fission-systems/fission-benchmark/main/results/latest.json",
-    "https://raw.githubusercontent.com/fission-systems/fission-benchmark/main/results/dev_latest.json",
 )
 
 
@@ -67,6 +65,10 @@ def evaluate_envelope(
     min_rows: int,
     require_valid: bool,
     min_decompilers: int = 1,
+    expected_fission_version: str | None = None,
+    require_release: bool = False,
+    require_official: bool = False,
+    require_publishable: bool = False,
 ) -> list[str]:
     """Return error strings if envelope is not displayable."""
     errors: list[str] = []
@@ -81,11 +83,31 @@ def evaluate_envelope(
     if schema is not None and int(schema) < 2:
         errors.append(f"{source}: schema_version={schema} expected >= 2")
     validity = data.get("validity") or {}
+    run = data.get("run") or {}
+    toolchain = data.get("toolchain") or {}
     if require_valid and validity.get("valid") is not True:
         errors.append(
             f"{source}: validity.valid is not true "
             f"(publishable={validity.get('publishable')}, reasons={validity.get('reasons')})"
         )
+    actual_version = toolchain.get("fission_version")
+    if expected_fission_version and actual_version != expected_fission_version:
+        errors.append(
+            f"{source}: Fission version={actual_version!r}; "
+            f"expected latest release {expected_fission_version!r}"
+        )
+    if require_release:
+        if toolchain.get("fission_source") != "release":
+            errors.append(
+                f"{source}: fission_source={toolchain.get('fission_source')!r}; "
+                "require release"
+            )
+        if run.get("legacy_source") is True:
+            errors.append(f"{source}: run.legacy_source=true is forbidden")
+    if require_official and run.get("official") is not True:
+        errors.append(f"{source}: run.official is not true")
+    if require_publishable and validity.get("publishable") is not True:
+        errors.append(f"{source}: validity.publishable is not true")
     tools = {
         str(r.get("decompiler") or "")
         for r in rows
@@ -150,12 +172,31 @@ def main(argv: list[str] | None = None) -> int:
         ),
     )
     parser.add_argument(
+        "--expected-fission-version",
+        help="Require toolchain.fission_version to match this release exactly",
+    )
+    parser.add_argument(
+        "--require-release",
+        action="store_true",
+        help="Require fission_source=release and reject legacy_source=true",
+    )
+    parser.add_argument(
+        "--require-official",
+        action="store_true",
+        help="Require run.official=true",
+    )
+    parser.add_argument(
+        "--require-publishable",
+        action="store_true",
+        help="Require validity.publishable=true",
+    )
+    parser.add_argument(
         "--local-paths",
         nargs="+",
         default=None,
         help=(
             "Override local envelope paths (repo-relative). "
-            "Default: public/benchmark-latest.json results/latest.json results/dev_latest.json. "
+            "Default: public/benchmark-latest.json results/latest.json. "
             "Pass only public/benchmark-latest.json for multi-decomp UI checks during ranking runs."
         ),
     )
@@ -163,7 +204,7 @@ def main(argv: list[str] | None = None) -> int:
         "--remote-paths",
         nargs="+",
         default=None,
-        help="Override remote URLs for --check-remote (default: main results/latest + dev_latest).",
+        help="Override release-channel remote URLs for --check-remote.",
     )
     args = parser.parse_args(argv)
 
@@ -183,6 +224,10 @@ def main(argv: list[str] | None = None) -> int:
             min_rows=args.min_rows,
             require_valid=args.require_valid,
             min_decompilers=args.min_decompilers,
+            expected_fission_version=args.expected_fission_version,
+            require_release=args.require_release,
+            require_official=args.require_official,
+            require_publishable=args.require_publishable,
         )
         if errs:
             for e in errs:
@@ -217,6 +262,10 @@ def main(argv: list[str] | None = None) -> int:
                 min_rows=args.min_rows,
                 require_valid=args.require_valid,
                 min_decompilers=args.min_decompilers,
+                expected_fission_version=args.expected_fission_version,
+                require_release=args.require_release,
+                require_official=args.require_official,
+                require_publishable=args.require_publishable,
             )
             if errs:
                 for e in errs:
@@ -243,8 +292,8 @@ def main(argv: list[str] | None = None) -> int:
         hard.append(
             "no local displayable envelope "
             f"(checked: {', '.join(local_paths)}). "
-            "Dashboard would be empty. Commit results/dev_latest.json or "
-            "public/benchmark-latest.json with non-empty rows."
+            "Dashboard would be empty. Commit a release-bound results/latest.json "
+            "or public/benchmark-latest.json with non-empty rows."
         )
     if args.check_remote and not remote_hits:
         hard.append(

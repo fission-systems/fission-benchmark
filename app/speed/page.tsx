@@ -17,6 +17,10 @@ import {
   speedByDecompiler,
 } from "@/lib/speed";
 import {
+  chooseNewestMicrobench,
+  getLatestSpeedMicrobench,
+} from "@/lib/speed-microbench";
+import {
   DecompilerSpeedTable,
   PairedSpeedTable,
   SlowestFunctionsTable,
@@ -74,8 +78,28 @@ function fmtX(v: number | null | undefined): string {
   return `${v.toFixed(2)}×`;
 }
 
+function fmtPct(v: number | null | undefined): string {
+  if (v == null || Number.isNaN(v)) return "—";
+  return `${v.toFixed(1)}%`;
+}
+
+function fmtBytes(v: number | null | undefined): string {
+  if (v == null || Number.isNaN(v)) return "—";
+  const units = ["B", "KiB", "MiB", "GiB"];
+  let value = v;
+  let unit = 0;
+  while (value >= 1024 && unit < units.length - 1) {
+    value /= 1024;
+    unit += 1;
+  }
+  return `${value.toFixed(unit === 0 ? 0 : 1)} ${units[unit]}`;
+}
+
 async function SpeedBody() {
-  const data = await getLatestBenchmarkOptional();
+  const [data, standaloneMicrobench] = await Promise.all([
+    getLatestBenchmarkOptional(),
+    getLatestSpeedMicrobench(),
+  ]);
   if (!data) {
     return (
       <section className={styles.section}>
@@ -93,7 +117,8 @@ async function SpeedBody() {
   const slowest = fissionSlowestFunctions(data, 30);
   const variants = fissionByVariant(data);
   const ext = extractSpeedExtension(data);
-  const micro = ext?.microbench;
+  const loadedMicro = chooseNewestMicrobench(ext?.microbench, standaloneMicrobench);
+  const micro = loadedMicro?.data;
   const microBy = micro?.by_decompiler ?? {};
   const microNames = Object.keys(microBy).sort((a, b) => {
     if (a === "fission") return -1;
@@ -165,7 +190,14 @@ async function SpeedBody() {
             Same binary × addresses, N timed <code>/decompile_batch</code>{" "}
             requests. Cold = trial 0; warm = trials 1..N−1 (no container
             restart). Schema:{" "}
-            <code>{micro?.schema ?? "speed-microbench-v1"}</code>
+            <code>{micro?.schema ?? "speed-microbench-v2"}</code>
+            {loadedMicro?.source ? ` · source: ${loadedMicro.source}` : ""}
+            {micro?.toolchain?.fission_version
+              ? ` · Fission ${micro.toolchain.fission_version}`
+              : " · Fission version not recorded"}
+            {micro?.finished_at
+              ? ` · measured: ${new Date(micro.finished_at).toLocaleString("en-US", { timeZone: "UTC", timeZoneName: "short" })}`
+              : ""}
             {micro?.notes ? ` — ${micro.notes}` : ""}
           </p>
           <div className={styles.frame}>
@@ -180,6 +212,11 @@ async function SpeedBody() {
                     <th className={tableStyles.num}>Warm mean</th>
                     <th className={tableStyles.num}>Warm p50</th>
                     <th className={tableStyles.num}>Warm n</th>
+                    <th className={tableStyles.num}>CPU mean</th>
+                    <th className={tableStyles.num}>CPU peak</th>
+                    <th className={tableStyles.num}>Memory peak</th>
+                    <th className={tableStyles.num}>Memory %</th>
+                    <th className={tableStyles.num}>Samples</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -187,6 +224,7 @@ async function SpeedBody() {
                     const s = microBy[name] || {};
                     const cold = s.cold || {};
                     const warm = s.warm || {};
+                    const resources = s.resources?.all || {};
                     return (
                       <tr
                         key={name}
@@ -203,6 +241,11 @@ async function SpeedBody() {
                         <td className={tableStyles.num}>{fmtMs(warm.mean_ms)}</td>
                         <td className={tableStyles.num}>{fmtMs(warm.p50_ms)}</td>
                         <td className={tableStyles.num}>{warm.n ?? "—"}</td>
+                        <td className={tableStyles.num}>{fmtPct(resources.mean_cpu_percent)}</td>
+                        <td className={tableStyles.num}>{fmtPct(resources.peak_cpu_percent)}</td>
+                        <td className={tableStyles.num}>{fmtBytes(resources.peak_memory_bytes)}</td>
+                        <td className={tableStyles.num}>{fmtPct(resources.peak_memory_percent)}</td>
+                        <td className={tableStyles.num}>{resources.samples ?? "—"}</td>
                       </tr>
                     );
                   })}
@@ -210,12 +253,20 @@ async function SpeedBody() {
               </table>
             </div>
           </div>
+          <p className={styles.sectionLead}>
+            Resource scope is the whole adapter container cgroup, including the
+            long-lived runtime and child processes. CPU may exceed 100% on
+            multicore runners. Memory peak is the largest Docker sample observed
+            during timed requests, not an operating-system high-water mark.
+          </p>
         </section>
       ) : (
         <section className={styles.section}>
           <h2 className={styles.sectionTitle}>Micro-bench (cold vs warm)</h2>
           <p className={styles.sectionLead}>
-            No <code>summary.extensions.speed.microbench</code> attached yet.
+            No version-linked <code>summary.extensions.speed.microbench</code>{" "}
+            is available for the latest Fission release. Older and unversioned
+            microbench artifacts are intentionally hidden. {" "}
             Run{" "}
             <code>python -m runner.speed_microbench …</code> or the{" "}
             <strong>Speed Smoke</strong> GitHub Action; attach via{" "}

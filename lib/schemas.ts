@@ -132,6 +132,9 @@ export const StandardSummarySchema = z
 
 export const ToolchainSchema = z.object({
   fission_version: z.string().optional(),
+  fission_source: z.string().optional(),
+  fission_git_sha: z.string().optional(),
+  fission_source_fingerprint: z.string().optional(),
   runner_commit: z.string().optional(),
   runner_os: z.string().optional(),
   python_version: z.string().optional(),

@@ -1,3 +1,7 @@
+import { readFile } from "fs/promises";
+import path from "path";
+import { getLatestReleaseVersion } from "./benchmark";
+
 export type ParityStageDetail = {
   total: number;
   match: number;
@@ -70,6 +74,40 @@ export type ParityTelemetry = {
   non_publishable_stages?: string[];
   primary_quality_stages?: string[];
   publishable?: ParityPublishable;
+  provenance?: ParityProvenance;
+};
+
+export type ParitySourceDetail = {
+  path: string;
+  stage?: string;
+  rows: number;
+  bytes?: number;
+  sha256?: string;
+  modified_at?: string;
+};
+
+export type ParityProvenance = {
+  generated_at?: string;
+  runner_commit?: string | null;
+  github_run_id?: string | null;
+  github_run_attempt?: string | null;
+  corpus?: string | null;
+  decompilers?: string | null;
+  tool_versions?: Record<string, string | null | undefined>;
+  oldest_source_at?: string | null;
+  newest_source_at?: string | null;
+  sources?: ParitySourceDetail[];
+};
+
+export type ParityFreshness = "fresh" | "aging" | "stale" | "unknown";
+
+export type LoadedParityTelemetry = {
+  telemetry: ParityTelemetry;
+  source: string;
+  generatedAt: string | null;
+  measuredAt: string | null;
+  ageHours: number | null;
+  freshness: ParityFreshness;
 };
 
 const LOCAL_URL =
@@ -79,16 +117,95 @@ const REMOTE_FALLBACK =
   process.env.PARITY_TELEMETRY_REMOTE_URL ??
   "https://raw.githubusercontent.com/fission-systems/fission-benchmark/main/results/telemetry/latest.json";
 
-export async function getParityTelemetry(): Promise<ParityTelemetry | null> {
-  for (const url of [LOCAL_URL, REMOTE_FALLBACK]) {
+export function classifyParityFreshness(
+  measuredAt: string | null | undefined,
+  nowMs = Date.now(),
+): Pick<LoadedParityTelemetry, "ageHours" | "freshness"> {
+  if (!measuredAt) {
+    return { ageHours: null, freshness: "unknown" };
+  }
+  const generatedMs = Date.parse(measuredAt);
+  if (!Number.isFinite(generatedMs)) {
+    return { ageHours: null, freshness: "unknown" };
+  }
+  const ageHours = Math.max(0, (nowMs - generatedMs) / 3_600_000);
+  const staleAfter = Number(process.env.PARITY_STALE_AFTER_HOURS ?? 72);
+  const agingAfter = Number(process.env.PARITY_AGING_AFTER_HOURS ?? 24);
+  const freshness: ParityFreshness =
+    ageHours > staleAfter ? "stale" : ageHours > agingAfter ? "aging" : "fresh";
+  return { ageHours, freshness };
+}
+
+function loadedState(telemetry: ParityTelemetry, source: string): LoadedParityTelemetry {
+  const generatedAt = telemetry.provenance?.generated_at ?? null;
+  const sourceTimes = (telemetry.provenance?.sources ?? [])
+    .map((item) => item.modified_at)
+    .filter(
+      (value): value is string =>
+        typeof value === "string" && Number.isFinite(Date.parse(value)),
+    );
+  const measuredAt = sourceTimes.length > 0
+    ? sourceTimes.sort((a, b) => Date.parse(a) - Date.parse(b))[0]
+    : generatedAt;
+  return {
+    telemetry,
+    source,
+    generatedAt,
+    measuredAt,
+    ...classifyParityFreshness(measuredAt),
+  };
+}
+
+export async function getParityTelemetryState(): Promise<LoadedParityTelemetry | null> {
+  const latestRelease = await getLatestReleaseVersion();
+  if (!latestRelease) return null;
+  const candidates: LoadedParityTelemetry[] = [];
+
+  const addCandidate = (data: ParityTelemetry, source: string) => {
+    const measuredRelease = data.provenance?.tool_versions?.fission;
+    if (measuredRelease !== latestRelease) return;
+    candidates.push(loadedState(data, source));
+  };
+
+  // Server Components cannot reliably fetch a same-origin relative URL.
+  // Read the dashboard artifact directly so a fresh local/CI copy does not
+  // silently lose to an older GitHub fallback.
+  try {
+    const localPath = path.join(process.cwd(), "public", "parity-telemetry.json");
+    const data = JSON.parse(await readFile(localPath, "utf8")) as ParityTelemetry;
+    if (typeof data.total_rows === "number") {
+      addCandidate(data, "public/parity-telemetry.json");
+    }
+  } catch {
+    // Network sources remain available below.
+  }
+
+  const urls = LOCAL_URL.startsWith("http")
+    ? [LOCAL_URL, REMOTE_FALLBACK]
+    : [REMOTE_FALLBACK];
+  for (const url of urls) {
     try {
       const res = await fetch(url, { cache: "no-store" });
       if (!res.ok) continue;
       const data = (await res.json()) as ParityTelemetry;
-      if (typeof data.total_rows === "number") return data;
+      if (typeof data.total_rows !== "number") continue;
+      addCandidate(data, url);
     } catch {
       // try next source
     }
   }
-  return null;
+  if (candidates.length === 0) return null;
+  candidates.sort((a, b) => {
+    if (a.generatedAt && b.generatedAt) {
+      return Date.parse(b.generatedAt) - Date.parse(a.generatedAt);
+    }
+    if (a.generatedAt) return -1;
+    if (b.generatedAt) return 1;
+    return 0;
+  });
+  return candidates[0];
+}
+
+export async function getParityTelemetry(): Promise<ParityTelemetry | null> {
+  return (await getParityTelemetryState())?.telemetry ?? null;
 }

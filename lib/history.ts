@@ -1,6 +1,13 @@
 import { readFile } from "fs/promises";
 import path from "path";
 import { BenchmarkEnvelopeSchema, type BenchmarkEnvelope, type Row } from "./schemas";
+import {
+  extractSpeedExtension,
+  fissionVsGhidraPaired,
+  pairSummary,
+  speedByDecompiler,
+  type SpeedMicrobenchDocument,
+} from "./speed";
 
 const REPO_RAW =
   "https://raw.githubusercontent.com/fission-systems/fission-benchmark/main";
@@ -58,6 +65,26 @@ export async function getArchivedEnvelope(
   if (!raw) return null;
   const parsed = BenchmarkEnvelopeSchema.safeParse(raw);
   return parsed.success ? parsed.data : null;
+}
+
+async function getArchivedSpeed(
+  version: string,
+): Promise<SpeedMicrobenchDocument | null> {
+  const relPath = `speed-history/${version}.json`;
+  const raw = (await readLocalJson(relPath)) ?? (await fetchRemoteJson(relPath));
+  if (!raw || typeof raw !== "object") return null;
+  const candidate = raw as SpeedMicrobenchDocument;
+  if (!candidate.schema?.startsWith("speed-microbench-v")) return null;
+  if (!candidate.by_decompiler || typeof candidate.by_decompiler !== "object") {
+    return null;
+  }
+  return candidate;
+}
+
+async function getSpeedHistoryIndex(): Promise<Set<string>> {
+  const raw = (await readLocalJson("speed-history/index.json"))
+    ?? (await fetchRemoteJson("speed-history/index.json"));
+  return new Set(Array.isArray(raw) ? raw.filter((value): value is string => typeof value === "string") : []);
 }
 
 /**
@@ -127,6 +154,35 @@ function meanSemantic(rows: Row[]): number | null {
     .filter((s): s is number => typeof s === "number");
   if (scored.length === 0) return null;
   return scored.reduce((a, b) => a + b, 0) / scored.length;
+}
+
+function isCanonicalRelease(envelope: BenchmarkEnvelope): boolean {
+  return (
+    envelope.run?.official === true &&
+    envelope.validity?.valid === true &&
+    envelope.validity?.publishable === true
+  );
+}
+
+function measurementContract(envelope: BenchmarkEnvelope): string {
+  return JSON.stringify({
+    corpus: envelope.run?.corpus ?? null,
+    profile: envelope.run?.profile ?? null,
+    oracleMode: envelope.oracle?.mode ?? null,
+    oracleSubject: envelope.oracle?.oracle_subject ?? null,
+    targetAbi: envelope.oracle?.target_abi ?? null,
+  });
+}
+
+function trendContract(envelope: BenchmarkEnvelope): string {
+  const fissionCells = envelope.rows
+    .filter((row) => row.decompiler === "fission")
+    .map(rowKey)
+    .sort();
+  return JSON.stringify({
+    measurement: measurementContract(envelope),
+    fissionCells,
+  });
 }
 
 /**
@@ -222,16 +278,28 @@ function diffFissionRows(
 export async function getReleaseComparison(
   current: BenchmarkEnvelope,
 ): Promise<ReleaseComparison | null> {
+  if (!isCanonicalRelease(current)) return null;
   const currentVersion = current.toolchain?.fission_version;
   if (!currentVersion) return null;
 
   const index = await getHistoryIndex();
   const older = index.filter((v) => compareVersions(v, currentVersion) < 0);
   if (older.length === 0) return null;
-  const previousVersion = older[older.length - 1];
-
-  const previous = await getArchivedEnvelope(previousVersion);
-  if (!previous) return null;
+  let previousVersion: string | null = null;
+  let previous: BenchmarkEnvelope | null = null;
+  for (const version of [...older].reverse()) {
+    const candidate = await getArchivedEnvelope(version);
+    if (
+      candidate &&
+      isCanonicalRelease(candidate) &&
+      measurementContract(candidate) === measurementContract(current)
+    ) {
+      previousVersion = version;
+      previous = candidate;
+      break;
+    }
+  }
+  if (!previousVersion || !previous) return null;
 
   const deltas = computeMetricDeltas(previous, current);
   const { newlyPassing, newlyFailing, compared } = diffFissionRows(previous, current);
@@ -249,11 +317,11 @@ export async function getReleaseComparison(
 }
 
 /**
- * One point per archived release, oldest first -- Fission's own numbers
- * only, each computed over that release's *own* full measured corpus (not
- * an intersection like `ReleaseComparison`, since a trend line is meant to
- * show how the corpus itself grew release over release, not paper over it).
- * `totalRows` is the corpus-size signal for that release.
+ * One audit point per archived version, oldest first. Canonical trend points
+ * are selected separately: they must be official, valid, publishable, and
+ * share both the benchmark contract and exact Fission cell matrix with the
+ * latest canonical release. Comparable diagnostics remain available to the UI
+ * as explicitly dashed engineering history, never as an official series.
  */
 export type VersionTrendPoint = {
   version: string;
@@ -262,15 +330,51 @@ export type VersionTrendPoint = {
   totalRows: number;
   finishedAt: string | null;
   official: boolean;
+  publishable: boolean;
+  canonical: boolean;
+  trendEligible: boolean;
+  semanticTestedRows: number;
+  profile: string | null;
+  corpus: string | null;
+  runId: string | null;
+  contractKey: string;
+  latencyMeanMs: number | null;
+  latencyP50Ms: number | null;
+  latencyP95Ms: number | null;
+  pairedRows: number;
+  medianSpeedup: number | null;
+  geometricMeanSpeedup: number | null;
+  fissionFasterShare: number | null;
+  coldMeanMs: number | null;
+  coldP50Ms: number | null;
+  warmMeanMs: number | null;
+  warmP50Ms: number | null;
+  meanCpuPercent: number | null;
+  peakCpuPercent: number | null;
+  peakMemoryBytes: number | null;
+  peakMemoryPercent: number | null;
+  resourceSamples: number;
+  speedRunId: string | null;
 };
 
 export async function getVersionTrend(): Promise<VersionTrendPoint[]> {
   const index = await getHistoryIndex();
+  const speedHistory = await getSpeedHistoryIndex();
   const points: VersionTrendPoint[] = [];
   for (const version of index) {
     const envelope = await getArchivedEnvelope(version);
     if (!envelope) continue;
     const fissionRows = envelope.rows.filter((r) => r.decompiler === "fission");
+    const canonical = isCanonicalRelease(envelope);
+    const fissionSpeed = speedByDecompiler(envelope).find(
+      (item) => item.decompiler === "fission",
+    );
+    const paired = pairSummary(fissionVsGhidraPaired(envelope));
+    const embeddedSpeed = extractSpeedExtension(envelope)?.microbench ?? null;
+    const speedDocument = (speedHistory.has(version) ? await getArchivedSpeed(version) : null)
+      ?? embeddedSpeed;
+    const micro = speedDocument?.by_decompiler?.fission;
+    const resources = micro?.resources?.all;
     points.push({
       version,
       meanSemantic: meanSemantic(fissionRows),
@@ -278,7 +382,41 @@ export async function getVersionTrend(): Promise<VersionTrendPoint[]> {
       totalRows: fissionRows.length,
       finishedAt: envelope.run?.finished_at ?? null,
       official: envelope.run?.official === true,
+      publishable: envelope.validity?.publishable === true,
+      canonical,
+      trendEligible: false,
+      semanticTestedRows: fissionRows.filter(
+        (row) => typeof row.semantic_score === "number",
+      ).length,
+      profile: envelope.run?.profile ?? null,
+      corpus: envelope.run?.corpus ?? null,
+      runId: envelope.run?.run_id ?? null,
+      contractKey: trendContract(envelope),
+      latencyMeanMs: fissionSpeed?.mean ?? null,
+      latencyP50Ms: fissionSpeed?.p50 ?? null,
+      latencyP95Ms: fissionSpeed?.p95 ?? null,
+      pairedRows: paired.n,
+      medianSpeedup: paired.medianSpeedup,
+      geometricMeanSpeedup: paired.geometricMeanSpeedup,
+      fissionFasterShare: paired.fissionFasterShare,
+      coldMeanMs: micro?.cold?.mean_ms ?? null,
+      coldP50Ms: micro?.cold?.p50_ms ?? null,
+      warmMeanMs: micro?.warm?.mean_ms ?? null,
+      warmP50Ms: micro?.warm?.p50_ms ?? null,
+      meanCpuPercent: resources?.mean_cpu_percent ?? null,
+      peakCpuPercent: resources?.peak_cpu_percent ?? null,
+      peakMemoryBytes: resources?.peak_memory_bytes ?? null,
+      peakMemoryPercent: resources?.peak_memory_percent ?? null,
+      resourceSamples: resources?.samples ?? 0,
+      speedRunId: speedDocument?.run_id ?? null,
     });
+  }
+  const latestCanonical = [...points].reverse().find((point) => point.canonical);
+  if (latestCanonical) {
+    for (const point of points) {
+      point.trendEligible =
+        point.canonical && point.contractKey === latestCanonical.contractKey;
+    }
   }
   return points;
 }

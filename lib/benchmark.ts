@@ -8,11 +8,7 @@ import {
 const REPO_RAW =
   "https://raw.githubusercontent.com/fission-systems/fission-benchmark/main";
 
-/**
- * Ordered candidates for multi-decomp dashboard data.
- * `results/latest.json` is only written on full publication; until then
- * `dev_latest.json` (tracked on main) is the public display fallback.
- */
+/** Ordered release-channel candidates. Development/legacy results are excluded. */
 function candidateUrls(): string[] {
   const urls: string[] = [];
   if (process.env.BENCHMARK_LATEST_URL) {
@@ -23,8 +19,8 @@ function candidateUrls(): string[] {
     urls.push(`https://${process.env.VERCEL_URL}/benchmark-latest.json`);
   }
   urls.push(
+    `${REPO_RAW}/public/benchmark-latest.json`,
     `${REPO_RAW}/results/latest.json`,
-    `${REPO_RAW}/results/dev_latest.json`,
   );
   return urls;
 }
@@ -139,14 +135,99 @@ async function tryParseEnvelope(raw: unknown): Promise<BenchmarkEnvelope | null>
   }
 }
 
-async function loadFromPublicFile(): Promise<BenchmarkEnvelope | null> {
+async function loadFromFile(relPath: string): Promise<BenchmarkEnvelope | null> {
   try {
-    const filePath = path.join(process.cwd(), "public", "benchmark-latest.json");
+    const filePath = path.join(process.cwd(), relPath);
     const text = await readFile(filePath, "utf8");
     return tryParseEnvelope(JSON.parse(text));
   } catch {
     return null;
   }
+}
+
+function versionKey(version: string): [number, number, number] | null {
+  const match = /^v?(\d+)\.(\d+)\.(\d+)$/.exec(version);
+  return match
+    ? [Number(match[1]), Number(match[2]), Number(match[3])]
+    : null;
+}
+
+function compareReleaseVersions(a: string, b: string): number {
+  const left = versionKey(a);
+  const right = versionKey(b);
+  if (!left || !right) return a.localeCompare(b);
+  for (let index = 0; index < left.length; index += 1) {
+    if (left[index] !== right[index]) return left[index] - right[index];
+  }
+  return 0;
+}
+
+function isReleaseArtifact(envelope: BenchmarkEnvelope): boolean {
+  return (
+    Boolean(envelope.toolchain?.fission_version) &&
+    envelope.toolchain?.fission_source === "release" &&
+    envelope.run?.legacy_source !== true
+  );
+}
+
+function isCanonicalPublication(envelope: BenchmarkEnvelope): boolean {
+  return (
+    isReleaseArtifact(envelope) &&
+    envelope.run?.official === true &&
+    envelope.validity?.valid === true &&
+    envelope.validity?.publishable === true
+  );
+}
+
+function decompilerCount(envelope: BenchmarkEnvelope): number {
+  return new Set(envelope.rows.map((row) => row.decompiler)).size;
+}
+
+function finishedAt(envelope: BenchmarkEnvelope): number {
+  const timestamp = Date.parse(envelope.run?.finished_at ?? "");
+  return Number.isFinite(timestamp) ? timestamp : 0;
+}
+
+/**
+ * Select only artifacts anchored to the newest canonical Fission release.
+ * This is intentionally fail-closed: dev_latest, legacy_source, local builds,
+ * and older release data can never become the default dashboard dataset.
+ */
+export function selectLatestReleaseEnvelope(
+  candidates: BenchmarkEnvelope[],
+  options?: { requirePublishable?: boolean; allowUnanchoredDevelopment?: boolean },
+): BenchmarkEnvelope | null {
+  const canonical = candidates.filter(isCanonicalPublication);
+  let latestVersion = canonical
+    .map((envelope) => envelope.toolchain.fission_version!)
+    .sort(compareReleaseVersions)
+    .at(-1);
+
+  if (!latestVersion && options?.allowUnanchoredDevelopment) {
+    latestVersion = candidates
+      .filter(isReleaseArtifact)
+      .map((envelope) => envelope.toolchain.fission_version!)
+      .sort(compareReleaseVersions)
+      .at(-1);
+  }
+  if (!latestVersion) return null;
+
+  const eligible = candidates.filter((envelope) => {
+    if (!isReleaseArtifact(envelope)) return false;
+    if (envelope.toolchain.fission_version !== latestVersion) return false;
+    if (options?.requirePublishable && !isCanonicalPublication(envelope)) return false;
+    return envelope.validity?.valid === true && envelope.rows.length > 0;
+  });
+
+  eligible.sort((a, b) => {
+    // The default dashboard is multi-decompiler: prefer the broadest matrix
+    // within the same release, then the newest measurement. Publication-only
+    // callers have already filtered to official publishable envelopes.
+    const tools = decompilerCount(b) - decompilerCount(a);
+    if (tools !== 0) return tools;
+    return finishedAt(b) - finishedAt(a);
+  });
+  return eligible[0] ?? null;
 }
 
 /**
@@ -161,12 +242,15 @@ export async function getLatestBenchmarkOptional(options?: {
 }): Promise<BenchmarkEnvelope | null> {
   // Intentionally NOT using Next.js data cache for multi-MB JSON.
   const requirePublishable = options?.requirePublishable === true;
-  const preferValid = options?.requirePublishable !== true;
 
   const candidates: BenchmarkEnvelope[] = [];
 
-  const local = await loadFromPublicFile();
-  if (local) candidates.push(local);
+  const [localPublic, localOfficial] = await Promise.all([
+    loadFromFile("public/benchmark-latest.json"),
+    loadFromFile("results/latest.json"),
+  ]);
+  if (localPublic) candidates.push(localPublic);
+  if (localOfficial) candidates.push(localOfficial);
 
   // `next dev` locally: skip the network candidates entirely once a local
   // public/benchmark-latest.json parses. Otherwise the remote-published
@@ -175,7 +259,7 @@ export async function getLatestBenchmarkOptional(options?: {
   // preview a fresh local runner output without pushing it to GitHub first.
   // Production/build (`next build` / `next start`, where NODE_ENV is
   // "production") is unaffected -- it always fetches, same as before.
-  const skipNetwork = process.env.NODE_ENV === "development" && local !== null;
+  const skipNetwork = process.env.NODE_ENV === "development" && localPublic !== null;
 
   if (!skipNetwork) {
     for (const url of candidateUrls()) {
@@ -190,25 +274,15 @@ export async function getLatestBenchmarkOptional(options?: {
     }
   }
 
-  if (candidates.length === 0) return null;
-
-  // Prefer publishable, then measurement-valid, then first parseable.
-  const ranked = [...candidates].sort((a, b) => {
-    const score = (e: BenchmarkEnvelope) =>
-      (e.validity?.publishable ? 4 : 0) +
-      (e.validity?.valid ? 2 : 0) +
-      (Array.isArray(e.rows) && e.rows.length > 0 ? 1 : 0);
-    return score(b) - score(a);
+  return selectLatestReleaseEnvelope(candidates, {
+    requirePublishable,
+    allowUnanchoredDevelopment: process.env.NODE_ENV === "development",
   });
+}
 
-  for (const env of ranked) {
-    if (requirePublishable && env.validity?.publishable !== true) continue;
-    if (preferValid && env.validity?.valid === false && env.rows?.length === 0) {
-      continue;
-    }
-    return env;
-  }
-  return ranked[0] ?? null;
+export async function getLatestReleaseVersion(): Promise<string | null> {
+  const envelope = await getLatestBenchmarkOptional({ requirePublishable: true });
+  return envelope?.toolchain.fission_version ?? null;
 }
 
 function isAdapterFailure(row: BenchmarkEnvelope["rows"][number]): boolean {

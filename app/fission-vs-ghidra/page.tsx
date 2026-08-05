@@ -7,11 +7,15 @@ import {
   getSameFunctionSummary,
   pct,
 } from "@/lib/benchmark";
-import { getParityTelemetry } from "@/lib/parity";
+import {
+  getParityTelemetryState,
+  type ParityTelemetry,
+} from "@/lib/parity";
 import { SiteChrome } from "@/components/SiteChrome";
 import { CorePairPanel } from "@/components/CorePairPanel";
 import { DualMetricsTiles } from "@/components/DualMetricsTiles";
 import { ParityStageTable } from "@/components/ParityStageTable";
+import { ParityDataStatus } from "@/components/ParityDataStatus";
 import { SameFunctionPanel } from "@/components/SameFunctionPanel";
 import styles from "../dashboard.module.css";
 
@@ -23,8 +27,7 @@ export const metadata = {
     "Shared p-code-class IR comparison: assembly, p-code dual metrics, CFG, and function discovery with Ghidra as reference — not multi-decompiler ranking.",
 };
 
-async function DualSection() {
-  const telemetry = await getParityTelemetry();
+function DualSection({ telemetry }: { telemetry: ParityTelemetry | null }) {
   return (
     <section className={styles.section}>
       <h2 className={styles.sectionTitle}>Dual metrics at a glance</h2>
@@ -37,8 +40,7 @@ async function DualSection() {
   );
 }
 
-async function StageTableSection() {
-  const telemetry = await getParityTelemetry();
+function StageTableSection({ telemetry }: { telemetry: ParityTelemetry | null }) {
   return (
     <section className={styles.section}>
       <h2 className={styles.sectionTitle}>Layer stack · full telemetry</h2>
@@ -51,8 +53,7 @@ async function StageTableSection() {
   );
 }
 
-async function OptCliffSection() {
-  const telemetry = await getParityTelemetry();
+function OptCliffSection({ telemetry }: { telemetry: ParityTelemetry | null }) {
   const oc = telemetry?.stages?.opt_cliff;
   const byCand = oc?.by_candidate as Record<
     string,
@@ -111,8 +112,7 @@ async function OptCliffSection() {
   );
 }
 
-async function ThroughputSection() {
-  const telemetry = await getParityTelemetry();
+function ThroughputSection({ telemetry }: { telemetry: ParityTelemetry | null }) {
   const tp = telemetry?.stages?.throughput;
   const byCand = tp?.throughput_by_candidate as Record<
     string,
@@ -159,6 +159,20 @@ async function ThroughputSection() {
         </tbody>
       </table>
     </section>
+  );
+}
+
+async function LayeredParitySections() {
+  const state = await getParityTelemetryState();
+  const telemetry = state?.telemetry ?? null;
+  return (
+    <>
+      <ParityDataStatus state={state} />
+      <DualSection telemetry={telemetry} />
+      <StageTableSection telemetry={telemetry} />
+      <OptCliffSection telemetry={telemetry} />
+      <ThroughputSection telemetry={telemetry} />
+    </>
   );
 }
 
@@ -254,20 +268,8 @@ export default function FissionVsGhidraPage() {
         </div>
       </div>
 
-      <Suspense fallback={<SkeletonSection rows={3} />}>
-        <DualSection />
-      </Suspense>
-
       <Suspense fallback={<SkeletonSection rows={6} />}>
-        <StageTableSection />
-      </Suspense>
-
-      <Suspense fallback={<SkeletonSection rows={3} />}>
-        <OptCliffSection />
-      </Suspense>
-
-      <Suspense fallback={<SkeletonSection rows={3} />}>
-        <ThroughputSection />
+        <LayeredParitySections />
       </Suspense>
 
       <Suspense fallback={<SkeletonSection rows={4} />}>
@@ -283,6 +285,7 @@ python -m benchmark.telemetry.aggregate
 # → public/parity-telemetry.json
 
 python -m benchmark.function_discovery.run --limit 10
+python scripts/check_parity_smoke.py public/parity-telemetry.json --require-provenance
 python scripts/check_reliability.py public/parity-telemetry.json`}</pre>
         </div>
       </section>

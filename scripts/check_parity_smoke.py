@@ -13,6 +13,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+from datetime import datetime, timezone
 import json
 import sys
 from pathlib import Path
@@ -70,6 +71,23 @@ def main(argv: list[str] | None = None) -> int:
         default=True,
         help="Require canonicalize_mode=strict (default true)",
     )
+    parser.add_argument(
+        "--require-provenance",
+        action="store_true",
+        help="Require v3 generation timestamp, runner commit, and source digests",
+    )
+    parser.add_argument(
+        "--max-age-hours",
+        type=float,
+        default=24.0,
+        help="Maximum telemetry age when --require-provenance is enabled",
+    )
+    parser.add_argument(
+        "--max-source-age-hours",
+        type=float,
+        default=None,
+        help="Maximum age of each required-stage JSONL input (defaults to --max-age-hours)",
+    )
     args = parser.parse_args(argv)
 
     if not args.telemetry.is_file():
@@ -86,6 +104,68 @@ def main(argv: list[str] | None = None) -> int:
     mode = data.get("canonicalize_mode")
     if args.require_strict and mode != "strict":
         errors.append(f"canonicalize_mode={mode!r}; require strict")
+
+    if args.require_provenance:
+        provenance = data.get("provenance") or {}
+        generated_at = provenance.get("generated_at")
+        runner_commit = provenance.get("runner_commit")
+        sources = provenance.get("sources") or []
+        if not generated_at:
+            errors.append("provenance.generated_at missing")
+        else:
+            try:
+                parsed = datetime.fromisoformat(str(generated_at).replace("Z", "+00:00"))
+                if parsed.tzinfo is None:
+                    parsed = parsed.replace(tzinfo=timezone.utc)
+                age_hours = (datetime.now(timezone.utc) - parsed).total_seconds() / 3600
+                if age_hours < -0.25:
+                    errors.append(f"provenance.generated_at is {abs(age_hours):.2f}h in the future")
+                elif age_hours > args.max_age_hours:
+                    errors.append(
+                        f"telemetry age {age_hours:.2f}h > {args.max_age_hours}h"
+                    )
+            except (TypeError, ValueError):
+                errors.append(f"invalid provenance.generated_at={generated_at!r}")
+        if not runner_commit:
+            errors.append("provenance.runner_commit missing")
+        if not sources:
+            errors.append("provenance.sources missing")
+        else:
+            source_age_limit = args.max_source_age_hours or args.max_age_hours
+            primary_sources: set[str] = set()
+            for index, source in enumerate(sources):
+                if not source.get("sha256") or not source.get("modified_at"):
+                    errors.append(f"provenance.sources[{index}] missing sha256/modified_at")
+                    continue
+                stage = source.get("stage") or Path(str(source.get("path", ""))).parent.name
+                if stage not in REQUIRED_STAGES:
+                    continue
+                primary_sources.add(stage)
+                try:
+                    modified = datetime.fromisoformat(
+                        str(source["modified_at"]).replace("Z", "+00:00")
+                    )
+                    if modified.tzinfo is None:
+                        modified = modified.replace(tzinfo=timezone.utc)
+                    source_age = (
+                        datetime.now(timezone.utc) - modified
+                    ).total_seconds() / 3600
+                    if source_age > source_age_limit:
+                        errors.append(
+                            f"{stage}: source age {source_age:.2f}h > "
+                            f"{source_age_limit}h"
+                        )
+                except (TypeError, ValueError):
+                    errors.append(
+                        f"provenance.sources[{index}] invalid modified_at="
+                        f"{source.get('modified_at')!r}"
+                    )
+            missing_sources = set(REQUIRED_STAGES) - primary_sources
+            if missing_sources:
+                errors.append(
+                    "provenance missing required stage sources: "
+                    + ", ".join(sorted(missing_sources))
+                )
 
     for stage in REQUIRED_STAGES:
         detail = stages.get(stage)

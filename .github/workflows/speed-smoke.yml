@@ -41,7 +41,7 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: read
+  contents: write
   packages: read
 
 jobs:
@@ -65,11 +65,18 @@ jobs:
         run: |
           set -euo pipefail
           requested="${FISSION_VERSION:-latest}"
+          latest="$(gh api repos/fission-systems/Fission/releases/latest --jq .tag_name)"
           if [ "$requested" = "latest" ]; then
-            requested="$(gh api repos/fission-systems/Fission/releases/latest --jq .tag_name)"
+            requested="$latest"
           fi
           echo "FISSION_VERSION=$requested" >> "$GITHUB_ENV"
+          if [ "$requested" = "$latest" ]; then
+            echo "IS_LATEST_RELEASE=true" >> "$GITHUB_ENV"
+          else
+            echo "IS_LATEST_RELEASE=false" >> "$GITHUB_ENV"
+          fi
           echo "Resolved FISSION_VERSION=$requested"
+          echo "Latest Fission release=$latest"
 
       - name: Pull fission (+ ghidra) images
         run: |
@@ -155,11 +162,18 @@ jobs:
         run: |
           set -euo pipefail
           ENDPOINT_ARGS=()
+          RESOURCE_ARGS=()
           if echo "$DECOMPILERS" | tr ',' '\n' | grep -qx fission; then
             ENDPOINT_ARGS+=(--endpoint "fission=http://localhost:8000")
+            FISSION_CONTAINER="$(docker compose ps -q fission)"
+            test -n "$FISSION_CONTAINER"
+            RESOURCE_ARGS+=(--container "fission=$FISSION_CONTAINER")
           fi
           if echo "$DECOMPILERS" | tr ',' '\n' | grep -qx ghidra; then
             ENDPOINT_ARGS+=(--endpoint "ghidra=http://localhost:8001")
+            GHIDRA_CONTAINER="$(docker compose ps -q ghidra)"
+            test -n "$GHIDRA_CONTAINER"
+            RESOURCE_ARGS+=(--container "ghidra=$GHIDRA_CONTAINER")
           fi
           ADDR_ARGS=()
           IFS=',' read -ra AS <<< "$SPEED_ADDRS"
@@ -167,14 +181,20 @@ jobs:
             ADDR_ARGS+=(--addr "$a")
           done
           mkdir -p results/speed
+          DASHBOARD_ARGS=(--dashboard-copy "")
+          if [ "$IS_LATEST_RELEASE" = "true" ]; then
+            DASHBOARD_ARGS=(--dashboard-copy public/speed-microbench-latest.json)
+          fi
           python -m runner.speed_microbench \
             "${ENDPOINT_ARGS[@]}" \
+            "${RESOURCE_ARGS[@]}" \
             --binary "$SPEED_BINARY" \
             "${ADDR_ARGS[@]}" \
             --trials "${SPEED_TRIALS}" \
             --warmup 0 \
             --timeout 120 \
-            --output results/speed/microbench_latest.json
+            --output results/speed/microbench_latest.json \
+            "${DASHBOARD_ARGS[@]}"
           python - <<'PY'
           import json
           from pathlib import Path
@@ -190,6 +210,15 @@ jobs:
                   f"warm mean={warm.get('mean_ms')}ms n={warm.get('n')}",
                   flush=True,
               )
+              resources = stats.get("resources") or {}
+              all_resources = resources.get("all") or {}
+              print(
+                  f"  resources: CPU mean={all_resources.get('mean_cpu_percent')}% "
+                  f"peak={all_resources.get('peak_cpu_percent')}%; "
+                  f"sampled memory peak={all_resources.get('peak_memory_bytes')} bytes; "
+                  f"samples={all_resources.get('samples')}",
+                  flush=True,
+              )
           PY
 
       - name: Upload micro-bench artifact
@@ -197,7 +226,10 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: speed-microbench-${{ github.run_id }}
-          path: results/speed/
+          path: |
+            results/speed/
+            public/speed-microbench-latest.json
+            public/speed-history/
           if-no-files-found: warn
 
       - name: Write job summary
@@ -223,21 +255,62 @@ jobs:
           import json
           from pathlib import Path
           d = json.loads(Path("results/speed/microbench_latest.json").read_text())
-          print("| Decompiler | Cold mean | Warm mean | Cold n | Warm n |")
-          print("|---|---:|---:|---:|---:|")
+          print("| Decompiler | Cold mean | Warm mean | CPU mean | CPU peak | Sampled memory peak | Samples |")
+          print("|---|---:|---:|---:|---:|---:|---:|")
           for name, stats in sorted((d.get("by_decompiler") or {}).items()):
               c, w = stats.get("cold") or {}, stats.get("warm") or {}
+              resources = (stats.get("resources") or {}).get("all") or {}
               print(
                   f"| {name} | {c.get('mean_ms')} | {w.get('mean_ms')} | "
-                  f"{c.get('n')} | {w.get('n')} |"
+                  f"{resources.get('mean_cpu_percent')}% | "
+                  f"{resources.get('peak_cpu_percent')}% | "
+                  f"{resources.get('peak_memory_bytes')} | "
+                  f"{resources.get('samples')} |"
               )
           print()
-          print("Does **not** update semantic ranking or Pages.")
+          print("Does **not** update semantic ranking; publishes Speed-tab telemetry only.")
           PY
             else
               echo "No microbench JSON produced."
             fi
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Publish speed telemetry for dashboard
+        if: success() && github.ref == 'refs/heads/main'
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git pull --rebase --autostash origin main
+          CONFLICTED="$(grep -rlE '^(<<<<<<< |>>>>>>> )' results/speed/ public/speed-microbench-latest.json public/speed-history/ 2>/dev/null || true)"
+          if [ -n "$CONFLICTED" ]; then
+            echo "::error::Unresolved speed telemetry conflict: $CONFLICTED" >&2
+            exit 1
+          fi
+          git add -f public/speed-history/
+          if [ "$IS_LATEST_RELEASE" = "true" ]; then
+            git add -f results/speed/microbench_latest.json \
+              public/speed-microbench-latest.json
+          fi
+          if git diff --staged --quiet; then
+            echo "Speed telemetry unchanged — no commit"
+          else
+            git commit -m "chore: archive speed telemetry for $FISSION_VERSION [skip ci]"
+            git push
+          fi
+
+      - name: Deploy speed dashboard telemetry
+        if: success() && github.ref == 'refs/heads/main' && env.IS_LATEST_RELEASE == 'true'
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          set -euo pipefail
+          npm install -g vercel@latest
+          vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+          vercel build --prod --token="$VERCEL_TOKEN"
+          vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN"
 
       - name: Stop containers
         if: always()

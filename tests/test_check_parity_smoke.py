@@ -1,5 +1,6 @@
 import importlib.util
 import json
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 
@@ -62,6 +63,57 @@ def test_check_parity_smoke_ok(tmp_path: Path) -> None:
     p = tmp_path / "t.json"
     p.write_text(json.dumps(telemetry), encoding="utf-8")
     assert mod.main([str(p)]) == 0
+
+
+def test_check_parity_smoke_requires_fresh_provenance(tmp_path: Path) -> None:
+    path = Path(__file__).resolve().parents[1] / "scripts" / "check_parity_smoke.py"
+    mod = _load("check_parity_smoke_provenance", path)
+    telemetry = {
+        "total_rows": 40,
+        "canonicalize_mode": "strict",
+        "by_status": {"match": 20, "mismatch": 20},
+        "reliability": {"usable_coverage": 1.0, "fetch_error_rate": 0.0},
+        "stages": {
+            "assembly_parity": _stage(),
+            "cfg_parity": _stage(),
+            "pcode_parity": _stage(),
+            "function_discovery": _stage(),
+        },
+        "provenance": {
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "runner_commit": "abc123",
+            "sources": [
+                {
+                    "path": f"results/{stage}/latest.jsonl",
+                    "stage": stage,
+                    "sha256": "0" * 64,
+                    "modified_at": datetime.now(timezone.utc).isoformat(),
+                }
+                for stage in (
+                    "assembly_parity",
+                    "cfg_parity",
+                    "pcode_parity",
+                    "function_discovery",
+                )
+            ],
+        },
+    }
+    p = tmp_path / "fresh.json"
+    p.write_text(json.dumps(telemetry), encoding="utf-8")
+    assert mod.main([str(p), "--require-provenance", "--max-age-hours", "1"]) == 0
+
+    telemetry["provenance"]["generated_at"] = (
+        datetime.now(timezone.utc) - timedelta(hours=2)
+    ).isoformat()
+    p.write_text(json.dumps(telemetry), encoding="utf-8")
+    assert mod.main([str(p), "--require-provenance", "--max-age-hours", "1"]) == 1
+
+    telemetry["provenance"]["generated_at"] = datetime.now(timezone.utc).isoformat()
+    telemetry["provenance"]["sources"][1]["modified_at"] = (
+        datetime.now(timezone.utc) - timedelta(hours=2)
+    ).isoformat()
+    p.write_text(json.dumps(telemetry), encoding="utf-8")
+    assert mod.main([str(p), "--require-provenance", "--max-source-age-hours", "1"]) == 1
 
 
 def test_check_parity_smoke_fails_when_all_errors(tmp_path: Path) -> None:

@@ -158,7 +158,7 @@ def test_aggregate_reports_attempted_and_coverage() -> None:
     assert asm["match_rate_attempted"] == round(2 / 3, 4)
     assert asm["usable_coverage"] == round(2 / 3, 4)
     assert summary["reliability"]["fetch_error_rate"] is not None
-    assert summary["schema"] == "parity-telemetry-v2"
+    assert summary["schema"] == "parity-telemetry-v3"
     # Headline publishable is only primary stages *present in the run*.
     assert "decode_parity" not in summary["publishable"]["stages"]
     assert "ir_invariants" not in summary["publishable"]["stages"]

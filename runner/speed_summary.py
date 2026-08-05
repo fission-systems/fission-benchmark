@@ -137,12 +137,17 @@ def normalize_microbench(raw: Mapping[str, Any] | None) -> dict[str, Any] | None
     """Validate/normalize a micro-bench JSON document for extensions.speed.microbench."""
     if not raw or not isinstance(raw, dict):
         return None
-    if raw.get("schema") not in (SPEED_SCHEMA, "speed-microbench-v1", None):
+    if raw.get("schema") not in (
+        SPEED_SCHEMA,
+        "speed-microbench-v1",
+        "speed-microbench-v2",
+        None,
+    ):
         # Accept documents that look like microbench even if schema key varies.
         if "subjects" not in raw and "trials" not in raw and "by_decompiler" not in raw:
             return None
     return {
-        "schema": str(raw.get("schema") or "speed-microbench-v1"),
+        "schema": str(raw.get("schema") or "speed-microbench-v2"),
         "run_id": raw.get("run_id"),
         "started_at": raw.get("started_at"),
         "finished_at": raw.get("finished_at"),

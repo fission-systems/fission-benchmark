@@ -145,7 +145,7 @@ def test_main_local_paths_override_ignores_ranking_envelope(tmp_path: Path):
     assert rc == 0
 
 
-def test_main_ok_with_dev_latest(tmp_path: Path):
+def test_main_rejects_dev_latest_as_default_fallback(tmp_path: Path):
     mod = _load_mod()
     results = tmp_path / "results"
     results.mkdir()
@@ -161,7 +161,31 @@ def test_main_ok_with_dev_latest(tmp_path: Path):
             "--require-valid",
         ]
     )
-    assert rc == 0
+    assert rc == 1
+
+
+def test_release_channel_requires_exact_version_and_no_legacy_source():
+    mod = _load_mod()
+    data = _envelope(5, True)
+    data["run"].update({"official": True, "legacy_source": True})
+    data["toolchain"].update(
+        {"fission_version": "v1.2.2", "fission_source": "release"}
+    )
+    data["validity"]["publishable"] = True
+
+    errs = mod.evaluate_envelope(
+        data,
+        source="t",
+        min_rows=1,
+        require_valid=True,
+        expected_fission_version="v1.2.3",
+        require_release=True,
+        require_official=True,
+        require_publishable=True,
+    )
+
+    assert any("expected latest release" in error for error in errs)
+    assert any("legacy_source=true" in error for error in errs)
 
 
 def test_repo_has_displayable_data_or_skip():
@@ -170,7 +194,6 @@ def test_repo_has_displayable_data_or_skip():
     candidates = [
         ROOT / "public" / "benchmark-latest.json",
         ROOT / "results" / "latest.json",
-        ROOT / "results" / "dev_latest.json",
     ]
     if not any(p.is_file() for p in candidates):
         pytest.skip("no local display envelope in this checkout")

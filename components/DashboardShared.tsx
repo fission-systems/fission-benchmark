@@ -7,6 +7,10 @@ import {
 } from "@/lib/benchmark";
 import styles from "@/app/dashboard.module.css";
 
+// Stable for a server module instance; avoids render-time clock reads while
+// still making a statically generated dashboard's age explicit.
+const DASHBOARD_RENDERED_AT_MS = Date.now();
+
 export function SkeletonMeta() {
   return (
     <div className={styles.heroMeta}>
@@ -67,9 +71,30 @@ export async function MetaStrip() {
         timeZoneName: "short",
       })
     : "not recorded";
+  const measuredMs = data.run?.finished_at ? Date.parse(data.run.finished_at) : NaN;
+  const ageDays = Number.isFinite(measuredMs)
+    ? Math.max(0, (DASHBOARD_RENDERED_AT_MS - measuredMs) / 86_400_000)
+    : null;
+  const freshness = ageDays == null
+    ? "age unknown"
+    : ageDays > 7
+      ? `stale · ${Math.round(ageDays)}d`
+      : ageDays > 3
+        ? `aging · ${Math.round(ageDays)}d`
+        : `fresh · ${Math.max(0, Math.round(ageDays * 24))}h`;
+  const publication = data.validity?.publishable && data.run?.official
+    ? "official"
+    : data.validity?.valid
+      ? "smoke / diagnostic"
+      : "invalid / unverified";
+  const commit = data.run?.runner_commit ?? data.toolchain?.runner_commit;
 
   return (
     <div className={styles.heroMeta}>
+      <span className={styles.metaItem}>
+        <span className={styles.metaLabel}>Status</span>
+        <span className={styles.metaValue}>{publication} · {freshness}</span>
+      </span>
       <span className={styles.metaItem}>
         <span className={styles.metaLabel}>Corpus</span>
         <code className={styles.metaValue}>{corpus}</code>
@@ -85,6 +110,13 @@ export async function MetaStrip() {
       <span className={styles.metaItem}>
         <span className={styles.metaLabel}>Measured</span>
         <span className={styles.metaValue}>{measuredAt}</span>
+      </span>
+      <span className={styles.metaItem}>
+        <span className={styles.metaLabel}>Build</span>
+        <code className={styles.metaValue}>
+          {data.run?.fission_version ?? data.toolchain?.fission_version ?? "?"}
+          {commit ? ` @ ${commit.slice(0, 8)}` : " @ ?"}
+        </code>
       </span>
     </div>
   );

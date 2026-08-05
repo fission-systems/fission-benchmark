@@ -1,13 +1,16 @@
 """Aggregate layered benchmark JSONL telemetry."""
 from __future__ import annotations
 
+import hashlib
 import json
+import os
+import re
+import subprocess
 from collections import Counter, defaultdict
+from datetime import datetime, timezone
 from pathlib import Path
 
 import typer
-
-import os
 
 from benchmark.common.io import read_jsonl
 
@@ -69,6 +72,94 @@ PRIMARY_QUALITY_STAGES = frozenset(
         "function_discovery",
     }
 )
+_VERSION_RE = re.compile(r"^v?\d+\.\d+\.\d+$")
+
+
+def _utc_iso(timestamp: float | None = None) -> str:
+    value = datetime.fromtimestamp(
+        timestamp if timestamp is not None else datetime.now().timestamp(),
+        tz=timezone.utc,
+    )
+    return value.isoformat().replace("+00:00", "Z")
+
+
+def build_provenance(paths: list[Path]) -> dict:
+    """Describe exactly which stage snapshots produced a dashboard aggregate."""
+    sources: list[dict] = []
+    for path in paths:
+        stat = path.stat()
+        payload = path.read_bytes()
+        row_count = sum(1 for line in payload.splitlines() if line.strip())
+        sources.append(
+            {
+                "path": str(path),
+                "stage": path.parent.name,
+                "rows": row_count,
+                "bytes": stat.st_size,
+                "sha256": hashlib.sha256(payload).hexdigest(),
+                "modified_at": _utc_iso(stat.st_mtime),
+            }
+        )
+
+    modified = [source["modified_at"] for source in sources]
+    runner_commit = os.environ.get("GITHUB_SHA") or os.environ.get("BENCHMARK_COMMIT")
+    if not runner_commit:
+        try:
+            runner_commit = subprocess.run(
+                ["git", "rev-parse", "HEAD"],
+                check=True,
+                capture_output=True,
+                text=True,
+            ).stdout.strip()
+        except (OSError, subprocess.CalledProcessError):
+            runner_commit = None
+
+    return {
+        "generated_at": _utc_iso(),
+        "runner_commit": runner_commit,
+        "github_run_id": os.environ.get("GITHUB_RUN_ID"),
+        "github_run_attempt": os.environ.get("GITHUB_RUN_ATTEMPT"),
+        "corpus": os.environ.get("CORPUS_SPLIT"),
+        "decompilers": os.environ.get("PARITY_DECOMPILERS"),
+        "tool_versions": {
+            "fission": os.environ.get("FISSION_VERSION"),
+            "ghidra": os.environ.get("GHIDRA_VERSION"),
+        },
+        "oldest_source_at": min(modified) if modified else None,
+        "newest_source_at": max(modified) if modified else None,
+        "sources": sources,
+    }
+
+
+def archive_release_telemetry(summary: dict, history_dir: Path) -> str | None:
+    """Archive parity telemetry only when it names a semantic Fission release."""
+    version = str(
+        (((summary.get("provenance") or {}).get("tool_versions") or {}).get("fission"))
+        or ""
+    )
+    if not _VERSION_RE.fullmatch(version):
+        return None
+    history_dir.mkdir(parents=True, exist_ok=True)
+    (history_dir / f"{version}.json").write_text(
+        json.dumps(summary, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    versions = {
+        path.stem
+        for path in history_dir.glob("v*.json")
+        if path.stem != "index"
+    }
+    ordered = sorted(
+        versions,
+        key=lambda value: tuple(
+            int(part) for part in value.removeprefix("v").split(".")
+        ),
+    )
+    (history_dir / "index.json").write_text(
+        json.dumps(ordered, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    return version
 
 
 def aggregate_rows(rows: list[dict]) -> dict:
@@ -360,7 +451,7 @@ def aggregate_rows(rows: list[dict]) -> dict:
             )
 
     return {
-        "schema": "parity-telemetry-v2",
+        "schema": "parity-telemetry-v3",
         "total_rows": total_rows,
         "by_stage": dict(sorted(by_stage.items())),
         "by_status": dict(sorted(by_status.items())),
@@ -402,6 +493,10 @@ def main(
         Path("public/parity-telemetry.json"),
         help="Optional Next.js static copy for the parity dashboard panel",
     ),
+    history_dir: Path = typer.Option(
+        Path("public/parity-history"),
+        help="Version-keyed parity telemetry history",
+    ),
     auto_discover: bool = typer.Option(
         True,
         help="If no inputs, discover results/*_parity/latest.jsonl and golden_repros",
@@ -421,15 +516,21 @@ def main(
 
     summary = aggregate_rows(rows)
     summary["sources"] = [str(p) for p in paths]
+    summary["provenance"] = build_provenance(paths)
     output.parent.mkdir(parents=True, exist_ok=True)
     payload = json.dumps(summary, indent=2, sort_keys=True) + "\n"
     output.write_text(payload, encoding="utf-8")
     if dashboard_copy:
         dashboard_copy.parent.mkdir(parents=True, exist_ok=True)
         dashboard_copy.write_text(payload, encoding="utf-8")
+    archived = archive_release_telemetry(summary, history_dir) if history_dir else None
     typer.echo(f"Wrote telemetry summary for {len(rows)} rows to {output}")
     if dashboard_copy:
         typer.echo(f"Dashboard copy: {dashboard_copy}")
+    if archived:
+        typer.echo(f"Release parity history: {archived}")
+    else:
+        typer.echo("Release parity history skipped: no semantic Fission version")
 
 
 if __name__ == "__main__":

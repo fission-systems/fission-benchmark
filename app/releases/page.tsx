@@ -13,7 +13,7 @@ export const revalidate = 900;
 export const metadata = {
   title: "Releases · What changed",
   description:
-    "Fission's own semantic pass rate across releases, and what changed since the last one.",
+    "Fission quality, latency, paired speedup, CPU, and memory trends across releases.",
 };
 
 async function ComparisonSection() {
@@ -23,9 +23,8 @@ async function ComparisonSection() {
   if (!comparison) {
     return (
       <p className={styles.sectionLead}>
-        No older archived release to compare against yet (this is either the
-        first archived release, or the previous one has no multi-decomp
-        snapshot — e.g. v0.1.5 shipped without one).
+        No comparable official release pair is archived yet. Diagnostic/smoke
+        snapshots are intentionally excluded from release-over-release deltas.
       </p>
     );
   }
@@ -43,19 +42,21 @@ export default function ReleasesPage() {
       <div className={styles.frame}>
         <div className={styles.frameTitle}>Releases</div>
         <p className={styles.frameBody}>
-          Every archived <code>public/benchmark-history/&lt;version&gt;.json</code>{" "}
-          is Fission&apos;s own measured envelope at that release, keyed by{" "}
-          <code>toolchain.fission_version</code>. Other decompilers are shown
-          for stability context only — this page never re-ranks tools.
+          Archives are keyed by <code>toolchain.fission_version</code>, but an
+          archived file is not automatically an official measurement. The
+          canonical trend includes only valid, publishable, official envelopes
+          with the same benchmark contract. Smoke snapshots remain visible for
+          engineering history as dashed lines, never as an official claim.
         </p>
       </div>
 
       <section className={styles.section}>
-        <h2 className={styles.sectionTitle}>Trend since the earliest archived release</h2>
+        <h2 className={styles.sectionTitle}>Quality and performance by release</h2>
         <p className={styles.sectionLead}>
-          Semantic pass rate over time. Dot size shows the corpus size
-          measured at that release — watch for it changing alongside the
-          rate, since a bigger corpus is a harder bar to clear.
+          Semantic quality is a guardrail, not the whole story. The dashboard
+          also tracks Fission mean/P50/P95 latency, paired speedup, cold/warm
+          trials, CPU, and memory. Contract changes and missing releases break
+          the relevant line instead of being interpolated.
         </p>
         <Suspense fallback={<SkeletonSection rows={4} />}>
           <TrendSection />

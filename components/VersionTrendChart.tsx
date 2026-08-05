@@ -1,208 +1,210 @@
 "use client";
 
 import { useMemo } from "react";
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Tooltip,
-  Filler,
-  type ChartOptions,
-  type ChartData,
-  type Plugin,
-  type ScriptableContext,
-  type TooltipItem,
-} from "chart.js";
-import { Line } from "react-chartjs-2";
 import type { VersionTrendPoint } from "@/lib/history";
 import { pct } from "@/lib/format";
+import {
+  ReleaseMetricChart,
+  type ReleaseMetricSeries,
+} from "./ReleaseMetricChart";
 import styles from "./VersionTrendChart.module.css";
-
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Filler);
 
 interface Props {
   points: VersionTrendPoint[];
 }
 
-const ACCENT = "#6366f1";
-const ACCENT_FILL_TOP = "rgba(99, 102, 241, 0.28)";
-const ACCENT_FILL_BOTTOM = "rgba(99, 102, 241, 0)";
-const GRID = "#2d3748";
-const AXIS_TEXT = "#94a3b8";
-const CORPUS_CHANGED = "#f59e0b";
-const DOT_HOLLOW_FILL = "#1e293b"; // matches --bg-elevated, so a "hollow" point reads as an outline
+const LATENCY: ReleaseMetricSeries[] = [
+  { label: "Mean", color: "#6366f1", value: (point) => point.latencyMeanMs },
+  { label: "P50", color: "#22c55e", value: (point) => point.latencyP50Ms },
+  { label: "P95", color: "#f59e0b", value: (point) => point.latencyP95Ms },
+];
+const SPEEDUP: ReleaseMetricSeries[] = [
+  { label: "Median", color: "#22c55e", value: (point) => point.medianSpeedup },
+  { label: "Geometric mean", color: "#38bdf8", value: (point) => point.geometricMeanSpeedup },
+];
+const FASTER_SHARE: ReleaseMetricSeries[] = [
+  { label: "Fission faster", color: "#22c55e", value: (point) => point.fissionFasterShare === null ? null : point.fissionFasterShare * 100 },
+];
+const MICRO_LATENCY: ReleaseMetricSeries[] = [
+  { label: "Cold mean", color: "#f59e0b", value: (point) => point.coldMeanMs },
+  { label: "Cold P50", color: "#fbbf24", value: (point) => point.coldP50Ms },
+  { label: "Warm mean", color: "#6366f1", value: (point) => point.warmMeanMs },
+  { label: "Warm P50", color: "#a78bfa", value: (point) => point.warmP50Ms },
+];
+const RESOURCE_PERCENT: ReleaseMetricSeries[] = [
+  { label: "CPU mean", color: "#38bdf8", value: (point) => point.meanCpuPercent },
+  { label: "CPU peak", color: "#f59e0b", value: (point) => point.peakCpuPercent },
+  { label: "Memory peak", color: "#a78bfa", value: (point) => point.peakMemoryPercent },
+];
+const MEMORY: ReleaseMetricSeries[] = [
+  { label: "Sampled peak", color: "#a78bfa", value: (point) => point.peakMemoryBytes },
+];
+const QUALITY: ReleaseMetricSeries[] = [
+  { label: "Semantic pass", color: "#6366f1", value: (point) => point.meanSemantic === null ? null : point.meanSemantic * 100 },
+];
 
-const MIN_RADIUS = 3;
-const MAX_RADIUS_BONUS = 7;
-
-/** Same sqrt-area scaling as the original hand-rolled SVG: area (not radius)
- * scales with row count, so a 4x bigger corpus reads as a 2x bigger dot,
- * not a 4x bigger one -- otherwise small corpora vanish and big ones
- * swallow the chart. */
-function dotRadius(rows: number, maxRows: number): number {
-  if (maxRows <= 0) return MIN_RADIUS;
-  const scale = Math.sqrt(Math.max(rows, 1) / maxRows);
-  return MIN_RADIUS + scale * MAX_RADIUS_BONUS;
+function missingPatchVersions(points: VersionTrendPoint[]): string[] {
+  const parsed = points
+    .map((point) => /^v?(\d+)\.(\d+)\.(\d+)$/.exec(point.version))
+    .filter((match): match is RegExpExecArray => Boolean(match))
+    .map((match) => [Number(match[1]), Number(match[2]), Number(match[3])] as const);
+  if (parsed.length < 2) return [];
+  const [major, minor] = parsed[0];
+  if (!parsed.every(([ma, mi]) => ma === major && mi === minor)) return [];
+  const patches = new Set(parsed.map(([, , patch]) => patch));
+  const min = Math.min(...patches);
+  const max = Math.max(...patches);
+  const missing: string[] = [];
+  for (let patch = min; patch <= max; patch += 1) {
+    if (!patches.has(patch)) missing.push(`v${major}.${minor}.${patch}`);
+  }
+  return missing;
 }
 
-/** Draws the small amber "corpus N→M" callouts under releases where the
- * measured corpus size changed from the previous release -- Chart.js has no
- * built-in per-point sub-label, so this is a plugin that reaches into the
- * already-laid-out x scale and paints directly on the canvas after the
- * chart finishes its own draw pass. */
-function makeCorpusChangePlugin(points: VersionTrendPoint[]): Plugin<"line"> {
-  return {
-    id: "corpusChangeLabels",
-    afterDraw(chart) {
-      const xScale = chart.scales.x;
-      if (!xScale) return;
-      const { ctx } = chart;
-      ctx.save();
-      ctx.font = "600 9px system-ui, sans-serif";
-      ctx.fillStyle = CORPUS_CHANGED;
-      ctx.textAlign = "center";
-      ctx.textBaseline = "top";
-      points.forEach((point, index) => {
-        if (index === 0) return;
-        const prev = points[index - 1];
-        if (prev.totalRows === point.totalRows) return;
-        const x = xScale.getPixelForValue(index);
-        ctx.fillText(`corpus ${prev.totalRows}→${point.totalRows}`, x, xScale.bottom + 14);
-      });
-      ctx.restore();
-    },
-  };
+function fmtMs(value: number | null): string {
+  if (value === null) return "—";
+  return value >= 1000 ? `${(value / 1000).toFixed(2)}s` : `${Math.round(value)}ms`;
+}
+
+function fmtRatio(value: number | null): string {
+  return value === null ? "—" : `${value.toFixed(2)}×`;
+}
+
+function fmtPercent(value: number | null): string {
+  return value === null ? "—" : `${value.toFixed(1)}%`;
+}
+
+function fmtBytes(value: number | null): string {
+  return value === null ? "—" : `${(value / 1024 / 1024).toFixed(1)} MiB`;
+}
+
+function classification(point: VersionTrendPoint): string {
+  return point.trendEligible
+    ? "official · comparable"
+    : point.canonical
+      ? "official · different contract"
+      : "diagnostic / smoke";
 }
 
 export function VersionTrendChart({ points }: Props) {
-  const maxRows = useMemo(() => Math.max(1, ...points.map((p) => p.totalRows)), [points]);
-  const minRows = useMemo(
-    () => (points.length ? Math.min(...points.map((p) => p.totalRows)) : 0),
-    [points],
-  );
-
-  const data: ChartData<"line", (number | null)[], string> = useMemo(
-    () => ({
-      labels: points.map((p) => p.version),
-      datasets: [
-        {
-          data: points.map((p) => (p.meanSemantic !== null ? p.meanSemantic : null)),
-          borderColor: ACCENT,
-          borderWidth: 2.5,
-          cubicInterpolationMode: "monotone",
-          tension: 0.35,
-          spanGaps: false,
-          fill: true,
-          backgroundColor: (context: ScriptableContext<"line">) => {
-            const { chart } = context;
-            const { ctx, chartArea } = chart;
-            if (!chartArea) return ACCENT_FILL_BOTTOM;
-            const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
-            gradient.addColorStop(0, ACCENT_FILL_TOP);
-            gradient.addColorStop(1, ACCENT_FILL_BOTTOM);
-            return gradient;
-          },
-          pointRadius: (context: ScriptableContext<"line">) => {
-            const point = points[context.dataIndex];
-            if (!point || point.meanSemantic === null) return 0;
-            return dotRadius(point.totalRows, maxRows);
-          },
-          pointHoverRadius: (context: ScriptableContext<"line">) => {
-            const point = points[context.dataIndex];
-            if (!point || point.meanSemantic === null) return 0;
-            return dotRadius(point.totalRows, maxRows) + 2;
-          },
-          pointBackgroundColor: (context: ScriptableContext<"line">) => {
-            const point = points[context.dataIndex];
-            return point?.official ? ACCENT : DOT_HOLLOW_FILL;
-          },
-          pointBorderColor: ACCENT,
-          pointBorderWidth: 2,
-          pointHoverBorderWidth: 2,
-        },
-      ],
-    }),
-    [points, maxRows],
-  );
-
-  const options: ChartOptions<"line"> = useMemo(
-    () => ({
-      responsive: true,
-      maintainAspectRatio: false,
-      layout: { padding: { bottom: 20, right: 12, top: 8 } },
-      interaction: { mode: "index", intersect: false },
-      scales: {
-        x: {
-          grid: { display: false },
-          border: { display: false },
-          ticks: { color: AXIS_TEXT, font: { size: 11 } },
-        },
-        y: {
-          min: 0,
-          max: 1,
-          border: { display: false },
-          grid: { color: GRID, drawTicks: false },
-          ticks: {
-            color: AXIS_TEXT,
-            font: { size: 11 },
-            stepSize: 0.25,
-            callback: (value) => `${Math.round(Number(value) * 100)}%`,
-          },
-        },
-      },
-      plugins: {
-        tooltip: {
-          backgroundColor: "#0f172a",
-          borderColor: GRID,
-          borderWidth: 1,
-          cornerRadius: 8,
-          padding: 10,
-          displayColors: false,
-          titleColor: "#e2e8f0",
-          titleFont: { size: 12, weight: 600 },
-          bodyColor: AXIS_TEXT,
-          bodyFont: { size: 11 },
-          callbacks: {
-            title: (items: TooltipItem<"line">[]) => points[items[0].dataIndex]?.version ?? "",
-            label: (item: TooltipItem<"line">) => {
-              const point = points[item.dataIndex];
-              if (!point || point.meanSemantic === null) return "no data";
-              return [
-                `${pct(point.meanSemantic)} semantic pass rate`,
-                `${point.perfectRows}/${point.totalRows} perfect rows`,
-                point.official ? "official run" : "smoke run",
-              ];
-            },
-          },
-        },
-      },
-    }),
-    [points],
-  );
-
-  const plugins = useMemo(() => [makeCorpusChangePlugin(points)], [points]);
+  const eligible = useMemo(() => points.filter((point) => point.trendEligible), [points]);
+  const diagnostics = useMemo(() => points.filter((point) => !point.canonical), [points]);
+  const missing = useMemo(() => missingPatchVersions(points), [points]);
 
   if (points.length === 0) {
-    return (
-      <p className={styles.empty}>No archived releases with multi-decomp data yet.</p>
-    );
+    return <p className={styles.empty}>No archived releases with multi-decomp data yet.</p>;
   }
 
   return (
     <div className={styles.wrap}>
-      <div
-        className={styles.canvasFrame}
-        role="img"
-        aria-label={`Fission semantic pass rate by release, from ${points[0].version} to ${points[points.length - 1].version}`}
-      >
-        <Line data={data} options={options} plugins={plugins} />
-      </div>
-      <p className={styles.hint}>
-        Dot size ∝ corpus size measured at that release ({minRows}–{maxRows} Fission rows).
-        Hollow dots are smoke-profile runs; filled dots are official publications.
+      {eligible.length < 2 && (
+        <div className={styles.warning}>
+          <strong>Official trend unavailable.</strong> This archive contains{" "}
+          {eligible.length} comparable official point{eligible.length === 1 ? "" : "s"}
+          {diagnostics.length > 0 ? ` and ${diagnostics.length} diagnostic/smoke snapshots` : ""}.
+          Dashed diagnostic lines show engineering history only; they are not an
+          official release-performance claim.
+        </div>
+      )}
+
+      <h3 className={styles.groupTitle}>Performance trend</h3>
+      <p className={styles.groupLead}>
+        Accuracy saturates near 100%, so release progress is led by latency,
+        paired speedup, cold/warm behavior, CPU, and memory. Lower is better for
+        latency and memory; higher is better for paired speedup.
       </p>
+      <div className={styles.metricGrid}>
+        <ReleaseMetricChart
+          title="Adapter latency"
+          description="Fission row timing: mean, P50, and P95. Lower is better."
+          points={points} series={LATENCY} format="ms"
+        />
+        <ReleaseMetricChart
+          title="Paired speedup vs Ghidra"
+          description="Same function and compiler cell; Ghidra time divided by Fission time."
+          points={points} series={SPEEDUP} format="ratio"
+        />
+        <ReleaseMetricChart
+          title="Fission-faster share"
+          description="Share of paired cells where Fission latency is lower than Ghidra."
+          points={points} series={FASTER_SHARE} format="percent"
+        />
+        <ReleaseMetricChart
+          title="Cold vs warm microbench"
+          description="Version-linked isolated trials. Missing history is shown as unmeasured."
+          points={points} series={MICRO_LATENCY} format="ms"
+        />
+        <ReleaseMetricChart
+          title="CPU and memory utilization"
+          description="Container-cgroup CPU mean/peak and peak memory share. CPU can exceed 100%."
+          points={points} series={RESOURCE_PERCENT} format="percent"
+        />
+        <ReleaseMetricChart
+          title="Sampled peak memory"
+          description="Largest Docker memory sample during timed requests; not an OS high-water mark."
+          points={points} series={MEMORY} format="bytes"
+        />
+      </div>
+
+      <h3 className={styles.groupTitle}>Quality guardrail</h3>
+      <p className={styles.groupLead}>
+        Semantic pass rate remains visible as a guardrail, but no longer carries
+        the entire release story once it reaches saturation.
+      </p>
+      <div className={styles.qualityGrid}>
+        <ReleaseMetricChart
+          title="Semantic pass rate"
+          description="Executable-oracle pass rate. Higher is better; 100% is the ceiling."
+          points={points} series={QUALITY} format="percent"
+        />
+      </div>
+
+      <p className={styles.hint}>
+        Solid lines = valid, publishable official runs with the same contract and
+        Fission cells. Dashed hollow lines = comparable diagnostic history.
+        Grey isolated points = a different contract.
+        {missing.length > 0 ? ` Missing archives break the line: ${missing.join(", ")}.` : ""}
+      </p>
+
+      <h3 className={styles.tableTitle}>Release performance audit</h3>
+      <div className={styles.tableWrap}>
+        <table className={styles.table}>
+          <thead><tr>
+            <th>Version</th><th>Mean</th><th>P50</th><th>P95</th>
+            <th>Speedup median</th><th>Geo mean</th><th>Faster share</th>
+            <th>Cold mean</th><th>Warm mean</th><th>CPU mean</th><th>CPU peak</th>
+            <th>Memory peak</th><th>Memory %</th><th>Samples</th>
+          </tr></thead>
+          <tbody>{points.map((point) => <tr key={point.version}>
+            <td><code>{point.version}</code></td>
+            <td>{fmtMs(point.latencyMeanMs)}</td><td>{fmtMs(point.latencyP50Ms)}</td>
+            <td>{fmtMs(point.latencyP95Ms)}</td><td>{fmtRatio(point.medianSpeedup)}</td>
+            <td>{fmtRatio(point.geometricMeanSpeedup)}</td>
+            <td>{point.fissionFasterShare === null ? "—" : pct(point.fissionFasterShare)}</td>
+            <td>{fmtMs(point.coldMeanMs)}</td><td>{fmtMs(point.warmMeanMs)}</td>
+            <td>{fmtPercent(point.meanCpuPercent)}</td><td>{fmtPercent(point.peakCpuPercent)}</td>
+            <td>{fmtBytes(point.peakMemoryBytes)}</td><td>{fmtPercent(point.peakMemoryPercent)}</td>
+            <td>{point.resourceSamples || "—"}</td>
+          </tr>)}</tbody>
+        </table>
+      </div>
+
+      <h3 className={styles.tableTitle}>Measurement contract audit</h3>
+      <div className={styles.tableWrap}>
+        <table className={styles.table}>
+          <thead><tr>
+            <th>Version</th><th>Classification</th><th>Profile</th><th>Corpus</th>
+            <th>Rows</th><th>Tested</th><th>Semantic</th><th>Paired</th><th>Measured</th>
+          </tr></thead>
+          <tbody>{points.map((point) => <tr key={point.version}>
+            <td><code>{point.version}</code></td><td>{classification(point)}</td>
+            <td><code>{point.profile ?? "—"}</code></td><td><code>{point.corpus ?? "—"}</code></td>
+            <td>{point.totalRows}</td><td>{point.semanticTestedRows}</td>
+            <td>{pct(point.meanSemantic)}</td><td>{point.pairedRows}</td>
+            <td>{point.finishedAt ? new Date(point.finishedAt).toLocaleDateString("en-CA", { timeZone: "UTC" }) : "—"}</td>
+          </tr>)}</tbody>
+        </table>
+      </div>
     </div>
   );
 }

@@ -7,6 +7,45 @@
  */
 import type { BenchmarkEnvelope } from "./schemas";
 
+export type ResourceStats = {
+  n_trials?: number;
+  samples?: number;
+  mean_cpu_percent?: number | null;
+  peak_cpu_percent?: number | null;
+  mean_peak_memory_bytes?: number | null;
+  peak_memory_bytes?: number | null;
+  peak_memory_percent?: number | null;
+};
+
+export type SpeedMicrobenchDocument = {
+  schema?: string;
+  run_id?: string;
+  started_at?: string;
+  finished_at?: string;
+  toolchain?: {
+    fission_version?: string | null;
+    runner_commit?: string | null;
+    github_run_id?: string | null;
+  };
+  by_decompiler?: Record<
+    string,
+    {
+      cold?: { n?: number; mean_ms?: number | null; p50_ms?: number | null };
+      warm?: { n?: number; mean_ms?: number | null; p50_ms?: number | null };
+      all?: { n?: number; mean_ms?: number | null };
+      resources?: {
+        collector?: string;
+        scope?: string;
+        cold?: ResourceStats;
+        warm?: ResourceStats;
+        all?: ResourceStats;
+      };
+    }
+  >;
+  config?: Record<string, unknown>;
+  notes?: string;
+};
+
 export type SpeedExtension = {
   schema?: string;
   ranking?: boolean;
@@ -31,19 +70,7 @@ export type SpeedExtension = {
       fission_faster_share?: number | null;
     };
   };
-  microbench?: {
-    schema?: string;
-    by_decompiler?: Record<
-      string,
-      {
-        cold?: { n?: number; mean_ms?: number | null; p50_ms?: number | null };
-        warm?: { n?: number; mean_ms?: number | null; p50_ms?: number | null };
-        all?: { n?: number; mean_ms?: number | null };
-      }
-    >;
-    config?: Record<string, unknown>;
-    notes?: string;
-  } | null;
+  microbench?: SpeedMicrobenchDocument | null;
 };
 
 export function extractSpeedExtension(

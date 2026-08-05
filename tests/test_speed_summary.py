@@ -65,11 +65,18 @@ def test_build_speed_extension_with_microbench():
         }
     ]
     micro = {
-        "schema": "speed-microbench-v1",
+        "schema": "speed-microbench-v2",
         "by_decompiler": {
             "fission": {
                 "cold": {"n": 1, "mean_ms": 40.0},
                 "warm": {"n": 4, "mean_ms": 12.0},
+                "resources": {
+                    "all": {
+                        "n_trials": 5,
+                        "mean_cpu_percent": 75.0,
+                        "peak_memory_bytes": 536870912,
+                    }
+                },
             }
         },
         "subjects": [],
@@ -79,6 +86,11 @@ def test_build_speed_extension_with_microbench():
     assert ext["ranking"] is False
     assert ext["from_rows"]["by_decompiler"]["fission"]["n"] == 1
     assert ext["microbench"]["by_decompiler"]["fission"]["cold"]["mean_ms"] == 40.0
+    assert (
+        ext["microbench"]["by_decompiler"]["fission"]["resources"]["all"]
+        ["peak_memory_bytes"]
+        == 536870912
+    )
 
 
 def test_attach_summary_includes_speed_extension():
