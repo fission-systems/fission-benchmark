@@ -8,6 +8,7 @@ export type DashboardPage =
   | "nir-hir"
   | "hir-ghidra"
   | "variants"
+  | "measurement"
   | "quality"
   | "speed"
   | "parity"
@@ -54,6 +55,12 @@ const NAV: {
     href: "/variants",
     label: "Variants",
     blurb: "Compiler × opt",
+  },
+  {
+    id: "measurement",
+    href: "/measurement",
+    label: "Measurement",
+    blurb: "Scope · health",
   },
   {
     id: "quality",
@@ -130,7 +137,7 @@ export function SiteChrome({
       <main className={styles.main}>{children}</main>
       <footer className={styles.footer}>
         <span>
-          Fission Benchmark · Overview · Functions · NIR vs HIR · Quality EXT ·
+          Fission Benchmark · Overview · Functions · Measurement · Quality EXT ·
           Speed · IR parity · ISR 15 min
         </span>
         <a

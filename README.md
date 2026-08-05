@@ -31,6 +31,9 @@ A Python runner sends decompile requests in parallel, scores results against ori
 | `/same-function` | Same-function matrix (boundary honesty) |
 | `/functions` | Per-function code grid |
 | `/variants` | Compiler × opt pivots |
+| `/measurement` | Preset, denominator, difficulty, failure/cost, and pipeline health |
+| `/quality` | Non-ranking compile, readability, and corpus diagnostics |
+| `/speed` | Latency, CPU, and memory diagnostics |
 | `/fission-vs-ghidra` | Fission ↔ Ghidra layered parity (shared IR; not ranking) |
 
 ```

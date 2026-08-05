@@ -5,8 +5,10 @@ from pathlib import Path
 
 from runner.run_validity import build_envelope
 from runner.standard_summary import (
+    MEASUREMENT_HEALTH_SCHEMA,
     SUMMARY_SCHEMA,
     annotate_rows_with_taxonomy,
+    build_measurement_health,
     build_standard_summary,
     normalize_fail_taxonomy,
     parse_compiler_variant,
@@ -183,6 +185,105 @@ def test_shared_denominator_counts_peer_measurable_missing_rows_as_misses() -> N
 def test_parse_compiler_variant() -> None:
     assert parse_compiler_variant("gcc -O0") == ("gcc", "-O0")
     assert parse_compiler_variant("gcc-m32 -O2") == ("gcc-m32", "-O2")
+
+
+def test_measurement_health_presets_normalization_and_pipeline() -> None:
+    rows = [
+        {
+            "decompiler": "fission",
+            "corpus": "core",
+            "function_name": "easy",
+            "compiler_variant": "gcc -O0",
+            "language": "c",
+            "decompiled_code": "int easy(void) { return 1; }",
+            "output_diagnostics": {"status": "direct_function"},
+            "semantic_score": 1.0,
+            "ged_score": 0.0,
+            "ged_metadata": {
+                "source_basis": "preprocessed_tu",
+                "source_cfg_available": True,
+                "decompiled_cfg_available": True,
+            },
+            "recompilation_score": 1.0,
+            "recompilation": {"compilable": True},
+            "time_ms": 10,
+        },
+        {
+            "decompiler": "ghidra",
+            "corpus": "core",
+            "function_name": "easy",
+            "compiler_variant": "gcc -O0",
+            "language": "c",
+            "decompiled_code": "int easy(void) { return 1; }",
+            "output_diagnostics": {"status": "direct_function"},
+            "semantic_score": 1.0,
+            "ged_score": 0.0,
+            "ged_metadata": {
+                "source_basis": "preprocessed_tu",
+                "source_cfg_available": True,
+                "decompiled_cfg_available": True,
+            },
+            "recompilation_score": 0.5,
+            "recompilation": {"compilable": True},
+            "time_ms": 20,
+        },
+        {
+            "decompiler": "fission",
+            "corpus": "core",
+            "function_name": "hard",
+            "compiler_variant": "gcc -O2",
+            "language": "c",
+            "decompiled_code": "int hard(void) { return 0; }",
+            "output_diagnostics": {"status": "direct_function"},
+            "semantic_score": 0.0,
+            "ged_score": 4.0,
+            "ged_metadata": {
+                "source_basis": "preprocessed_tu",
+                "source_cfg_available": True,
+                "decompiled_cfg_available": True,
+            },
+            "recompilation_score": 0.0,
+            "recompilation": {"compilable": False},
+            "time_ms": 30,
+        },
+        {
+            "decompiler": "ghidra",
+            "corpus": "core",
+            "function_name": "hard",
+            "compiler_variant": "gcc -O2",
+            "language": "c",
+            "error": "adapter failed",
+            "output_diagnostics": {"status": "no_output"},
+            "semantic_score": None,
+            "ged_score": None,
+            "ged_metadata": {
+                "source_basis": "preprocessed_tu",
+                "source_cfg_available": False,
+                "decompiled_cfg_available": False,
+            },
+            "time_ms": 5,
+        },
+    ]
+    health = build_measurement_health(annotate_rows_with_taxonomy(rows))
+    assert health["schema"] == MEASUREMENT_HEALTH_SCHEMA
+    presets = {preset["id"]: preset for preset in health["presets"]}
+    assert {"all", "language:c", "optimized", "unoptimized"} <= set(presets)
+
+    shared = presets["all"]["views"]["shared"]
+    intersection = presets["all"]["views"]["intersection"]
+    assert shared["scope"]["subjects"] == 2
+    assert shared["scope"]["difficulty"] == {
+        "easy": 1,
+        "medium": 0,
+        "hard": 1,
+        "unmeasured": 0,
+    }
+    assert intersection["scope"]["subjects"] == 1
+    assert shared["by_decompiler"]["ghidra"]["output_clean_rate"] == 0.5
+    assert shared["by_decompiler"]["fission"]["cost"]["p95_ms"] == 30.0
+    assert shared["by_decompiler"]["fission"]["cost"]["usd"] is None
+    assert shared["pipeline"]["source_cfg"]["available"] == 2
+    assert shared["pipeline"]["decompiled_cfg"]["ghidra"]["available"] == 1
 
 
 def test_build_envelope_attaches_summary() -> None:

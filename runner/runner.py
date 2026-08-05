@@ -347,9 +347,20 @@ async def decompile_batch_and_score(
             source_cfgs = extract_source_cfgs(str(ged_source_path))
             source_cfg = source_cfgs.get(fn.name)
             decompiled_cfg = decompiled_cfgs.get(fn.name)
+            ged_metadata["source_cfg_available"] = source_cfg is not None
+            ged_metadata["decompiled_cfg_available"] = decompiled_cfg is not None
             if source_cfg is not None and decompiled_cfg is not None:
                 ged_metadata.update(compute_ged(source_cfg, decompiled_cfg))
                 ged_score = ged_metadata.get("ged")
+            elif source_cfg is None and decompiled_cfg is None:
+                ged_metadata["error"] = "missing source and decompiled CFG"
+            elif source_cfg is None:
+                ged_metadata["error"] = "missing source CFG"
+            else:
+                ged_metadata["error"] = "missing decompiled CFG"
+        else:
+            ged_metadata["source_cfg_available"] = False
+            ged_metadata["decompiled_cfg_available"] = False
         # Primary readability metrics: prefer HIR for Fission dual printers.
         readability_metrics = (
             analyze_readability(readability_code, dname)
@@ -941,6 +952,7 @@ def run(
                 "metric_cache": CACHE_SCHEMA,
                 "ged_cache_version": "v2-preprocessed-tu",
                 "recompilation_cache_version": "v1",
+                "dashboard_health": "measurement-health-v1",
             },
             "checkpoint": {
                 "schema": CHECKPOINT_SCHEMA,

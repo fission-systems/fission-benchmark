@@ -53,6 +53,7 @@ except ImportError:
     from recompilation import aggregate_recompilation
 
 SUMMARY_SCHEMA = "standard-set-v1"
+MEASUREMENT_HEALTH_SCHEMA = "measurement-health-v1"
 
 # Exclusive fail taxonomy buckets (each row maps to exactly one).
 TAXONOMY_BUCKETS = (
@@ -180,6 +181,303 @@ def _valid_semantic_score(row: Mapping[str, Any]) -> float | None:
         return None
     score = row.get("semantic_score")
     return float(score) if score is not None else None
+
+
+def _percentile(values: list[float], quantile: float) -> float | None:
+    """Return a deterministic nearest-rank percentile for dashboard costs."""
+    if not values:
+        return None
+    ordered = sorted(values)
+    index = max(0, min(len(ordered) - 1, int((len(ordered) - 1) * quantile + 0.5)))
+    return round(ordered[index], 2)
+
+
+def _clean_output(row: Mapping[str, Any]) -> bool:
+    """Whether a row produced the requested function as usable decompiled text."""
+    bucket = str(row.get("fail_taxonomy") or normalize_fail_taxonomy(row))
+    status = str((row.get("output_diagnostics") or {}).get("status") or "")
+    code = str(row.get("decompiled_code") or "").strip()
+    return bool(code) and not row.get("error") and bucket not in {
+        "adapter_error",
+        "boundary_mismatch",
+        "whole_program_output",
+    } and status not in _BOUNDARY_STATUSES
+
+
+def _preset_memberships(row: Mapping[str, Any]) -> set[str]:
+    """Return stable, non-overlapping dashboard filters plus the all preset."""
+    memberships = {"all"}
+    _, opt = parse_compiler_variant(str(row.get("compiler_variant") or ""))
+    memberships.add("unoptimized" if opt in {"", "-O0", "-Og"} else "optimized")
+
+    language = str(row.get("language") or "").strip().lower()
+    if language:
+        memberships.add(f"language:{language}")
+    isa_format = row.get("isa_format") or {}
+    if isinstance(isa_format, Mapping):
+        arch = str(isa_format.get("arch") or "").strip().lower()
+        fmt = str(isa_format.get("format") or isa_format.get("fmt") or "").strip().lower()
+        if arch:
+            memberships.add(f"arch:{arch}")
+        if fmt:
+            memberships.add(f"format:{fmt}")
+    track = str(row.get("track") or "").strip().lower()
+    if track:
+        memberships.add(f"track:{track}")
+    return memberships
+
+
+def _difficulty_by_cell(rows: list[Mapping[str, Any]]) -> dict[tuple[str, str, str], str]:
+    """Classify a structural difficulty proxy from cross-tool exact GED agreement."""
+    exact: dict[tuple[str, str, str], list[bool]] = defaultdict(list)
+    cells = {_subject_cell(row) for row in rows}
+    for row in rows:
+        if row.get("ged_score") is not None:
+            exact[_subject_cell(row)].append(float(row["ged_score"]) == 0.0)
+    out: dict[tuple[str, str, str], str] = {}
+    for cell in cells:
+        measured = exact.get(cell, [])
+        if not measured:
+            out[cell] = "unmeasured"
+            continue
+        rate = sum(measured) / len(measured)
+        out[cell] = "easy" if rate >= 2 / 3 else "hard" if rate <= 1 / 3 else "medium"
+    return out
+
+
+def _metric_summary(
+    tool_rows: list[Mapping[str, Any]],
+    all_rows: list[Mapping[str, Any]],
+    field: str,
+    *,
+    exact: float,
+    lower_is_better: bool = False,
+) -> dict[str, Any]:
+    def metric_value(row: Mapping[str, Any]) -> float | None:
+        if field == "semantic_score":
+            return _valid_semantic_score(row)
+        value = row.get(field)
+        return float(value) if value is not None else None
+
+    cells = {_subject_cell(row) for row in all_rows if metric_value(row) is not None}
+    observed = {
+        _subject_cell(row): value
+        for row in tool_rows
+        if (value := metric_value(row)) is not None
+    }
+    values = list(observed.values())
+    perfect = sum(value == exact for value in values)
+    output = {
+        "shared_rows": len(cells),
+        "observed_rows": len(values),
+        "perfect_rows": perfect,
+        "perfect_rate": round(perfect / len(cells), 4) if cells else None,
+    }
+    if lower_is_better:
+        output["observed_mean"] = round(sum(values) / len(values), 4) if values else None
+    else:
+        shared_values = [observed.get(cell, 0.0) for cell in cells]
+        output["shared_mean"] = (
+            round(sum(shared_values) / len(shared_values), 4) if shared_values else None
+        )
+        output["observed_mean"] = round(sum(values) / len(values), 4) if values else None
+    return output
+
+
+def _view_measurement_health(rows: list[Mapping[str, Any]]) -> dict[str, Any]:
+    tools = sorted({str(row.get("decompiler") or "unknown") for row in rows})
+    cells = {_subject_cell(row) for row in rows}
+    difficulty = _difficulty_by_cell(rows)
+    difficulty_counts = {name: 0 for name in ("easy", "medium", "hard", "unmeasured")}
+    for bucket in difficulty.values():
+        difficulty_counts[bucket] += 1
+
+    source_available: dict[tuple[str, str, str], bool] = {}
+    source_basis: dict[str, set[tuple[str, str, str]]] = defaultdict(set)
+    for row in rows:
+        cell = _subject_cell(row)
+        ged = row.get("ged_metadata") or {}
+        available = ged.get("source_cfg_available")
+        if available is None:
+            available = row.get("ged_score") is not None or ged.get("source_nodes") is not None
+        source_available[cell] = source_available.get(cell, False) or bool(available)
+        basis = str(ged.get("source_basis") or "missing")
+        source_basis[basis].add(cell)
+
+    by_tool: dict[str, Any] = {}
+    output_cfg: dict[str, Any] = {}
+    for tool in tools:
+        tool_rows = [row for row in rows if str(row.get("decompiler") or "unknown") == tool]
+        clean = sum(_clean_output(row) for row in tool_rows)
+        taxonomy = _empty_taxonomy()
+        times: list[float] = []
+        cfg_available = 0
+        recomp_measured = 0
+        compilable = 0
+        byte_match = 0
+        by_difficulty: dict[str, dict[str, int]] = {
+            name: {"rows": 0, "semantic_perfect": 0, "compilable": 0}
+            for name in difficulty_counts
+        }
+        for row in tool_rows:
+            bucket = str(row.get("fail_taxonomy") or normalize_fail_taxonomy(row))
+            taxonomy[bucket if bucket in taxonomy else "other"] += 1
+            time_ms = row.get("time_ms")
+            if isinstance(time_ms, (int, float)) and time_ms > 0:
+                times.append(float(time_ms))
+            ged = row.get("ged_metadata") or {}
+            decompiled_available = ged.get("decompiled_cfg_available")
+            if decompiled_available is None:
+                decompiled_available = (
+                    row.get("ged_score") is not None or ged.get("decompiled_nodes") is not None
+                )
+            cfg_available += bool(decompiled_available)
+            recomp = row.get("recompilation") or {}
+            if row.get("recompilation_score") is not None:
+                recomp_measured += 1
+                byte_match += float(row["recompilation_score"]) >= 1.0
+            compilable += recomp.get("compilable") is True
+            diff = difficulty[_subject_cell(row)]
+            by_difficulty[diff]["rows"] += 1
+            by_difficulty[diff]["semantic_perfect"] += (
+                _valid_semantic_score(row) == 1.0
+            )
+            by_difficulty[diff]["compilable"] += recomp.get("compilable") is True
+
+        output_cfg[tool] = {
+            "attempted": len(tool_rows),
+            "available": cfg_available,
+            "rate": round(cfg_available / len(tool_rows), 4) if tool_rows else None,
+        }
+        by_tool[tool] = {
+            "attempted": len(tool_rows),
+            "output_clean": clean,
+            "output_clean_rate": round(clean / len(tool_rows), 4) if tool_rows else None,
+            "semantic": _metric_summary(
+                tool_rows, rows, "semantic_score", exact=1.0
+            ),
+            "ged": _metric_summary(
+                tool_rows, rows, "ged_score", exact=0.0, lower_is_better=True
+            ),
+            "type_match": _metric_summary(
+                tool_rows, rows, "type_match_score", exact=1.0
+            ),
+            "compile": {
+                "measured_rows": recomp_measured,
+                "compilable_rows": compilable,
+                "compilable_rate": (
+                    round(compilable / recomp_measured, 4) if recomp_measured else None
+                ),
+                "byte_match_rows": byte_match,
+                "byte_match_rate": (
+                    round(byte_match / recomp_measured, 4) if recomp_measured else None
+                ),
+            },
+            "failures": taxonomy,
+            "cost": {
+                "basis": "per-function wall time",
+                "rows_with_time": len(times),
+                "total_ms": round(sum(times), 2),
+                "mean_ms": round(sum(times) / len(times), 2) if times else None,
+                "p50_ms": _percentile(times, 0.5),
+                "p95_ms": _percentile(times, 0.95),
+                "usd": None,
+            },
+            "by_difficulty": by_difficulty,
+        }
+
+    source_count = sum(source_available.values())
+    return {
+        "scope": {
+            "rows": len(rows),
+            "subjects": len(cells),
+            "decompilers": len(tools),
+            "difficulty": difficulty_counts,
+        },
+        "by_decompiler": by_tool,
+        "pipeline": {
+            "source_cfg": {
+                "subjects": len(cells),
+                "available": source_count,
+                "rate": round(source_count / len(cells), 4) if cells else None,
+                "by_basis": {
+                    basis: len(basis_cells)
+                    for basis, basis_cells in sorted(source_basis.items())
+                },
+            },
+            "decompiled_cfg": output_cfg,
+            "oracle": {
+                "attempted": len(rows),
+                "tested": sum(_valid_semantic_score(row) is not None for row in rows),
+                "no_wrapper": sum(
+                    (row.get("fail_taxonomy") or normalize_fail_taxonomy(row))
+                    == "no_wrapper"
+                    for row in rows
+                ),
+            },
+        },
+    }
+
+
+def build_measurement_health(rows: list[Mapping[str, Any]]) -> dict[str, Any]:
+    """Build DecBench-inspired scope, normalization, failure, and cost pivots."""
+    preset_rows: dict[str, list[Mapping[str, Any]]] = defaultdict(list)
+    for row in rows:
+        for preset in _preset_memberships(row):
+            preset_rows[preset].append(row)
+
+    presets: list[dict[str, Any]] = []
+    for preset_id, selected in sorted(
+        preset_rows.items(), key=lambda item: (item[0] != "all", item[0])
+    ):
+        tools = {str(row.get("decompiler") or "unknown") for row in selected}
+        clean_by_cell: dict[tuple[str, str, str], set[str]] = defaultdict(set)
+        for row in selected:
+            if _clean_output(row):
+                clean_by_cell[_subject_cell(row)].add(
+                    str(row.get("decompiler") or "unknown")
+                )
+        intersection_cells = {
+            cell for cell, clean_tools in clean_by_cell.items() if clean_tools == tools
+        }
+        intersection = [
+            row for row in selected if _subject_cell(row) in intersection_cells
+        ]
+        presets.append(
+            {
+                "id": preset_id,
+                "label": preset_id.replace(":", " · ").replace("-", " ").title(),
+                "views": {
+                    "shared": _view_measurement_health(selected),
+                    "intersection": _view_measurement_health(intersection),
+                },
+            }
+        )
+    return {
+        "schema": MEASUREMENT_HEALTH_SCHEMA,
+        "ranking": False,
+        "default_preset": "all",
+        "default_normalization": "shared",
+        "normalization_contract": {
+            "shared": (
+                "Any-tool measurable subjects stay in every tool's metric denominator; "
+                "a missing peer measurement is a miss."
+            ),
+            "intersection": (
+                "Restrict scope to subjects for which every active decompiler produced "
+                "usable requested-function output."
+            ),
+        },
+        "difficulty_contract": (
+            "Structural proxy: easy >= 2/3 exact GED agreement, hard <= 1/3, "
+            "medium otherwise; unmeasured is explicit."
+        ),
+        "cost_contract": (
+            "Per-function wall time is comparable within this run. USD is null unless "
+            "an explicit priced execution source exists."
+        ),
+        "presets": presets,
+    }
 
 
 def build_mvp_by_decompiler(rows: list[Mapping[str, Any]]) -> dict[str, Any]:
@@ -511,12 +809,14 @@ def build_standard_summary(
     readability_axis = aggregate_readability_axis(annotated)
     tracks = aggregate_track_taxonomy(annotated)
     speed = build_speed_extension(annotated, microbench=microbench)
+    measurement_health = build_measurement_health(annotated)
 
     return {
         "schema": SUMMARY_SCHEMA,
         "mvp": {
             "same_function": same_function_summary,
             "by_decompiler": mvp,
+            "measurement_health": measurement_health,
         },
         "secondary": {"cfg": load_cfg_summary(cfg_jsonl)},
         "extensions": {

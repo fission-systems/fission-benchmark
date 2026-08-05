@@ -147,6 +147,19 @@ export const StandardSummarySchema = z
     mvp: z
       .object({
         by_decompiler: z.record(z.string(), z.unknown()).optional(),
+        measurement_health: z
+          .object({
+            schema: z.literal("measurement-health-v1"),
+            ranking: z.literal(false),
+            default_preset: z.string(),
+            default_normalization: z.enum(["shared", "intersection"]),
+            normalization_contract: z.record(z.string(), z.string()),
+            difficulty_contract: z.string(),
+            cost_contract: z.string(),
+            presets: z.array(z.record(z.string(), z.unknown())),
+          })
+          .passthrough()
+          .optional(),
       })
       .passthrough()
       .optional(),

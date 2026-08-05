@@ -122,6 +122,34 @@ def evaluate_envelope(
             f"< min_decompilers={min_decompilers} "
             f"(dashboard would hide most backends — re-run multi-decomp and update envelope)"
         )
+    measurement_contracts = run.get("measurement_contracts") or {}
+    if measurement_contracts.get("dashboard_health") == "measurement-health-v1":
+        health = (((data.get("summary") or {}).get("mvp") or {}).get(
+            "measurement_health"
+        ))
+        if not isinstance(health, dict) or health.get("schema") != "measurement-health-v1":
+            errors.append(
+                f"{source}: dashboard_health is stamped but summary.mvp."
+                "measurement_health is missing or invalid"
+            )
+        else:
+            presets = health.get("presets")
+            all_preset = next(
+                (
+                    preset
+                    for preset in presets or []
+                    if isinstance(preset, dict) and preset.get("id") == "all"
+                ),
+                None,
+            )
+            views = all_preset.get("views") if isinstance(all_preset, dict) else None
+            if not isinstance(views, dict) or not {
+                "shared",
+                "intersection",
+            }.issubset(views):
+                errors.append(
+                    f"{source}: measurement-health all preset lacks shared/intersection views"
+                )
     return errors
 
 

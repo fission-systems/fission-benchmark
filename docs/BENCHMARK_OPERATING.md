@@ -101,6 +101,32 @@ CI stores it permanently as the versioned GitHub Release asset
 if row, subject, tool, binary, or source-CFG coverage falls below the prior
 release using the same release contract.
 
+### P2 measurement-health contract
+
+New runner envelopes stamp
+`run.measurement_contracts.dashboard_health=measurement-health-v1` and include
+`summary.mvp.measurement_health`. The `/measurement` dashboard uses that one
+block for five questions that must be answered together before comparing tools:
+
+- Which preset and how many subject cells are selected?
+- Is the denominator the shared missing-as-miss scope, or the all-tool clean
+  output intersection?
+- How many subjects are easy, medium, hard, or structurally unmeasured?
+- Which failures came from adapters, boundaries, recompilation, or the oracle?
+- Did source CFG, decompiled CFG, semantic oracle, and wall-time collection run?
+
+The default remains `shared`: if any active tool measures a metric for a
+subject, missing peer measurements remain misses. `intersection` is an
+investigative normalization that first requires every active decompiler to
+produce usable requested-function output. Difficulty is explicitly a proxy
+from exact GED agreement (`easy >= 2/3`, `hard <= 1/3`, otherwise `medium`), not
+a ranking metric. Runtime cost is per-function wall time; USD stays `null`/N/A
+unless a priced execution source is recorded.
+
+The dashboard data gate is backward-compatible for archived envelopes, but
+fail-closed once the P2 contract is stamped: a missing health block or missing
+`all.shared` / `all.intersection` views rejects publication.
+
 ### Infra non-negotiables
 
 - Oracle rows that reach the harness must carry **`oracle_evidence.valid=true`**
@@ -124,7 +150,8 @@ Every modern result envelope should carry:
   "schema": "standard-set-v1",
   "mvp": {
     "same_function": { "...": "infra honesty axis" },
-    "by_decompiler": { "...": "semantic + coverage + taxonomy" }
+    "by_decompiler": { "...": "semantic + coverage + taxonomy" },
+    "measurement_health": { "schema": "measurement-health-v1" }
   }
 }
 ```

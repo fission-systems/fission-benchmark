@@ -119,6 +119,15 @@ export default function Home() {
           </p>
           <div className={styles.cardCta}>Open diagnostics →</div>
         </Link>
+        <Link href="/measurement" className={styles.card}>
+          <div className={styles.cardKicker}>P2 · Measurement contract</div>
+          <div className={styles.cardTitle}>Scope & pipeline health</div>
+          <p className={styles.cardBody}>
+            Presets, common-denominator normalization, structural difficulty,
+            compile/error/cost, and CFG · oracle pipeline health in one view.
+          </p>
+          <div className={styles.cardCta}>Inspect measurement →</div>
+        </Link>
         <Link href="/fission-vs-ghidra" className={styles.card}>
           <div className={styles.cardKicker}>Shared IR</div>
           <div className={styles.cardTitle}>Fission ↔ Ghidra</div>

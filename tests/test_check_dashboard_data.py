@@ -81,6 +81,35 @@ def test_evaluate_envelope_min_decompilers():
     assert any("min_decompilers" in e for e in errs)
 
 
+def test_evaluate_envelope_requires_health_when_contract_is_stamped():
+    mod = _load_mod()
+    data = _envelope(5, True)
+    data["run"]["measurement_contracts"] = {
+        "dashboard_health": "measurement-health-v1"
+    }
+    errs = mod.evaluate_envelope(
+        data, source="t", min_rows=1, require_valid=True
+    )
+    assert any("measurement_health is missing" in error for error in errs)
+
+    data["summary"] = {
+        "mvp": {
+            "measurement_health": {
+                "schema": "measurement-health-v1",
+                "presets": [
+                    {
+                        "id": "all",
+                        "views": {"shared": {}, "intersection": {}},
+                    }
+                ],
+            }
+        }
+    }
+    assert mod.evaluate_envelope(
+        data, source="t", min_rows=1, require_valid=True
+    ) == []
+
+
 def test_main_fails_without_local_data(tmp_path: Path):
     mod = _load_mod()
     # empty root — no results/

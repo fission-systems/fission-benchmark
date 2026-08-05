@@ -82,6 +82,95 @@ export type QualityExtensions = {
   byOpt: Record<string, Record<string, number | null | undefined>>;
 };
 
+export type MeasurementMetric = {
+  shared_rows: number;
+  observed_rows: number;
+  perfect_rows: number;
+  perfect_rate: number | null;
+  shared_mean?: number | null;
+  observed_mean: number | null;
+};
+
+export type MeasurementToolHealth = {
+  attempted: number;
+  output_clean: number;
+  output_clean_rate: number | null;
+  semantic: MeasurementMetric;
+  ged: MeasurementMetric;
+  type_match: MeasurementMetric;
+  compile: {
+    measured_rows: number;
+    compilable_rows: number;
+    compilable_rate: number | null;
+    byte_match_rows: number;
+    byte_match_rate: number | null;
+  };
+  failures: Record<string, number>;
+  cost: {
+    basis: string;
+    rows_with_time: number;
+    total_ms: number;
+    mean_ms: number | null;
+    p50_ms: number | null;
+    p95_ms: number | null;
+    usd: number | null;
+  };
+  by_difficulty: Record<
+    string,
+    { rows: number; semantic_perfect: number; compilable: number }
+  >;
+};
+
+export type MeasurementView = {
+  scope: {
+    rows: number;
+    subjects: number;
+    decompilers: number;
+    difficulty: Record<string, number>;
+  };
+  by_decompiler: Record<string, MeasurementToolHealth>;
+  pipeline: {
+    source_cfg: {
+      subjects: number;
+      available: number;
+      rate: number | null;
+      by_basis: Record<string, number>;
+    };
+    decompiled_cfg: Record<
+      string,
+      { attempted: number; available: number; rate: number | null }
+    >;
+    oracle: { attempted: number; tested: number; no_wrapper: number };
+  };
+};
+
+export type MeasurementHealth = {
+  schema: "measurement-health-v1";
+  ranking: false;
+  default_preset: string;
+  default_normalization: "shared" | "intersection";
+  normalization_contract: Record<string, string>;
+  difficulty_contract: string;
+  cost_contract: string;
+  presets: Array<{
+    id: string;
+    label: string;
+    views: { shared: MeasurementView; intersection: MeasurementView };
+  }>;
+};
+
+export function extractMeasurementHealth(
+  data: BenchmarkEnvelope | null | undefined,
+): MeasurementHealth | null {
+  const health = data?.summary?.mvp?.measurement_health as
+    | MeasurementHealth
+    | undefined;
+  return health?.schema === "measurement-health-v1" &&
+    Array.isArray(health.presets)
+    ? health
+    : null;
+}
+
 export function extractQualityExtensions(
   data: BenchmarkEnvelope | null | undefined,
 ): QualityExtensions {
