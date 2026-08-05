@@ -29,7 +29,10 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8.0", "ruff>=0.4"]
+# Keep local and CI lint semantics identical. Ruff 0.16 expands the default
+# rule set and turns hundreds of pre-existing style findings into hard errors;
+# upgrading it requires a separate, intentional repository-wide cleanup.
+dev = ["pytest>=8.0", "ruff==0.15.19"]
 
 [build-system]
 requires = ["hatchling"]
