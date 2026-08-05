@@ -27,6 +27,9 @@ implementation as of the full extension pass (not only MVP semantic).
 | **Track / ISA / format pivots** | `summary.extensions.tracks` | Diagnostic only |
 | **Advanced pattern corpus** | `corpus/dev/source/advanced_patterns.c` | Semantic matrix |
 | **Dashboard Quality EXT** | `/quality` | Non-ranking UI |
+| **Compiler-matched source CFG** | preprocessed TU + GED provenance | Diagnostic ground truth |
+| **Resumable matrix execution** | row checkpoint + metric content cache | Infra reliability |
+| **Public re-evaluation kit** | binaries + rows + source CFG + manifest | Release artifact |
 
 Unified extension runner:
 

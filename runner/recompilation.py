@@ -8,12 +8,19 @@ It is deliberately non-ranking; semantic execution remains the headline.
 from __future__ import annotations
 
 import difflib
+import hashlib
+import functools
 import re
 import shutil
 import subprocess
 import tempfile
 from pathlib import Path
 from typing import Any, Mapping
+
+try:
+    from .metric_cache import load as cache_load, store as cache_store
+except ImportError:
+    from metric_cache import load as cache_load, store as cache_store
 
 try:
     from .bare_compile import build_bare_tu
@@ -34,6 +41,12 @@ _HEX_TOKEN = re.compile(r"#?-?(?:0x[0-9a-fA-F]+|\d+)")
 _PC_REL_MEM = re.compile(
     r"\[(rip|pc)(?:\s*[+\-,]\s*#?-?(?:0x[0-9a-fA-F]+|\d+))?\]"
 )
+
+
+@functools.lru_cache(maxsize=256)
+def _file_sha256(path: str, mtime_ns: int, size: int) -> str:
+    _ = mtime_ns, size
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
 def _compiler_command(info: BinInfo, compiler_variant: str) -> tuple[str, list[str]] | None:
@@ -185,7 +198,7 @@ def _ordered_jaccard(left: list[str], right: list[str]) -> tuple[float, int]:
     return (shared / union if union else 1.0), changed
 
 
-def measure_recompilation(
+def _measure_recompilation_uncached(
     decompiled_code: str,
     *,
     function_name: str,
@@ -288,6 +301,56 @@ def measure_recompilation(
         "original_asm_lines": len(original_asm),
         "recompiled_asm_lines": len(recompiled_asm),
     }
+
+
+def measure_recompilation(
+    decompiled_code: str,
+    *,
+    function_name: str,
+    binary_path: Path,
+    function_address: str | int | None,
+    compiler_variant: str,
+    timeout_s: float = 10.0,
+) -> tuple[float | None, dict[str, Any]]:
+    """Content-cached wrapper around recompilation bytematch."""
+    try:
+        stat = binary_path.stat()
+        binary_sha256 = _file_sha256(
+            str(binary_path.resolve()), stat.st_mtime_ns, stat.st_size
+        )
+    except OSError:
+        binary_sha256 = "missing"
+    key = {
+        "binary_sha256": binary_sha256,
+        "decompiled_code": decompiled_code,
+        "function_name": function_name,
+        "function_address": str(function_address or ""),
+        "compiler_variant": compiler_variant,
+        "timeout_s": timeout_s,
+    }
+    cached = cache_load("recompilation", "v1", key)
+    if isinstance(cached, dict) and "metadata" in cached:
+        metadata = dict(cached["metadata"])
+        metadata["cache"] = {"schema": "metric-content-cache-v1", "hit": True}
+        return cached.get("score"), metadata
+
+    score, metadata = _measure_recompilation_uncached(
+        decompiled_code,
+        function_name=function_name,
+        binary_path=binary_path,
+        function_address=function_address,
+        compiler_variant=compiler_variant,
+        timeout_s=timeout_s,
+    )
+    cache_store(
+        "recompilation",
+        "v1",
+        key,
+        {"score": score, "metadata": metadata},
+    )
+    metadata = dict(metadata)
+    metadata["cache"] = {"schema": "metric-content-cache-v1", "hit": False}
+    return score, metadata
 
 
 def aggregate_recompilation(rows: list[Mapping[str, Any]]) -> dict[str, Any]:

@@ -35,7 +35,10 @@ from test_wrappers import TEST_WRAPPERS
 from bare_compile import try_bare_compile, classify_track, classify_isa_format
 from type_match import calibrate_binary_shift, compute_type_match, ground_truth_for_binary
 from ged import compute_ged, extract_decompiled_cfgs, extract_source_cfgs
+from preprocessed_tu import PREPROCESSED_TU_SCHEMA
 from recompilation import measure_recompilation
+from checkpoint import BenchmarkCheckpoint, CHECKPOINT_SCHEMA
+from metric_cache import CACHE_SCHEMA
 import subprocess
 
 app = typer.Typer(help="Fission decompiler benchmark runner.")
@@ -159,30 +162,56 @@ async def decompile_batch_and_score(
     dname: str,
     url: str,
     binary_path: Path,
-    targets: List[tuple],  # list of (fn_object, variant_object, function_source, source_path)
+    targets: List[tuple],  # fn, variant, function source, GED TU path, GED basis
     sem: asyncio.Semaphore,
     oracle_endpoint: str | None,
     corpus_split: str = "dev",
+    checkpoint: BenchmarkCheckpoint | None = None,
 ) -> List[FunctionScore]:
     addresses = [t[1].addr for t in targets]
-    binary_rel = str(binary_path)
+    try:
+        binary_rel = str(binary_path.relative_to(CORPUS_ROOT / corpus_split))
+    except ValueError:
+        binary_rel = str(binary_path)
+
+    def _ged_provenance(target: tuple) -> dict[str, Any]:
+        source_path = target[3]
+        try:
+            source_rel = str(source_path.relative_to(CORPUS_ROOT / corpus_split))
+        except ValueError:
+            source_rel = str(source_path)
+        return {
+            "source_basis": target[4],
+            "source_path": source_rel,
+            "source_contract": PREPROCESSED_TU_SCHEMA,
+        }
+
+    def _failure_score(
+        target: tuple, message: str, category: str = "adapter_error"
+    ) -> FunctionScore:
+        fn, variant = target[0], target[1]
+        return FunctionScore(
+            decompiler=dname,
+            function_name=fn.name,
+            compiler_variant=f"{variant.compiler} {variant.opt}",
+            source_similarity=0.0,
+            goto_count=0,
+            nesting_depth=0,
+            time_ms=0,
+            error=message,
+            semantic_error=message,
+            fail_category=category,
+            ged_metadata=_ged_provenance(target),
+            binary=binary_rel,
+            corpus=corpus_split,
+            language=getattr(fn, "language", None) or "c",
+        )
 
     try:
         binary_b64 = base64.b64encode(binary_path.read_bytes()).decode()
     except Exception as e:
         return [
-            FunctionScore(
-                decompiler=dname,
-                function_name=t[0].name,
-                compiler_variant=f"{t[1].compiler} {t[1].opt}",
-                source_similarity=0.0,
-                goto_count=0,
-                nesting_depth=0,
-                time_ms=0,
-                error=f"Failed to read binary: {e}",
-                semantic_error=f"Failed to read binary: {e}",
-                fail_category="adapter_error",
-            ) for t in targets
+            _failure_score(t, f"Failed to read binary: {e}") for t in targets
         ]
 
     # Post to batch endpoint under semaphore
@@ -208,18 +237,7 @@ async def decompile_batch_and_score(
                 detail = repr(e)
             err_msg = f"Batch decompile error: {detail}"
             return [
-                FunctionScore(
-                    decompiler=dname,
-                    function_name=t[0].name,
-                    compiler_variant=f"{t[1].compiler} {t[1].opt}",
-                    source_similarity=0.0,
-                    goto_count=0,
-                    nesting_depth=0,
-                    time_ms=0,
-                    error=err_msg,
-                    semantic_error=err_msg,
-                    fail_category="adapter_error",
-                ) for t in targets
+                _failure_score(t, err_msg) for t in targets
             ]
 
     # Map batch results back (normalize hex forms so 0x1400… vs 0X1400… match).
@@ -242,7 +260,7 @@ async def decompile_batch_and_score(
     # functions into a single Joern invocation (mirrors decbench's own
     # per-binary batching) instead of one parse call per function.
     decompiled_by_function: dict[str, str] = {}
-    for fn, variant, _, _src in targets:
+    for fn, variant, _, _ged_src, _ged_basis in targets:
         item = results_by_addr.get(_addr_key(variant.addr))
         if not item:
             continue
@@ -260,21 +278,18 @@ async def decompile_batch_and_score(
     # GED: one Joern parse for every function decompiled in this batch.
     decompiled_cfgs = extract_decompiled_cfgs(decompiled_by_function)
 
-    for fn, variant, function_source, source_path in targets:
+    for fn, variant, function_source, ged_source_path, ged_source_basis in targets:
         variant_label = f"{variant.compiler} {variant.opt}"
         item = results_by_addr.get(_addr_key(variant.addr))
 
         if not item:
-            fn_scores.append(FunctionScore(
-                decompiler=dname,
-                function_name=fn.name,
-                compiler_variant=variant_label,
-                source_similarity=0.0,
-                goto_count=0,
-                nesting_depth=0,
-                time_ms=0,
-                error="Address missing from batch result",
-            ))
+            missing_score = _failure_score(
+                (fn, variant, function_source, ged_source_path, ged_source_basis),
+                "Address missing from batch result",
+            )
+            fn_scores.append(missing_score)
+            if checkpoint is not None:
+                checkpoint.append([missing_score])
             continue
 
         code = item.get("code", "") or ""
@@ -316,14 +331,24 @@ async def decompile_batch_and_score(
             type_match_score = type_match_metadata.get("accuracy")
         # Structural correctness: source CFG vs decompiled CFG edit distance
         # (lower is better; None = no CFG on one side, not a real 0 miss).
-        ged_metadata: dict[str, Any] = {}
+        try:
+            ged_source_rel = str(
+                ged_source_path.relative_to(CORPUS_ROOT / corpus_split)
+            )
+        except ValueError:
+            ged_source_rel = str(ged_source_path)
+        ged_metadata: dict[str, Any] = {
+            "source_basis": ged_source_basis,
+            "source_path": ged_source_rel,
+            "source_contract": PREPROCESSED_TU_SCHEMA,
+        }
         ged_score: float | None = None
         if semantic_code and not error:
-            source_cfgs = extract_source_cfgs(str(source_path))
+            source_cfgs = extract_source_cfgs(str(ged_source_path))
             source_cfg = source_cfgs.get(fn.name)
             decompiled_cfg = decompiled_cfgs.get(fn.name)
             if source_cfg is not None and decompiled_cfg is not None:
-                ged_metadata = compute_ged(source_cfg, decompiled_cfg)
+                ged_metadata.update(compute_ged(source_cfg, decompiled_cfg))
                 ged_score = ged_metadata.get("ged")
         # Primary readability metrics: prefer HIR for Fission dual printers.
         readability_metrics = (
@@ -446,7 +471,7 @@ async def decompile_batch_and_score(
             fmt=isa_fmt.get("format"),
         )
 
-        fn_scores.append(FunctionScore(
+        completed_score = FunctionScore(
             decompiler=dname,
             function_name=fn.name,
             compiler_variant=variant_label,
@@ -484,7 +509,12 @@ async def decompile_batch_and_score(
             isa_format=isa_fmt,
             binary=binary_rel,
             corpus=corpus_split,
-        ))
+        )
+        fn_scores.append(completed_score)
+        # Persist at function granularity, not merely when the whole binary
+        # batch returns, so an interruption loses at most the active function.
+        if checkpoint is not None:
+            checkpoint.append([completed_score])
 
         # Direct feedback output
         status = "✓" if not error else "✗"
@@ -547,9 +577,12 @@ async def run_all(
     limit: int | None,
     variant_limit: int | None,
     oracle_endpoint: str | None,
+    checkpoint: BenchmarkCheckpoint | None = None,
 ) -> list[FunctionScore]:
     fn_list = functions  # [:limit] already applied by caller — do not slice again
-    all_scores: list[FunctionScore] = []
+    all_scores: list[FunctionScore] = (
+        checkpoint.recovered_rows if checkpoint is not None else []
+    )
 
     # 1. Group decompile requests by (decompiler, binary_path)
     groups = {}
@@ -561,9 +594,27 @@ async def run_all(
         variants = fn.compiler_variants[:variant_limit] if variant_limit else fn.compiler_variants
         for variant in variants:
             binary_path = CORPUS_ROOT / corpus_split / variant.binary
+            preprocessed_source = str(
+                getattr(variant, "preprocessed_source", "") or ""
+            )
+            candidate_ged_source = (
+                CORPUS_ROOT / corpus_split / preprocessed_source
+                if preprocessed_source
+                else source_path
+            )
+            if preprocessed_source and candidate_ged_source.is_file():
+                ged_source_path = candidate_ged_source
+                ged_source_basis = "preprocessed_tu"
+            else:
+                ged_source_path = source_path
+                ged_source_basis = "authored_source_fallback"
             if not binary_path.exists():
+                missing_rows = []
                 for dname in decompilers:
-                    all_scores.append(FunctionScore(
+                    key = (dname, fn.name, f"{variant.compiler} {variant.opt}")
+                    if checkpoint is not None and checkpoint.contains(key):
+                        continue
+                    missing_rows.append(FunctionScore(
                         decompiler=dname,
                         function_name=fn.name,
                         compiler_variant=f"{variant.compiler} {variant.opt}",
@@ -575,13 +626,27 @@ async def run_all(
                         semantic_error=f"Missing binary: {variant.binary}",
                         fail_category="fixture_error",
                     ))
+                all_scores.extend(missing_rows)
+                if checkpoint is not None:
+                    checkpoint.append(missing_rows)
                 continue
 
             for dname, url in decompilers.items():
+                key = (dname, fn.name, f"{variant.compiler} {variant.opt}")
+                if checkpoint is not None and checkpoint.contains(key):
+                    continue
                 key = (dname, url, binary_path)
                 if key not in groups:
                     groups[key] = []
-                groups[key].append((fn, variant, function_source, source_path))
+                groups[key].append(
+                    (
+                        fn,
+                        variant,
+                        function_source,
+                        ged_source_path,
+                        ged_source_basis,
+                    )
+                )
 
     # HTTP decompile batches are I/O-bound (work runs in containers). Prefer an
     # explicit BENCHMARK_HTTP_CONCURRENCY override in CI; otherwise scale past
@@ -607,12 +672,15 @@ async def run_all(
                     sem,
                     oracle_endpoint,
                     corpus_split=corpus_split,
+                    checkpoint=checkpoint,
                 )
             )
 
-        results = await asyncio.gather(*tasks)
-        for r in results:
-            all_scores.extend(r)
+        for task in asyncio.as_completed(tasks):
+            rows = await task
+            all_scores.extend(rows)
+            if checkpoint is not None:
+                checkpoint.append(rows)
 
     return assign_consensus_ranks(
         all_scores,
@@ -649,6 +717,16 @@ def run(
         "--profile",
         help="Corpus matrix profile from corpus/matrix/profiles.yaml "
         "(or set BENCHMARK_PROFILE). Filters language/opt/isa/function slices.",
+    ),
+    checkpoint_file: str | None = typer.Option(
+        None,
+        "--checkpoint",
+        help="Append-only row checkpoint path (content-addressed default under .cache)",
+    ),
+    resume: bool = typer.Option(
+        True,
+        "--resume/--no-resume",
+        help="Reuse rows from a matching checkpoint, or start the checkpoint anew",
     ),
 ) -> None:
     """Run benchmark evaluation pipeline."""
@@ -758,12 +836,70 @@ def run(
 
     expected_rows = len(expected_cells)
 
+    try:
+        commit = subprocess.check_output(["git", "rev-parse", "HEAD"]).decode().strip()
+    except Exception:
+        commit = "unknown"
+    manifest_hash = hashlib.sha256()
+    manifest_paths = sorted((CORPUS_ROOT / corpus / "manifests").glob("*.json"))
+    for manifest_path in manifest_paths:
+        manifest_hash.update(manifest_path.name.encode("utf-8"))
+        manifest_hash.update(manifest_path.read_bytes())
+    runner_source_hash = hashlib.sha256()
+    for source_file in sorted(Path(__file__).parent.glob("*.py")):
+        runner_source_hash.update(source_file.name.encode("utf-8"))
+        runner_source_hash.update(source_file.read_bytes())
+    checkpoint_contract = {
+        "schema": CHECKPOINT_SCHEMA,
+        "corpus": corpus,
+        "corpus_manifest_sha256": manifest_hash.hexdigest(),
+        "runner_commit": commit,
+        "runner_source_sha256": runner_source_hash.hexdigest(),
+        "toolchain": fission_toolchain_metadata(),
+        "run_mode": run_mode,
+        "matrix_profile": profile_name,
+        "release_contract_id": (release_contract or {}).get("id"),
+        "expected_cells": expected_cells,
+    }
+    checkpoint_digest = hashlib.sha256(
+        json.dumps(
+            checkpoint_contract, sort_keys=True, separators=(",", ":")
+        ).encode("utf-8")
+    ).hexdigest()
+    checkpoint_path = (
+        Path(checkpoint_file)
+        if checkpoint_file
+        else Path(__file__).resolve().parents[1]
+        / ".cache"
+        / "benchmark-checkpoints"
+        / f"{checkpoint_digest}.jsonl"
+    )
+    try:
+        checkpoint_store = BenchmarkCheckpoint(
+            checkpoint_path,
+            contract=checkpoint_contract,
+            reset=not resume,
+        )
+    except ValueError as exc:
+        raise typer.BadParameter(str(exc), param_hint="--checkpoint") from exc
+    recovered_rows = len(checkpoint_store.recovered_rows)
+    if recovered_rows:
+        typer.echo(f"Resuming {recovered_rows}/{expected_rows} completed rows")
+
     # Run event loop
     oracle_endpoint = os.environ.get("ORACLE_ENDPOINT")
     if run_mode == "official" and not oracle_endpoint:
         raise typer.BadParameter("official runs require ORACLE_ENDPOINT")
     scores = asyncio.run(
-        run_all(fn_list, dec_map, corpus, limit, variant_limit, oracle_endpoint)
+        run_all(
+            fn_list,
+            dec_map,
+            corpus,
+            limit,
+            variant_limit,
+            oracle_endpoint,
+            checkpoint_store,
+        )
     )
 
     elapsed = time.monotonic() - start_monotonic
@@ -781,17 +917,7 @@ def run(
         json_path = results_dir / f"{timestamp}.json"
     serialized = [asdict(s) for s in scores]
     
-    try:
-        commit = subprocess.check_output(["git", "rev-parse", "HEAD"]).decode().strip()
-    except Exception:
-        commit = "unknown"
-
     oracle = aggregate_oracle_evidence(serialized)
-    manifest_hash = hashlib.sha256()
-    manifest_paths = sorted((CORPUS_ROOT / corpus / "manifests").glob("*.json"))
-    for manifest_path in manifest_paths:
-        manifest_hash.update(manifest_path.name.encode("utf-8"))
-        manifest_hash.update(manifest_path.read_bytes())
 
     envelope = build_envelope(
         serialized,
@@ -809,6 +935,18 @@ def run(
             "profile": "realistic" if run_mode == "official" else "diagnostic",
             "matrix_profile": profile_name,
             "release_contract": release_contract,
+            "measurement_contracts": {
+                "source_cfg": PREPROCESSED_TU_SCHEMA,
+                "checkpoint": CHECKPOINT_SCHEMA,
+                "metric_cache": CACHE_SCHEMA,
+                "ged_cache_version": "v2-preprocessed-tu",
+                "recompilation_cache_version": "v1",
+            },
+            "checkpoint": {
+                "schema": CHECKPOINT_SCHEMA,
+                "contract_sha256": checkpoint_store.contract_sha256,
+                "recovered_rows": recovered_rows,
+            },
             "limits": {
                 "limit": limit,
                 "variant_limit": variant_limit,

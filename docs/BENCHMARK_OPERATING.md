@@ -54,6 +54,53 @@ CORPUS_TARGET=windows-x86_64 python scripts/build_matrix.py --split dev
 
 See `corpus/README.md` and `corpus/matrix/{profiles,toolchains}.yaml`.
 
+### P1 reproducibility contract
+
+Official C/C++ builds now emit one compiler-matched preprocessed translation
+unit per binary variant under `corpus/<split>/preprocessed/`. The manifest field
+`compiler_variants[].preprocessed_source` binds GED to that exact TU. System
+header bodies are stripped, while macro expansion and corpus-local includes are
+retained. `ged_metadata.source_basis=authored_source_fallback` is a visible
+legacy fallback and the official eval-kit builder rejects it.
+
+Long matrix runs are resumable by default:
+
+```bash
+# Content-addressed default under .cache/benchmark-checkpoints/
+python runner/runner.py --corpus dev --profile smoke
+
+# Explicit checkpoint; contract mismatch is rejected
+python runner/runner.py --corpus dev --profile smoke \
+  --checkpoint .cache/my-run.jsonl
+
+# Deliberately discard existing rows for that checkpoint
+python runner/runner.py --corpus dev --profile smoke \
+  --checkpoint .cache/my-run.jsonl --no-resume
+```
+
+The checkpoint contract binds the exact expected cells, corpus manifest,
+release contract, runner commit, and runner source hash. Each completed batch is
+fsync'd as JSONL before the next batch completes. GED and recompilation use the
+versioned content cache under `.cache/metric-cache`; set
+`FISSION_BENCHMARK_NO_CACHE=1` to bypass it or
+`FISSION_BENCHMARK_CACHE_DIR=/path` to relocate it. CI restores and saves both
+caches even when a later benchmark step fails.
+
+Every publishable official run builds `results/eval-kit/` with:
+
+- `rows.jsonl` (decompiler output and metric evidence)
+- `expected-cells.json` (frozen denominator)
+- `binaries/` plus SHA-256 `binary-index.json`
+- `preprocessed/` and serialized `source-cfgs.json`
+- `manifest.json` binding every file and the source envelope
+
+CI stores it permanently as the versioned GitHub Release asset
+`fission-eval-kit-<version>.tar.gz`, also uploads the per-run Actions artifact
+`benchmark-eval-kit-<github_run_id>`, and commits the lightweight
+`public/eval-kit-latest.json` index with the direct release URL. The build fails
+if row, subject, tool, binary, or source-CFG coverage falls below the prior
+release using the same release contract.
+
 ### Infra non-negotiables
 
 - Oracle rows that reach the harness must carry **`oracle_evidence.valid=true`**
@@ -247,7 +294,8 @@ Other push-path speedups (no quality gate regression):
 
 - **Parallel image pull** (×6) then sequential build only for miss/changed
 - **Parallel container health waits**
-- **Corpus binary cache** (`actions/cache` on `corpus/*/binaries`)
+- **Corpus binary + preprocessed-TU cache** (`actions/cache` on corpus artifacts)
+- **Row checkpoint + metric content cache** (`.cache/benchmark-*`, restored in CI)
 - **pip cache** via `setup-python`
 - **`BENCHMARK_HTTP_CONCURRENCY=12`** for I/O-bound multi-adapter batches
 - **`paths-ignore`**: `**.md`, `docs/**`, `LICENSE` skip the full workflow

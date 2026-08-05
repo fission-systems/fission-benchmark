@@ -26,6 +26,10 @@ ROOT = Path(__file__).resolve().parent.parent
 CORPUS_ROOT = ROOT / "corpus"
 CORPUS_TARGET = os.environ.get("CORPUS_TARGET", "host")
 sys.path.insert(0, str(ROOT))
+from runner.preprocessed_tu import (  # noqa: E402
+    preprocessed_tu_path,
+    strip_system_headers,
+)
 
 
 def target_tool(compiler: str, tool: str) -> str:
@@ -152,6 +156,53 @@ def compile_c_family(
         except subprocess.CalledProcessError as e2:
             print(f"Compilation error ({source.name}): {e2.stderr}", file=sys.stderr)
             raise
+
+
+def preprocess_c_family(
+    compiler: str,
+    opt: str,
+    source: Path,
+    output: Path,
+    *,
+    corpus_root: Path,
+    language: str = "c",
+    fmt: str = "",
+    isa: str = "",
+) -> None:
+    """Emit the exact compiler-specific C/C++ TU used as GED ground truth."""
+    is_cpp = language == "cpp" or compiler in {"g++", "cpp", "cxx", "clang++"}
+    fmt = fmt or ("pe" if CORPUS_TARGET == "windows-x86_64" else "elf")
+    isa = isa or (
+        "x86_32"
+        if compiler in {"gcc-m32", "clang-m32"}
+        else ("aarch64" if compiler in {"gcc-aarch64", "aarch64"} else "x86_64")
+    )
+    selected = _select_c_tool(compiler, language=language, fmt=fmt, isa=isa)
+    cmd = [compiler_binary(selected), "-E", opt, "-g", "-fno-inline"]
+    if is_cpp:
+        cmd.extend(["-std=c++17", "-fno-exceptions"])
+    if not is_cpp and compiler == "clang" and CORPUS_TARGET == "windows-x86_64":
+        cmd.extend(["-target", "x86_64-w64-mingw32"])
+    elif not is_cpp and compiler == "clang-m32" and CORPUS_TARGET == "windows-x86_64":
+        cmd.extend(["-target", "i686-w64-mingw32"])
+    cmd.append(str(source))
+
+    try:
+        proc = subprocess.run(cmd, check=True, capture_output=True, text=True)
+    except subprocess.CalledProcessError as exc:
+        detail = exc.stderr or exc.stdout or str(exc)
+        print(f"Preprocessing error ({source.name}): {detail}", file=sys.stderr)
+        raise
+
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(
+        strip_system_headers(
+            proc.stdout,
+            source_path=source,
+            corpus_root=corpus_root,
+        ),
+        encoding="utf-8",
+    )
 
 
 def symbol_addresses(binary: Path, compiler: str) -> dict[str, str]:
@@ -409,6 +460,10 @@ def build_manifest(manifest_path: Path, split: str, languages: set[str] | None) 
             variant["binary"] = target_binary(
                 variant["binary"], variant.get("format", "")
             )
+            if language in {"c", "cpp"}:
+                variant["preprocessed_source"] = preprocessed_tu_path(
+                    variant["binary"], language=language
+                )
             key = (
                 fn["source"],
                 compiler,
@@ -427,6 +482,17 @@ def build_manifest(manifest_path: Path, split: str, languages: set[str] | None) 
                 fmt=str(variant.get("format") or ""),
                 isa=str(variant.get("isa") or ""),
             )
+            if language in {"c", "cpp"}:
+                preprocess_c_family(
+                    compiler,
+                    variant["opt"],
+                    source,
+                    CORPUS_ROOT / split / variant["preprocessed_source"],
+                    corpus_root=CORPUS_ROOT / split,
+                    language=language,
+                    fmt=str(variant.get("format") or ""),
+                    isa=str(variant.get("isa") or ""),
+                )
             built.add(key)
 
     addr_cache: dict[str, dict[str, str]] = {}

@@ -22,6 +22,7 @@ class CompilerVariant:
     isa: str = ""  # x86_64 | x86_32 | aarch64
     format: str = ""  # pe | elf
     abi_profile: str = ""  # windows-x86_64 | linux-x86_64 | ...
+    preprocessed_source: str = ""  # exact C/C++ TU used for source-CFG GED
 
 
 @dataclass

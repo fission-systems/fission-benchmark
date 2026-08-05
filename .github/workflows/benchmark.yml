@@ -290,11 +290,13 @@ jobs:
           path: |
             corpus/dev/binaries
             corpus/holdout/binaries
+            corpus/dev/preprocessed
+            corpus/holdout/preprocessed
             corpus/dev/manifests
             corpus/holdout/manifests
             corpus/dev/inventory.json
             corpus/holdout/inventory.json
-          key: corpus-bin-manifest-v3-${{ hashFiles('corpus/**/source/**', 'corpus/**/manifests/**', 'corpus/matrix/**', 'docker/corpus-builder/**', 'scripts/build_matrix.py', 'scripts/build_corpus.py') }}
+          key: corpus-bin-manifest-v4-${{ hashFiles('corpus/**/source/**', 'corpus/**/manifests/**', 'corpus/matrix/**', 'docker/corpus-builder/**', 'scripts/build_matrix.py', 'scripts/build_corpus.py', 'runner/preprocessed_tu.py') }}
 
       - name: Build corpus binaries
         if: steps.corpus-cache.outputs.cache-hit != 'true'
@@ -302,6 +304,19 @@ jobs:
 
       - name: Verify corpus binaries present
         run: bash scripts/verify_corpus_binaries.sh
+
+      - name: Verify compiler-matched preprocessed TUs
+        run: python scripts/check_preprocessed_tus.py corpus/dev corpus/holdout
+
+      - name: Restore benchmark checkpoints and metric cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            .cache/benchmark-checkpoints
+            .cache/metric-cache
+          key: benchmark-runtime-v1-${{ runner.os }}-${{ hashFiles('runner/*.py', 'runner/**/*.py', 'corpus/**/manifests/**', 'corpus/matrix/**') }}
+          restore-keys: |
+            benchmark-runtime-v1-${{ runner.os }}-
 
       - name: Start decompiler containers
         run: |
@@ -515,6 +530,15 @@ jobs:
             --output results/publication-verdict.json \
             --github-env "$GITHUB_ENV"
 
+      - name: Save benchmark checkpoints and metric cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            .cache/benchmark-checkpoints
+            .cache/metric-cache
+          key: benchmark-runtime-v1-${{ runner.os }}-${{ hashFiles('runner/*.py', 'runner/**/*.py', 'corpus/**/manifests/**', 'corpus/matrix/**') }}-${{ github.run_id }}
+
       - name: Determine publish mode
         id: publish-mode
         if: always()
@@ -545,6 +569,42 @@ jobs:
           # Preserve the canonical publication by Fission release. This is the
           # release-channel anchor used to reject older dashboard fallbacks.
           python scripts/archive_benchmark_history.py --input results/latest.json
+
+      - name: Build public re-evaluation kit
+        if: ${{ env.MEASUREMENT_VALID == 'true' && steps.publish-mode.outputs.should_publish == 'true' }}
+        run: |
+          python scripts/build_eval_kit.py \
+            --envelope results/latest.json \
+            --output .cache/eval-kit \
+            --public-index public/eval-kit-latest.json \
+            --previous-index public/eval-kit-latest.json
+
+      - name: Publish versioned re-evaluation kit asset
+        if: ${{ env.MEASUREMENT_VALID == 'true' && steps.publish-mode.outputs.should_publish == 'true' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          release_tag="benchmark-${FISSION_VERSION}"
+          asset_name="fission-eval-kit-${FISSION_VERSION}.tar.gz"
+          archive_path=".cache/${asset_name}"
+          tar -C .cache -czf "$archive_path" eval-kit
+          if ! gh release view "$release_tag" >/dev/null 2>&1; then
+            gh release create "$release_tag" \
+              --target "$GITHUB_SHA" \
+              --title "Fission benchmark ${FISSION_VERSION}" \
+              --notes "Frozen benchmark re-evaluation kit for Fission ${FISSION_VERSION}."
+          fi
+          gh release upload "$release_tag" "$archive_path" --clobber
+
+      - name: Upload public re-evaluation kit
+        if: ${{ env.MEASUREMENT_VALID == 'true' && steps.publish-mode.outputs.should_publish == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-eval-kit-${{ github.run_id }}
+          path: .cache/eval-kit/
+          if-no-files-found: error
+          retention-days: 90
 
       - name: Run parity benchmarks (Ghidra reference)
         id: parity
@@ -881,7 +941,7 @@ jobs:
           # autostash re-apply can conflict without failing `git pull`
           # itself, and committing anyway bakes conflict markers straight
           # into these JSON files.
-          CONFLICTED="$(grep -rlE '^(<<<<<<< |>>>>>>> )' results/ docs/ public/parity-telemetry.json public/parity-history/ public/benchmark-latest.json public/benchmark-history/ 2>/dev/null || true)"
+          CONFLICTED="$(grep -rlE '^(<<<<<<< |>>>>>>> )' results/ docs/ public/parity-telemetry.json public/parity-history/ public/benchmark-latest.json public/benchmark-history/ public/eval-kit-latest.json 2>/dev/null || true)"
           if [ -n "$CONFLICTED" ]; then
             echo "::error::Unresolved conflict markers after autostash pop in: $CONFLICTED" >&2
             echo "::error::A concurrent workflow run likely raced this commit. Not committing -- re-run this job." >&2
@@ -889,7 +949,7 @@ jobs:
           fi
           git add -f results/ docs/ public/parity-telemetry.json \
             public/parity-history/ public/benchmark-latest.json \
-            public/benchmark-history/
+            public/benchmark-history/ public/eval-kit-latest.json
           git diff --staged --quiet || git commit -m "chore: update benchmark results [skip ci]"
           git push
 

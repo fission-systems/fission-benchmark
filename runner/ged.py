@@ -8,8 +8,10 @@ shape* match the original source's, not just its behavior (semantic_score)
 or its Ghidra-relative parity (assembly/pcode/cfg parity)?
 
 Both sides are parsed with the same tool (pyjoern/Joern) for structural
-comparability. Source CFGs are extracted from the **whole corpus source
-file**, not an isolated per-function text extract: fission-benchmark's
+comparability. Source CFGs are extracted from the binary variant's
+**preprocessed translation unit**, with authored source retained only as an
+explicit legacy fallback. They are not extracted from an isolated function:
+fission-benchmark's
 fixtures define shared types near the top of the file (e.g.
 `typedef struct Node {...} Node;` in advanced_patterns.c) that an isolated
 function body wouldn't carry, and Joern needs the file to resolve them.
@@ -35,12 +37,18 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
+try:
+    from .metric_cache import load as cache_load, store as cache_store
+except ImportError:
+    from metric_cache import load as cache_load, store as cache_store
+
 logger = logging.getLogger(__name__)
 
 
 # Exact GED is super-polynomial, so graphs above this node count fall back to
 # a cheap structural (size-delta) distance instead of vj_ged.
 GED_MAX_NODES = int(os.environ.get("FISSION_BENCHMARK_GED_MAX_NODES") or "60")
+GED_CACHE_VERSION = "v2-preprocessed-tu"
 
 
 # ── Decompiled-C sanitization (pre-parse) ───────────────────────────────────
@@ -133,7 +141,7 @@ def is_degenerate_cfg(cfg: Any) -> bool:
 
 @functools.lru_cache(maxsize=64)
 def extract_source_cfgs(source_path: str) -> dict[str, Any]:
-    """Parse a whole corpus source .c file once via pyjoern, cached by path.
+    """Parse a whole source translation unit once via pyjoern, cached by path.
 
     Returns function_name -> CFG DiGraph. Parsing the whole file (not an
     isolated per-function extract) lets same-file typedefs resolve, and the
@@ -223,6 +231,25 @@ def _get_vj_ged():
     return _vj_ged
 
 
+def _graph_content(graph: Any) -> dict[str, Any]:
+    """Stable-enough CFG content payload for the versioned metric cache."""
+    nodes = list(graph.nodes())
+    node_index = {node: index for index, node in enumerate(nodes)}
+    return {
+        "nodes": [
+            {
+                "statements": [repr(stmt) for stmt in (getattr(node, "statements", None) or [])],
+                "in_degree": int(graph.in_degree(node)),
+                "out_degree": int(graph.out_degree(node)),
+            }
+            for node in nodes
+        ],
+        "edges": sorted(
+            (node_index[left], node_index[right]) for left, right in graph.edges()
+        ),
+    }
+
+
 def compute_ged(source_cfg: Any, decompiled_cfg: Any) -> dict[str, Any]:
     """Graph edit distance between a source CFG and a decompiled CFG.
 
@@ -254,13 +281,26 @@ def compute_ged(source_cfg: Any, decompiled_cfg: Any) -> dict[str, Any]:
         "decompiled_edges": d_edges,
     }
 
+    cache_key = {
+        "max_nodes": GED_MAX_NODES,
+        "source": _graph_content(source_cfg),
+        "decompiled": _graph_content(decompiled_cfg),
+    }
+    cached = cache_load("ged", GED_CACHE_VERSION, cache_key)
+    if isinstance(cached, dict):
+        return {**cached, "cache": {"schema": "metric-content-cache-v1", "hit": True}}
+
     if s_nodes > GED_MAX_NODES or d_nodes > GED_MAX_NODES:
         approx = float(abs(s_nodes - d_nodes) + abs(s_edges - d_edges))
-        return {**base, "ged": approx, "approximated": True}
+        result = {**base, "ged": approx, "approximated": True}
+        cache_store("ged", GED_CACHE_VERSION, cache_key, result)
+        return {**result, "cache": {"schema": "metric-content-cache-v1", "hit": False}}
 
     vj_ged = _get_vj_ged()
     try:
         ged_value = vj_ged(source_cfg, decompiled_cfg)
-        return {**base, "ged": float(ged_value)}
+        result = {**base, "ged": float(ged_value)}
+        cache_store("ged", GED_CACHE_VERSION, cache_key, result)
+        return {**result, "cache": {"schema": "metric-content-cache-v1", "hit": False}}
     except Exception as e:
         return {**base, "error": str(e)}

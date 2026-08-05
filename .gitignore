@@ -17,6 +17,9 @@ corpus/*/binaries/
 # Docker build cache
 .docker/
 
+# Resumable benchmark checkpoints and metric content cache
+.cache/
+
 # OS
 .DS_Store
 

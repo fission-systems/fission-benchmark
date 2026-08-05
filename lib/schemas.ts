@@ -49,6 +49,14 @@ export const RunMetaSchema = z.object({
     })
     .nullable()
     .optional(),
+  measurement_contracts: z.record(z.string(), z.string()).optional(),
+  checkpoint: z
+    .object({
+      schema: z.string(),
+      contract_sha256: z.string(),
+      recovered_rows: z.number().int().nonnegative(),
+    })
+    .optional(),
   profile: z.enum(["diagnostic", "realistic"]).optional(),
   limits: z.record(z.string(), z.unknown()).optional(),
   official: z.boolean(),
@@ -125,6 +133,7 @@ export const RowSchema = z
     // Lower is better, 0.0 = perfect structural match. null = no CFG pair
     // extracted for this function (degenerate/unparseable), not a miss.
     ged_score: z.number().nullable().optional(),
+    ged_metadata: z.record(z.string(), z.unknown()).optional(),
     // Same-toolchain normalized assembly match (diagnostic; not ranking).
     recompilation_score: z.number().nullable().optional(),
     recompilation: z.record(z.string(), z.unknown()).optional(),

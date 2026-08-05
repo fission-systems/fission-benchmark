@@ -77,6 +77,18 @@ async function QualitySection() {
   const isas = Object.keys(ext.byIsa);
   const formats = Object.keys(ext.byFormat);
   const opts = Object.keys(ext.byOpt);
+  const gedProvenance = data.rows.reduce(
+    (counts, row) => {
+      const basis = String(row.ged_metadata?.source_basis ?? "missing");
+      if (basis === "preprocessed_tu") counts.preprocessed += 1;
+      else if (basis === "authored_source_fallback") counts.fallback += 1;
+      else counts.missing += 1;
+      return counts;
+    },
+    { preprocessed: 0, fallback: 0, missing: 0 },
+  );
+  const sourceCfgContract =
+    data.run.measurement_contracts?.source_cfg ?? "legacy / unstamped";
 
   return (
     <>
@@ -98,6 +110,18 @@ async function QualitySection() {
             semantic rows use NIR; readability proxies prefer HIR when dual
             layers are present. ELF uses host/qemu recompile ABI (not wine).
             Study pack: <code>benchmark/readability/</code>.
+          </p>
+        </div>
+        <div className={styles.frame}>
+          <div className={styles.frameTitle}>Re-evaluation provenance</div>
+          <p className={styles.frameBody}>
+            Source-CFG contract: <code>{sourceCfgContract}</code>. Compiler-matched
+            preprocessed TU rows: <strong>{gedProvenance.preprocessed}</strong>;
+            authored-source fallback: <strong>{gedProvenance.fallback}</strong>;
+            missing provenance: <strong>{gedProvenance.missing}</strong>. Official
+            releases publish binaries, decompiler rows, expected cells, and
+            serialized source CFGs in the eval kit. {" "}
+            <a href="/eval-kit-latest.json">Open latest eval-kit index →</a>
           </p>
         </div>
       </section>
@@ -260,8 +284,8 @@ async function QualitySection() {
         <h2 className={styles.sectionTitle}>EXT · Structural correctness (GED)</h2>
         <p className={styles.sectionLead}>
           Graph edit distance between the decompiled function&apos;s control-flow
-          graph and the original source&apos;s CFG (both parsed with the same
-          tool, Joern, for structural comparability). Lower is better — 0.0
+          graph and the exact compiler-variant preprocessed TU&apos;s CFG (both
+          parsed with Joern for structural comparability). Lower is better — 0.0
           means the control-flow shape matches exactly. Mean GED describes
           observed rows; exact-match rate uses the shared subject denominator.
           Diagnostic evidence only, not a ranking axis.
