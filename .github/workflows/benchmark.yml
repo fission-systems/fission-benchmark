@@ -275,6 +275,12 @@ jobs:
       - name: Install Python deps
         run: pip install -e ".[dev]"
 
+      - name: Install matching PE recompilation toolchains
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            gcc-mingw-w64-x86-64 gcc-mingw-w64-i686
+
       - name: Cache corpus binaries + synced manifests
         id: corpus-cache
         uses: actions/cache@v4

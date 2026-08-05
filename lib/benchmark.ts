@@ -31,6 +31,7 @@ export type MvpDecompilerStats = {
   adapterClean: number;
   invalidBoundary: number;
   semanticTested: number;
+  semanticSharedRows: number;
   noWrapper: number;
   meanSemantic: number | null;
   perfectRows: number;
@@ -40,12 +41,16 @@ export type MvpDecompilerStats = {
   // Type correctness vs DWARF ground truth (diagnostic; not ranking).
   meanTypeMatch: number | null;
   typeMatchTestedRows: number;
+  typeMatchSharedRows: number;
   typeMatchPerfectRows: number;
+  typeMatchPerfectRate: number | null;
   // Structural correctness vs source CFG (diagnostic; not ranking).
   // Lower is better, 0.0 = perfect structural match.
   meanGed: number | null;
   gedTestedRows: number;
+  gedSharedRows: number;
   gedPerfectRows: number;
+  gedPerfectRate: number | null;
 };
 
 export type CrossVariantRow = {
@@ -54,6 +59,7 @@ export type CrossVariantRow = {
   compiler: string;
   opt: string;
   tested_rows: number;
+  shared_rows?: number;
   mean_pass_rate: number | null;
   perfect_rows: number;
 };
@@ -61,6 +67,10 @@ export type CrossVariantRow = {
 /** Non-ranking extension pivots from envelope.summary. */
 export type QualityExtensions = {
   bareByDecompiler: Record<string, Record<string, number | null | undefined>>;
+  recompilationByDecompiler: Record<
+    string,
+    Record<string, number | null | undefined>
+  >;
   readabilityByDecompiler: Record<
     string,
     Record<string, number | null | undefined>
@@ -77,6 +87,7 @@ export function extractQualityExtensions(
 ): QualityExtensions {
   const empty: QualityExtensions = {
     bareByDecompiler: {},
+    recompilationByDecompiler: {},
     readabilityByDecompiler: {},
     byTrack: {},
     byLanguage: {},
@@ -97,12 +108,19 @@ export function extractQualityExtensions(
     (extensions.readability_axis as Record<string, unknown> | undefined) ||
     (diagnostics.readability_axis as Record<string, unknown> | undefined) ||
     {};
+  const recompilation =
+    (extensions.recompilation as Record<string, unknown> | undefined) ||
+    (diagnostics.recompilation as Record<string, unknown> | undefined) ||
+    {};
   const tracks =
     (extensions.tracks as Record<string, unknown> | undefined) ||
     (diagnostics.tracks as Record<string, unknown> | undefined) ||
     {};
   return {
     bareByDecompiler: (bare.by_decompiler as QualityExtensions["bareByDecompiler"]) || {},
+    recompilationByDecompiler:
+      (recompilation.by_decompiler as QualityExtensions["recompilationByDecompiler"]) ||
+      {},
     readabilityByDecompiler:
       (readability.by_decompiler as QualityExtensions["readabilityByDecompiler"]) ||
       {},
@@ -173,6 +191,7 @@ function isReleaseArtifact(envelope: BenchmarkEnvelope): boolean {
 function isCanonicalPublication(envelope: BenchmarkEnvelope): boolean {
   return (
     isReleaseArtifact(envelope) &&
+    envelope.run?.release_contract?.id === "release-baseline-v1" &&
     envelope.run?.official === true &&
     envelope.validity?.valid === true &&
     envelope.validity?.publishable === true
@@ -299,6 +318,7 @@ export function groupByDecompiler(data: BenchmarkEnvelope): MvpDecompilerStats[]
             mean_pass_rate?: number | null;
             perfect_rows?: number;
             tested_rows?: number;
+            shared_rows?: number;
             oracle_subject?: string | null;
           };
           coverage?: {
@@ -314,11 +334,15 @@ export function groupByDecompiler(data: BenchmarkEnvelope): MvpDecompilerStats[]
             mean_accuracy?: number | null;
             perfect_rows?: number;
             tested_rows?: number;
+            shared_rows?: number;
+            perfect_rate?: number | null;
           };
           ged?: {
             mean_ged?: number | null;
             perfect_rows?: number;
             tested_rows?: number;
+            shared_rows?: number;
+            perfect_rate?: number | null;
           };
         }
       >
@@ -332,6 +356,7 @@ export function groupByDecompiler(data: BenchmarkEnvelope): MvpDecompilerStats[]
         adapterClean: s.coverage?.adapter_clean ?? 0,
         invalidBoundary: s.coverage?.invalid_boundary ?? 0,
         semanticTested: s.coverage?.semantic_tested ?? s.semantic?.tested_rows ?? 0,
+        semanticSharedRows: s.semantic?.shared_rows ?? s.semantic?.tested_rows ?? 0,
         noWrapper: s.coverage?.no_wrapper ?? 0,
         meanSemantic:
           s.semantic?.mean_pass_rate === undefined || s.semantic?.mean_pass_rate === null
@@ -349,13 +374,23 @@ export function groupByDecompiler(data: BenchmarkEnvelope): MvpDecompilerStats[]
             ? null
             : Number(s.type_match.mean_accuracy),
         typeMatchTestedRows: s.type_match?.tested_rows ?? 0,
+        typeMatchSharedRows: s.type_match?.shared_rows ?? s.type_match?.tested_rows ?? 0,
         typeMatchPerfectRows: s.type_match?.perfect_rows ?? 0,
+        typeMatchPerfectRate:
+          s.type_match?.perfect_rate === undefined || s.type_match?.perfect_rate === null
+            ? null
+            : Number(s.type_match.perfect_rate),
         meanGed:
           s.ged?.mean_ged === undefined || s.ged?.mean_ged === null
             ? null
             : Number(s.ged.mean_ged),
         gedTestedRows: s.ged?.tested_rows ?? 0,
+        gedSharedRows: s.ged?.shared_rows ?? s.ged?.tested_rows ?? 0,
         gedPerfectRows: s.ged?.perfect_rows ?? 0,
+        gedPerfectRate:
+          s.ged?.perfect_rate === undefined || s.ged?.perfect_rate === null
+            ? null
+            : Number(s.ged.perfect_rate),
       }))
       .sort((a, b) => {
         if (a.decompiler === "fission") return -1;
@@ -430,6 +465,7 @@ export function groupByDecompiler(data: BenchmarkEnvelope): MvpDecompilerStats[]
       adapterClean: s.adapterClean,
       invalidBoundary: s.invalidBoundary,
       semanticTested: s.semanticScores.length,
+      semanticSharedRows: s.semanticScores.length,
       noWrapper: s.noWrapper,
       meanSemantic:
         s.semanticScores.length > 0
@@ -445,13 +481,23 @@ export function groupByDecompiler(data: BenchmarkEnvelope): MvpDecompilerStats[]
           ? s.typeMatchScores.reduce((a, b) => a + b, 0) / s.typeMatchScores.length
           : null,
       typeMatchTestedRows: s.typeMatchScores.length,
+      typeMatchSharedRows: s.typeMatchScores.length,
       typeMatchPerfectRows: s.typeMatchScores.filter((v) => v >= 1).length,
+      typeMatchPerfectRate:
+        s.typeMatchScores.length > 0
+          ? s.typeMatchScores.filter((v) => v >= 1).length / s.typeMatchScores.length
+          : null,
       meanGed:
         s.gedScores.length > 0
           ? s.gedScores.reduce((a, b) => a + b, 0) / s.gedScores.length
           : null,
       gedTestedRows: s.gedScores.length,
+      gedSharedRows: s.gedScores.length,
       gedPerfectRows: s.gedScores.filter((v) => v === 0).length,
+      gedPerfectRate:
+        s.gedScores.length > 0
+          ? s.gedScores.filter((v) => v === 0).length / s.gedScores.length
+          : null,
     }))
     .sort((a, b) => {
       if (a.decompiler === "fission") return -1;
@@ -489,6 +535,7 @@ export function getCrossVariantRows(data: BenchmarkEnvelope): CrossVariantRow[] 
             compiler: string;
             opt: string;
             tested_rows: number;
+            shared_rows?: number;
             mean_pass_rate: number | null;
             perfect_rows: number;
           }>

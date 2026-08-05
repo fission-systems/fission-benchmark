@@ -130,3 +130,73 @@ def apply_profile_to_functions(
     if max_functions > 0:
         selected = selected[:max_functions]
     return selected
+
+
+def validate_release_contract(
+    profile_name: str | None,
+    profile: dict[str, Any] | None,
+    functions: list[Any],
+    decompilers: list[str],
+) -> dict[str, Any] | None:
+    """Validate and return the immutable subject contract for an official run.
+
+    Profiles without ``release_contract`` remain usable for diagnostic runs.
+    A contracted profile fails closed when a function, compiler variant, or
+    compared decompiler drifts, so a release cannot silently publish a new
+    denominator under the old chart series.
+    """
+    contract = (profile or {}).get("release_contract")
+    if not contract:
+        return None
+
+    expected_functions = [str(name) for name in contract.get("functions") or []]
+    expected_variants = [str(name) for name in contract.get("compiler_variants") or []]
+    expected_decompilers = [str(name) for name in contract.get("decompilers") or []]
+    actual_functions = [str(fn.name) for fn in functions]
+    if actual_functions != expected_functions:
+        missing = sorted(set(expected_functions) - set(actual_functions))
+        extra = sorted(set(actual_functions) - set(expected_functions))
+        raise ValueError(
+            f"release contract {contract.get('id')!r} function drift "
+            f"(missing={missing}, extra={extra}, order_changed="
+            f"{not missing and not extra})"
+        )
+
+    expected_variant_set = set(expected_variants)
+    variant_drift: list[str] = []
+    subject_count = 0
+    for fn in functions:
+        actual = [f"{variant.compiler} {variant.opt}" for variant in fn.compiler_variants]
+        subject_count += len(actual)
+        if set(actual) != expected_variant_set or len(actual) != len(expected_variants):
+            variant_drift.append(f"{fn.name}: {actual}")
+    if variant_drift:
+        raise ValueError(
+            f"release contract {contract.get('id')!r} compiler variant drift: "
+            + "; ".join(variant_drift[:5])
+        )
+
+    if decompilers != expected_decompilers:
+        raise ValueError(
+            f"release contract {contract.get('id')!r} decompiler drift "
+            f"(expected={expected_decompilers}, actual={decompilers})"
+        )
+
+    expected_subjects = int(contract.get("subject_count") or 0)
+    if expected_subjects and subject_count != expected_subjects:
+        raise ValueError(
+            f"release contract {contract.get('id')!r} subject drift "
+            f"(expected={expected_subjects}, actual={subject_count})"
+        )
+
+    return {
+        "id": str(contract.get("id") or f"{profile_name or 'profile'}-v1"),
+        "version": int(contract.get("version") or 1),
+        "profile": profile_name,
+        "function_count": len(actual_functions),
+        "compiler_variant_count": len(expected_variants),
+        "subject_count": subject_count,
+        "row_count": subject_count * len(decompilers),
+        "decompilers": list(decompilers),
+        "compiler_variants": expected_variants,
+    }

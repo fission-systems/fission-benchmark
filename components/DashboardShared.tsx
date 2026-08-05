@@ -88,6 +88,7 @@ export async function MetaStrip() {
       ? "smoke / diagnostic"
       : "invalid / unverified";
   const commit = data.run?.runner_commit ?? data.toolchain?.runner_commit;
+  const contract = data.run?.release_contract;
 
   return (
     <div className={styles.heroMeta}>
@@ -106,6 +107,14 @@ export async function MetaStrip() {
       <span className={styles.metaItem}>
         <span className={styles.metaLabel}>Decompilers</span>
         <span className={styles.metaValue}>{stats.length}</span>
+      </span>
+      <span className={styles.metaItem}>
+        <span className={styles.metaLabel}>Contract</span>
+        <code className={styles.metaValue}>
+          {contract
+            ? `${contract.id} · ${contract.subject_count} subjects`
+            : data.run?.matrix_profile ?? "legacy / unstamped"}
+        </code>
       </span>
       <span className={styles.metaItem}>
         <span className={styles.metaLabel}>Measured</span>

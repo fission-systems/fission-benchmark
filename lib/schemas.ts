@@ -34,6 +34,21 @@ export const RunMetaSchema = z.object({
   duration_ms: z.number().optional(),
   runner_commit: z.string().optional(),
   corpus: z.string().optional(),
+  matrix_profile: z.string().nullable().optional(),
+  release_contract: z
+    .object({
+      id: z.string(),
+      version: z.number().int().positive(),
+      profile: z.string().nullable().optional(),
+      function_count: z.number().int().nonnegative(),
+      compiler_variant_count: z.number().int().nonnegative(),
+      subject_count: z.number().int().nonnegative(),
+      row_count: z.number().int().nonnegative(),
+      decompilers: z.array(z.string()),
+      compiler_variants: z.array(z.string()),
+    })
+    .nullable()
+    .optional(),
   profile: z.enum(["diagnostic", "realistic"]).optional(),
   limits: z.record(z.string(), z.unknown()).optional(),
   official: z.boolean(),
@@ -110,6 +125,9 @@ export const RowSchema = z
     // Lower is better, 0.0 = perfect structural match. null = no CFG pair
     // extracted for this function (degenerate/unparseable), not a miss.
     ged_score: z.number().nullable().optional(),
+    // Same-toolchain normalized assembly match (diagnostic; not ranking).
+    recompilation_score: z.number().nullable().optional(),
+    recompilation: z.record(z.string(), z.unknown()).optional(),
   })
   .passthrough();
 

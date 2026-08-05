@@ -158,6 +158,7 @@ function meanSemantic(rows: Row[]): number | null {
 
 function isCanonicalRelease(envelope: BenchmarkEnvelope): boolean {
   return (
+    envelope.run?.release_contract?.id === "release-baseline-v1" &&
     envelope.run?.official === true &&
     envelope.validity?.valid === true &&
     envelope.validity?.publishable === true
@@ -166,12 +167,33 @@ function isCanonicalRelease(envelope: BenchmarkEnvelope): boolean {
 
 function measurementContract(envelope: BenchmarkEnvelope): string {
   return JSON.stringify({
+    releaseContract: envelope.run?.release_contract?.id ?? null,
     corpus: envelope.run?.corpus ?? null,
     profile: envelope.run?.profile ?? null,
     oracleMode: envelope.oracle?.mode ?? null,
     oracleSubject: envelope.oracle?.oracle_subject ?? null,
     targetAbi: envelope.oracle?.target_abi ?? null,
   });
+}
+
+function sharedSemanticSummary(envelope: BenchmarkEnvelope): {
+  mean: number | null;
+  perfect: number;
+  observed: number;
+  shared: number;
+} | null {
+  const stats = envelope.summary?.mvp?.by_decompiler as
+    | Record<string, { semantic?: Record<string, unknown> }>
+    | undefined;
+  const semantic = stats?.fission?.semantic;
+  if (!semantic) return null;
+  const mean = semantic.mean_pass_rate;
+  return {
+    mean: typeof mean === "number" ? mean : null,
+    perfect: Number(semantic.perfect_rows ?? 0),
+    observed: Number(semantic.observed_rows ?? semantic.tested_rows ?? 0),
+    shared: Number(semantic.shared_rows ?? semantic.tested_rows ?? 0),
+  };
 }
 
 function trendContract(envelope: BenchmarkEnvelope): string {
@@ -375,19 +397,22 @@ export async function getVersionTrend(): Promise<VersionTrendPoint[]> {
       ?? embeddedSpeed;
     const micro = speedDocument?.by_decompiler?.fission;
     const resources = micro?.resources?.all;
+    const sharedSemantic = sharedSemanticSummary(envelope);
     points.push({
       version,
-      meanSemantic: meanSemantic(fissionRows),
-      perfectRows: fissionRows.filter((r) => isPassing(r.semantic_score)).length,
-      totalRows: fissionRows.length,
+      meanSemantic: sharedSemantic?.mean ?? meanSemantic(fissionRows),
+      perfectRows:
+        sharedSemantic?.perfect ??
+        fissionRows.filter((r) => isPassing(r.semantic_score)).length,
+      totalRows: sharedSemantic?.shared ?? fissionRows.length,
       finishedAt: envelope.run?.finished_at ?? null,
       official: envelope.run?.official === true,
       publishable: envelope.validity?.publishable === true,
       canonical,
       trendEligible: false,
-      semanticTestedRows: fissionRows.filter(
-        (row) => typeof row.semantic_score === "number",
-      ).length,
+      semanticTestedRows:
+        sharedSemantic?.observed ??
+        fissionRows.filter((row) => typeof row.semantic_score === "number").length,
       profile: envelope.run?.profile ?? null,
       corpus: envelope.run?.corpus ?? null,
       runId: envelope.run?.run_id ?? null,

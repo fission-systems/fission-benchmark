@@ -47,6 +47,11 @@ try:
 except ImportError:
     from speed_summary import build_speed_extension
 
+try:
+    from .recompilation import aggregate_recompilation
+except ImportError:
+    from recompilation import aggregate_recompilation
+
 SUMMARY_SCHEMA = "standard-set-v1"
 
 # Exclusive fail taxonomy buckets (each row maps to exactly one).
@@ -158,7 +163,39 @@ def _oracle_subject_for_rows(rows: list[Mapping[str, Any]]) -> str | None:
     return ",".join(sorted(subjects))
 
 
+def _subject_cell(row: Mapping[str, Any]) -> tuple[str, str, str]:
+    """Return the tool-independent identity used by shared denominators."""
+    return (
+        str(row.get("corpus") or ""),
+        str(row.get("function_name") or ""),
+        str(row.get("compiler_variant") or ""),
+    )
+
+
+def _valid_semantic_score(row: Mapping[str, Any]) -> float | None:
+    bucket = row.get("fail_taxonomy") or normalize_fail_taxonomy(row)
+    if row.get("error") or bucket in {"adapter_error", "no_wrapper"}:
+        return None
+    if row.get("fail_category") == "no_wrapper":
+        return None
+    score = row.get("semantic_score")
+    return float(score) if score is not None else None
+
+
 def build_mvp_by_decompiler(rows: list[Mapping[str, Any]]) -> dict[str, Any]:
+    # DecBench-style fairness contract: once any compared tool can measure a
+    # subject cell, that cell belongs to every tool's denominator. A missing
+    # result is therefore a miss, not an invisible row that improves the mean.
+    semantic_cells = {
+        _subject_cell(row) for row in rows if _valid_semantic_score(row) is not None
+    }
+    type_cells = {
+        _subject_cell(row) for row in rows if row.get("type_match_score") is not None
+    }
+    ged_cells = {
+        _subject_cell(row) for row in rows if row.get("ged_score") is not None
+    }
+
     by_tool: dict[str, list[Mapping[str, Any]]] = defaultdict(list)
     for row in rows:
         by_tool[str(row.get("decompiler") or "unknown")].append(row)
@@ -239,6 +276,17 @@ def build_mvp_by_decompiler(rows: list[Mapping[str, Any]]) -> dict[str, Any]:
 
         attempted = len(tool_rows)
         tested = len(semantic_scores)
+        semantic_by_cell = {
+            _subject_cell(row): score
+            for row in tool_rows
+            if (score := _valid_semantic_score(row)) is not None
+        }
+        shared_semantic_scores = [
+            semantic_by_cell.get(cell, 0.0) for cell in semantic_cells
+        ]
+        shared_semantic_rows = len(semantic_cells)
+        shared_type_rows = len(type_cells)
+        shared_ged_rows = len(ged_cells)
         # Function-boundary diagnostic breakdown (infra first-class).
         boundary_status: dict[str, int] = defaultdict(int)
         addr_hit = 0
@@ -256,9 +304,23 @@ def build_mvp_by_decompiler(rows: list[Mapping[str, Any]]) -> dict[str, Any]:
                 name_hit += 1
         result[decompiler] = {
             "semantic": {
-                "mean_pass_rate": round(sum(semantic_scores) / tested, 4) if tested else None,
+                "mean_pass_rate": (
+                    round(sum(shared_semantic_scores) / shared_semantic_rows, 4)
+                    if shared_semantic_rows
+                    else None
+                ),
+                "observed_mean_pass_rate": (
+                    round(sum(semantic_scores) / tested, 4) if tested else None
+                ),
                 "perfect_rows": perfect,
                 "tested_rows": tested,
+                "observed_rows": tested,
+                "shared_rows": shared_semantic_rows,
+                "perfect_rate": (
+                    round(perfect / shared_semantic_rows, 4)
+                    if shared_semantic_rows
+                    else None
+                ),
                 "oracle_subject": _oracle_subject_for_rows(list(tool_rows)),
             },
             "type_match": {
@@ -269,6 +331,13 @@ def build_mvp_by_decompiler(rows: list[Mapping[str, Any]]) -> dict[str, Any]:
                 ),
                 "perfect_rows": type_match_perfect,
                 "tested_rows": len(type_match_scores),
+                "observed_rows": len(type_match_scores),
+                "shared_rows": shared_type_rows,
+                "perfect_rate": (
+                    round(type_match_perfect / shared_type_rows, 4)
+                    if shared_type_rows
+                    else None
+                ),
             },
             "ged": {
                 "mean_ged": (
@@ -276,6 +345,13 @@ def build_mvp_by_decompiler(rows: list[Mapping[str, Any]]) -> dict[str, Any]:
                 ),
                 "perfect_rows": ged_perfect,
                 "tested_rows": len(ged_scores),
+                "observed_rows": len(ged_scores),
+                "shared_rows": shared_ged_rows,
+                "perfect_rate": (
+                    round(ged_perfect / shared_ged_rows, 4)
+                    if shared_ged_rows
+                    else None
+                ),
             },
             "coverage": {
                 "attempted": attempted,
@@ -305,31 +381,45 @@ def build_mvp_by_decompiler(rows: list[Mapping[str, Any]]) -> dict[str, Any]:
 
 def build_cross_variant(rows: list[Mapping[str, Any]]) -> dict[str, Any]:
     """Semantic mean by decompiler × compiler_variant (and parsed compiler/opt)."""
-    groups: dict[tuple[str, str], list[float]] = defaultdict(list)
+    groups: dict[tuple[str, str], dict[tuple[str, str, str], float]] = defaultdict(dict)
+    attempted_groups: set[tuple[str, str]] = set()
+    shared_by_variant: dict[str, set[tuple[str, str, str]]] = defaultdict(set)
     for row in rows:
-        if row.get("error"):
-            continue
-        if row.get("fail_category") == "no_wrapper":
-            continue
-        semantic = row.get("semantic_score")
-        if semantic is None:
-            continue
-        key = (
-            str(row.get("decompiler") or "unknown"),
-            str(row.get("compiler_variant") or "unknown"),
-        )
-        groups[key].append(float(semantic))
+        decompiler = str(row.get("decompiler") or "unknown")
+        variant = str(row.get("compiler_variant") or "unknown")
+        key = (decompiler, variant)
+        attempted_groups.add(key)
+        semantic = _valid_semantic_score(row)
+        if semantic is not None:
+            cell = _subject_cell(row)
+            groups[key][cell] = semantic
+            shared_by_variant[variant].add(cell)
 
     by_decompiler_variant: dict[str, Any] = {}
-    for (decompiler, variant), scores in sorted(groups.items()):
+    for decompiler, variant in sorted(attempted_groups):
+        scores_by_cell = groups[(decompiler, variant)]
+        observed_scores = list(scores_by_cell.values())
+        shared_cells = shared_by_variant[variant]
+        shared_scores = [scores_by_cell.get(cell, 0.0) for cell in shared_cells]
         compiler, opt = parse_compiler_variant(variant)
         entry = {
             "compiler_variant": variant,
             "compiler": compiler,
             "opt": opt,
-            "tested_rows": len(scores),
-            "mean_pass_rate": round(sum(scores) / len(scores), 4) if scores else None,
-            "perfect_rows": sum(1 for s in scores if s >= 1.0),
+            "tested_rows": len(observed_scores),
+            "observed_rows": len(observed_scores),
+            "shared_rows": len(shared_cells),
+            "mean_pass_rate": (
+                round(sum(shared_scores) / len(shared_scores), 4)
+                if shared_scores
+                else None
+            ),
+            "observed_mean_pass_rate": (
+                round(sum(observed_scores) / len(observed_scores), 4)
+                if observed_scores
+                else None
+            ),
+            "perfect_rows": sum(1 for score in observed_scores if score >= 1.0),
         }
         by_decompiler_variant.setdefault(decompiler, []).append(entry)
     return {"by_decompiler_variant": by_decompiler_variant}
@@ -417,6 +507,7 @@ def build_standard_summary(
     }
 
     bare = aggregate_bare_compile(annotated)
+    recompilation = aggregate_recompilation(annotated)
     readability_axis = aggregate_readability_axis(annotated)
     tracks = aggregate_track_taxonomy(annotated)
     speed = build_speed_extension(annotated, microbench=microbench)
@@ -433,6 +524,8 @@ def build_standard_summary(
             "cross_variant": build_cross_variant(annotated),
             # EXT-10: bare-compile form quality (not ranking)
             "bare_compile": bare,
+            # EXT-14: same-toolchain normalized assembly match (not ranking)
+            "recompilation": recompilation,
             # EXT-11: readability diagnostic 2-axis (goto/temp/flag soup)
             "readability_axis": readability_axis,
             # EXT-12: realworld / multi-ISA / track pivots + fail taxonomy
@@ -441,6 +534,11 @@ def build_standard_summary(
             "speed": speed,
         },
         "diagnostics": {
+            "denominator_contract": (
+                "shared-by-subject-v1: if any compared decompiler measures a "
+                "subject cell, missing measurements from peers remain in that "
+                "metric's denominator"
+            ),
             "note": (
                 "source_similarity, ast_similarity, readability_proxy, bare_compile, "
                 "track/ISA pivots, and speed are non-ranking diagnostic axes; "
@@ -449,6 +547,7 @@ def build_standard_summary(
                 "boundary), not a semantic ranking substitute."
             ),
             "bare_compile": bare,
+            "recompilation": recompilation,
             "readability_axis": readability_axis,
             "tracks": tracks,
             "speed": speed,

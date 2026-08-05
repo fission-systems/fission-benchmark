@@ -2,7 +2,14 @@
 from __future__ import annotations
 
 from runner.corpus import CompilerVariant, Corpus, FunctionEntry
-from runner.matrix_profile import apply_profile_to_functions, get_profile, load_profiles
+import pytest
+
+from runner.matrix_profile import (
+    apply_profile_to_functions,
+    get_profile,
+    load_profiles,
+    validate_release_contract,
+)
 
 
 def test_profiles_yaml_loads_smoke_and_core() -> None:
@@ -59,3 +66,35 @@ def test_corpus_apply_profile_smoke() -> None:
         for v in fn.compiler_variants:
             assert v.opt == "-O0"
             assert v.compiler == "gcc"
+
+
+def test_core_release_contract_is_exactly_36_by_6() -> None:
+    profile = get_profile("core_c_pe")
+    assert profile is not None
+    corpus = Corpus.load_all("dev")
+    functions = apply_profile_to_functions(corpus.functions, profile)
+    contract = validate_release_contract(
+        "core_c_pe", profile, functions, ["fission", "ghidra"]
+    )
+    assert contract is not None
+    assert contract["id"] == "release-baseline-v1"
+    assert contract["function_count"] == 36
+    assert contract["compiler_variant_count"] == 6
+    assert contract["subject_count"] == 216
+    assert contract["row_count"] == 432
+
+
+def test_release_contract_fails_closed_on_cohort_drift() -> None:
+    profile = get_profile("core_c_pe")
+    assert profile is not None
+    corpus = Corpus.load_all("dev")
+    functions = apply_profile_to_functions(corpus.functions, profile)
+
+    with pytest.raises(ValueError, match="function drift"):
+        validate_release_contract(
+            "core_c_pe", profile, functions[:-1], ["fission", "ghidra"]
+        )
+    with pytest.raises(ValueError, match="decompiler drift"):
+        validate_release_contract(
+            "core_c_pe", profile, functions, ["ghidra", "fission"]
+        )

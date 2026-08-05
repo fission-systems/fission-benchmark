@@ -35,6 +35,7 @@ from test_wrappers import TEST_WRAPPERS
 from bare_compile import try_bare_compile, classify_track, classify_isa_format
 from type_match import calibrate_binary_shift, compute_type_match, ground_truth_for_binary
 from ged import compute_ged, extract_decompiled_cfgs, extract_source_cfgs
+from recompilation import measure_recompilation
 import subprocess
 
 app = typer.Typer(help="Fission decompiler benchmark runner.")
@@ -415,6 +416,25 @@ async def decompile_batch_and_score(
             if semantic_code and not error
             else {"ok": False, "category": "empty", "error": error or "no code"}
         )
+        if error:
+            recompilation_score, recompilation = measure_recompilation(
+                "",
+                function_name=fn.name,
+                binary_path=binary_path,
+                function_address=variant.addr,
+                compiler_variant=variant_label,
+            )
+            if recompilation_score is not None:
+                recompilation["category"] = "decompilation_error"
+                recompilation["error"] = str(error)[:400]
+        else:
+            recompilation_score, recompilation = measure_recompilation(
+                semantic_code,
+                function_name=fn.name,
+                binary_path=binary_path,
+                function_address=variant.addr,
+                compiler_variant=variant_label,
+            )
         isa_fmt = classify_isa_format(
             binary_rel, isa=var_isa or None, fmt=var_fmt or None
         )
@@ -454,6 +474,8 @@ async def decompile_batch_and_score(
             type_match_metadata=type_match_metadata,
             ged_score=ged_score,
             ged_metadata=ged_metadata,
+            recompilation_score=recompilation_score,
+            recompilation=recompilation,
             output_diagnostics=output_diagnostics,
             oracle_evidence=oracle_evidence,
             bare_compile=bare,
@@ -639,7 +661,11 @@ def run(
             "official runs cannot use --limit, --variant-limit, or --function"
         )
 
-    from matrix_profile import get_profile, resolve_profile_name
+    from matrix_profile import (
+        get_profile,
+        resolve_profile_name,
+        validate_release_contract,
+    )
 
     profile_name = resolve_profile_name(profile)
     profile_cfg = None
@@ -698,6 +724,34 @@ def run(
     fn_list = selected_functions[:limit] if limit else selected_functions
     expected_functions = len(fn_list)
 
+    release_contract = None
+    if run_mode == "official":
+        if not profile_cfg:
+            raise typer.BadParameter(
+                "official runs require a matrix profile with a release_contract",
+                param_hint="--profile",
+            )
+        try:
+            release_contract = validate_release_contract(
+                profile_name,
+                profile_cfg,
+                fn_list,
+                list(dec_map),
+            )
+        except ValueError as exc:
+            raise typer.BadParameter(str(exc), param_hint="--profile") from exc
+        if release_contract is None:
+            raise typer.BadParameter(
+                f"profile {profile_name!r} has no release_contract",
+                param_hint="--profile",
+            )
+        typer.echo(
+            "Release contract: "
+            f"{release_contract['id']} "
+            f"({release_contract['subject_count']} subjects / "
+            f"{release_contract['row_count']} rows)"
+        )
+
     # Build exact expected_cells list (per function x variant x decompiler)
     # Avoids Cartesian product assumptions when functions have different variants.
     expected_cells = build_expected_cells(fn_list, list(dec_map), variant_limit)
@@ -754,6 +808,7 @@ def run(
             # Official publication requires profile=realistic with no focus limits.
             "profile": "realistic" if run_mode == "official" else "diagnostic",
             "matrix_profile": profile_name,
+            "release_contract": release_contract,
             "limits": {
                 "limit": limit,
                 "variant_limit": variant_limit,

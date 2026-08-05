@@ -113,6 +113,73 @@ def test_build_standard_summary_denominators() -> None:
     assert any(v["compiler_variant"] == "gcc -O0" and v["mean_pass_rate"] == 1.0 for v in cross)
 
 
+def test_shared_denominator_counts_peer_measurable_missing_rows_as_misses() -> None:
+    rows = [
+        {
+            "decompiler": "fission",
+            "function_name": "clamp",
+            "compiler_variant": "gcc -O0",
+            "error": None,
+            "semantic_score": 1.0,
+            "type_match_score": 1.0,
+            "ged_score": 0.0,
+        },
+        {
+            "decompiler": "ghidra",
+            "function_name": "clamp",
+            "compiler_variant": "gcc -O0",
+            "error": None,
+            "semantic_score": 0.5,
+            "type_match_score": 0.5,
+            "ged_score": 1.0,
+        },
+        {
+            "decompiler": "fission",
+            "function_name": "sum_array",
+            "compiler_variant": "gcc -O0",
+            "error": "adapter failed",
+            "semantic_score": None,
+            "type_match_score": None,
+            "ged_score": None,
+        },
+        {
+            "decompiler": "ghidra",
+            "function_name": "sum_array",
+            "compiler_variant": "gcc -O0",
+            "error": None,
+            "semantic_score": 1.0,
+            "type_match_score": 1.0,
+            "ged_score": 0.0,
+        },
+    ]
+    summary = build_standard_summary(rows)
+    fission = summary["mvp"]["by_decompiler"]["fission"]
+    ghidra = summary["mvp"]["by_decompiler"]["ghidra"]
+
+    assert fission["semantic"]["observed_mean_pass_rate"] == 1.0
+    assert fission["semantic"]["mean_pass_rate"] == 0.5
+    assert fission["semantic"]["observed_rows"] == 1
+    assert fission["semantic"]["shared_rows"] == 2
+    assert ghidra["semantic"]["mean_pass_rate"] == 0.75
+
+    assert fission["type_match"]["observed_rows"] == 1
+    assert fission["type_match"]["shared_rows"] == 2
+    assert fission["type_match"]["perfect_rate"] == 0.5
+    assert fission["ged"]["observed_rows"] == 1
+    assert fission["ged"]["shared_rows"] == 2
+    assert fission["ged"]["perfect_rate"] == 0.5
+    fission_variant = summary["extensions"]["cross_variant"][
+        "by_decompiler_variant"
+    ]["fission"][0]
+    assert fission_variant["observed_rows"] == 1
+    assert fission_variant["shared_rows"] == 2
+    assert fission_variant["observed_mean_pass_rate"] == 1.0
+    assert fission_variant["mean_pass_rate"] == 0.5
+    assert summary["diagnostics"]["denominator_contract"].startswith(
+        "shared-by-subject-v1"
+    )
+
+
 def test_parse_compiler_variant() -> None:
     assert parse_compiler_variant("gcc -O0") == ("gcc", "-O0")
     assert parse_compiler_variant("gcc-m32 -O2") == ("gcc-m32", "-O2")

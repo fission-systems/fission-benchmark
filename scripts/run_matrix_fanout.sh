@@ -36,13 +36,19 @@ run_one() {
   local profile="$1"
   local out="$2"
   local decs="$3"
-  echo "==> profile=$profile decompilers=$decs → $out"
+  local mode="$RUN_MODE"
+  # Only the immutable core cohort is a publishable official measurement.
+  # Language/ISA slices remain explicit diagnostics in the merged envelope.
+  if [ "$mode" = "official" ] && [ "$profile" != "core_c_pe" ]; then
+    mode="local"
+  fi
+  echo "==> profile=$profile mode=$mode decompilers=$decs → $out"
   ORACLE_ENDPOINT="${ORACLE_ENDPOINT:-}" \
     python runner/runner.py \
       --corpus "$CORPUS" \
       --profile "$profile" \
       --decompilers "$decs" \
-      --run-mode "$RUN_MODE" \
+      --run-mode "$mode" \
       --output "$out"
   echo "OK profile=$profile"
 }

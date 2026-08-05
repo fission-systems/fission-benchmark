@@ -22,7 +22,8 @@ export function CrossVariantTable({ rows }: Props) {
     <div className={styles.wrap}>
       <p className={styles.hint}>
         Extension — semantic pass rate by compiler × optimization. Not a ranking
-        axis; use to spot opt-level regressions.
+        axis; use to spot opt-level regressions. Each variant uses a shared
+        subject denominator across decompilers.
       </p>
       <table className={styles.table}>
         <thead>
@@ -31,8 +32,8 @@ export function CrossVariantTable({ rows }: Props) {
             <th>Variant</th>
             <th>Compiler</th>
             <th>Opt</th>
-            <th className={styles.num}>Tested</th>
-            <th className={styles.num}>Semantic mean</th>
+            <th className={styles.num}>Observed / shared</th>
+            <th className={styles.num}>Shared semantic mean</th>
             <th className={styles.num}>Perfect</th>
           </tr>
         </thead>
@@ -47,7 +48,9 @@ export function CrossVariantTable({ rows }: Props) {
               </td>
               <td>{r.compiler}</td>
               <td>{r.opt || "—"}</td>
-              <td className={styles.num}>{r.tested_rows}</td>
+              <td className={styles.num}>
+                {r.tested_rows} / {r.shared_rows ?? r.tested_rows}
+              </td>
               <td className={styles.num}>
                 {r.mean_pass_rate == null
                   ? "N/A"

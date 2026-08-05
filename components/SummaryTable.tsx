@@ -46,8 +46,9 @@ export function SummaryTable({ stats }: Props) {
     <div className={styles.wrap}>
       <p className={styles.hint}>
         MVP standard set — <strong>Semantic</strong> is the only ranking axis.
-        Coverage and fail taxonomy are denominators; runtime is practicality.
-        Source similarity is not shown here (diagnostics only).
+        The mean uses one shared subject denominator across tools, so missing
+        peer measurements count as misses. Runtime is practicality; source
+        similarity is diagnostic only.
       </p>
       <table className={styles.table}>
         <thead>
@@ -56,8 +57,8 @@ export function SummaryTable({ stats }: Props) {
             <th className={styles.num}>Attempted</th>
             <th className={styles.num}>Adapter clean</th>
             <th className={styles.num}>Boundary invalid</th>
-            <th className={styles.num}>Semantic tested</th>
-            <th>Semantic mean</th>
+            <th className={styles.num}>Observed / shared</th>
+            <th>Shared semantic mean</th>
             <th className={styles.num}>Perfect</th>
             <th className={styles.num}>No wrapper</th>
             <th>Fail taxonomy (top)</th>
@@ -83,7 +84,9 @@ export function SummaryTable({ stats }: Props) {
                 >
                   {s.invalidBoundary || "—"}
                 </td>
-                <td className={styles.num}>{s.semanticTested}</td>
+                <td className={styles.num}>
+                  {s.semanticTested} / {s.semanticSharedRows}
+                </td>
                 <td>
                   {s.meanSemantic === null ? (
                     "N/A"
@@ -92,7 +95,9 @@ export function SummaryTable({ stats }: Props) {
                   )}
                 </td>
                 <td className={styles.num}>
-                  {s.semanticTested > 0 ? s.perfectRows : "—"}
+                  {s.semanticSharedRows > 0
+                    ? `${s.perfectRows} / ${s.semanticSharedRows}`
+                    : "—"}
                 </td>
                 <td className={styles.num}>{s.noWrapper || "—"}</td>
                 <td className={styles.tax}>{topTaxonomy(s.taxonomy)}</td>

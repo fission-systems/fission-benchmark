@@ -121,6 +121,13 @@ def _check_envelope(path: Path, *, allow_legacy: bool, repair: bool) -> list[str
         tested = int(cov.get("semantic_tested") or 0)
         if tested > attempted:
             errors.append(f"{path}: {tool} semantic_tested > attempted")
+        semantic = stats.get("semantic") or {}
+        shared = semantic.get("shared_rows")
+        observed = semantic.get("observed_rows")
+        if shared is None or observed is None:
+            errors.append(f"{path}: {tool} shared semantic denominator missing")
+        elif int(observed) > int(shared):
+            errors.append(f"{path}: {tool} semantic observed_rows > shared_rows")
 
     for i, row in enumerate(envelope.get("rows") or []):
         sem = row.get("semantic_score")
@@ -143,6 +150,17 @@ def _check_envelope(path: Path, *, allow_legacy: bool, repair: bool) -> list[str
 
     verdict = evaluate_run(loaded if not repair else load_result_file(path))
     if envelope.get("run", {}).get("official") is True:
+        release_contract = envelope.get("run", {}).get("release_contract") or {}
+        if release_contract.get("id") != "release-baseline-v1":
+            errors.append(f"{path}: official run requires release-baseline-v1")
+        if (
+            release_contract.get("subject_count") != 216
+            or release_contract.get("row_count") != 432
+        ):
+            errors.append(f"{path}: official release contract must be 216 subjects / 432 rows")
+        recompilation = (summary.get("extensions") or {}).get("recompilation")
+        if not isinstance(recompilation, dict):
+            errors.append(f"{path}: official summary.extensions.recompilation missing")
         if not envelope.get("run", {}).get("profile") == "realistic":
             errors.append(f"{path}: official run requires profile=realistic")
         if not verdict.official_profile_valid and "official_profile_invalid" not in str(

@@ -65,6 +65,10 @@ class FunctionScore:
     # evidence only, not part of semantic ranking.
     ged_score: float | None = None
     ged_metadata: dict[str, Any] = field(default_factory=dict)
+    # Same-toolchain recompilation assembly match. None = matching compiler or
+    # ABI unavailable; 0.0 includes compile/extraction failures. Diagnostic only.
+    recompilation_score: float | None = None
+    recompilation: dict[str, Any] = field(default_factory=dict)
     output_diagnostics: dict[str, Any] = field(default_factory=dict)
     oracle_evidence: dict[str, Any] = field(default_factory=dict)
     # Stable exclusive fail bucket for standard-set reporting (see standard_summary).

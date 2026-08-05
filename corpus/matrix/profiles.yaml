@@ -38,10 +38,62 @@ profiles:
     isas: [x86_64, x86_32]
     opts: ["-O0", "-O2"]
     compilers: [gcc, gcc-m32, clang]
+    # Immutable publication cohort. New corpus functions must enter a new
+    # contract/version instead of silently changing historical denominators.
+    function_allowlist: &core_c_pe_functions
+      - accumulate_pairs
+      - add_ints
+      - apply_binop
+      - bounded_checksum
+      - bounded_tlv_sum
+      - bubble_sort
+      - checksum
+      - clamp
+      - count_bits
+      - crc32
+      - dot_product_stride
+      - factorial
+      - fibonacci
+      - find_pair_value
+      - find_substring
+      - kv_lookup
+      - linear_search
+      - list_sum
+      - manipulate_bitfields
+      - matrix_multiply
+      - mixed_width_accumulate
+      - mul_ints
+      - overlap_move
+      - pointer_stride_sum
+      - power
+      - process_code
+      - rc4_crypt
+      - rc4_init
+      - reverse_in_place
+      - reverse_string
+      - rolling_hash32
+      - rotate_words
+      - saturating_add
+      - signum
+      - state_machine_score
+      - sum_array
     max_functions: 0          # 0 = all matching
     max_variants_per_function: 0
     decompilers_default: fission,ghidra
     timeout_minutes: 90
+    release_contract:
+      id: release-baseline-v1
+      version: 1
+      functions: *core_c_pe_functions
+      compiler_variants:
+        - clang -O0
+        - clang -O2
+        - gcc -O0
+        - gcc -O2
+        - gcc-m32 -O0
+        - gcc-m32 -O2
+      decompilers: [fission, ghidra]
+      subject_count: 216
 
   # Optimization cliff for stress / advanced C functions.
   opt_cliff:

@@ -62,6 +62,15 @@ async function QualitySection() {
     if (b === "ghidra") return 1;
     return a.localeCompare(b);
   });
+  const recompilationTools = Object.keys(ext.recompilationByDecompiler).sort(
+    (a, b) => {
+      if (a === "fission") return -1;
+      if (b === "fission") return 1;
+      if (a === "ghidra") return -1;
+      if (b === "ghidra") return 1;
+      return a.localeCompare(b);
+    },
+  );
   const readStats = buildReadabilityDiagnostics(data);
   const tracks = Object.keys(ext.byTrack);
   const languages = Object.keys(ext.byLanguage);
@@ -91,6 +100,64 @@ async function QualitySection() {
             Study pack: <code>benchmark/readability/</code>.
           </p>
         </div>
+      </section>
+
+      <section className={styles.section}>
+        <h2 className={styles.sectionTitle}>
+          EXT · Recompilation bytematch
+        </h2>
+        <p className={styles.sectionLead}>
+          Decompiled C is rebuilt for the original PE/ELF ABI with the matching
+          compiler family and optimization level, then compared as ordered,
+          relocation-normalized assembly. Missing peer measurements stay in the
+          shared denominator. This is diagnostic evidence, not a ranking axis.
+        </p>
+        {recompilationTools.length === 0 ? (
+          <p className={styles.sectionLead}>
+            No recompilation field on this envelope yet. It will appear after
+            the next official benchmark publishes.
+          </p>
+        ) : (
+          <div className={tableStyles.wrap}>
+            <table className={tableStyles.table}>
+              <thead>
+                <tr>
+                  <th>Decompiler</th>
+                  <th className={tableStyles.num}>Observed / shared</th>
+                  <th className={tableStyles.num}>Compilable</th>
+                  <th>Observed mean</th>
+                  <th>Exact / shared</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recompilationTools.map((tool) => {
+                  const row = ext.recompilationByDecompiler[tool] || {};
+                  return (
+                    <tr
+                      key={tool}
+                      className={
+                        tool === "fission" ? tableStyles.fissionRow : undefined
+                      }
+                    >
+                      <td>{tool}</td>
+                      <td className={tableStyles.num}>
+                        {row.observed_rows ?? "—"} / {row.shared_rows ?? "—"}
+                      </td>
+                      <td className={tableStyles.num}>
+                        {row.compilable_rows ?? "—"}
+                      </td>
+                      <td><RateCell value={row.mean_similarity} /></td>
+                      <td className={tableStyles.num}>
+                        {row.perfect_rows ?? "—"} / {row.shared_rows ?? "—"}{" "}
+                        (<RateCell value={row.perfect_rate} />)
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </section>
 
       <section className={styles.section}>
@@ -142,9 +209,9 @@ async function QualitySection() {
         <h2 className={styles.sectionTitle}>EXT · Type correctness (DWARF)</h2>
         <p className={styles.sectionLead}>
           Recovered variable types checked against the DWARF debug info baked
-          into each corpus binary (rows without ground truth — no debug info,
-          or no matched function — are excluded rather than counted as a
-          miss). Diagnostic evidence only, not a ranking axis.
+          into each corpus binary. Mean accuracy describes observed rows;
+          perfect rate uses the shared subject denominator, so a peer-measurable
+          missing row is not hidden. Diagnostic evidence only, not ranking.
         </p>
         {typeMatchStats.length === 0 ? (
           <p className={styles.sectionLead}>
@@ -157,7 +224,7 @@ async function QualitySection() {
               <thead>
                 <tr>
                   <th>Decompiler</th>
-                  <th className={tableStyles.num}>Tested</th>
+                  <th className={tableStyles.num}>Observed / shared</th>
                   <th>Mean accuracy</th>
                   <th className={tableStyles.num}>Perfect</th>
                 </tr>
@@ -171,11 +238,16 @@ async function QualitySection() {
                     }
                   >
                     <td>{s.decompiler}</td>
-                    <td className={tableStyles.num}>{s.typeMatchTestedRows}</td>
+                    <td className={tableStyles.num}>
+                      {s.typeMatchTestedRows} / {s.typeMatchSharedRows}
+                    </td>
                     <td>
                       <RateCell value={s.meanTypeMatch} />
                     </td>
-                    <td className={tableStyles.num}>{s.typeMatchPerfectRows}</td>
+                    <td className={tableStyles.num}>
+                      {s.typeMatchPerfectRows} / {s.typeMatchSharedRows}{" "}
+                      (<RateCell value={s.typeMatchPerfectRate} />)
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -190,8 +262,8 @@ async function QualitySection() {
           Graph edit distance between the decompiled function&apos;s control-flow
           graph and the original source&apos;s CFG (both parsed with the same
           tool, Joern, for structural comparability). Lower is better — 0.0
-          means the control-flow shape matches exactly. Rows without an
-          extractable CFG pair are excluded rather than counted as a miss.
+          means the control-flow shape matches exactly. Mean GED describes
+          observed rows; exact-match rate uses the shared subject denominator.
           Diagnostic evidence only, not a ranking axis.
         </p>
         {gedStats.length === 0 ? (
@@ -205,7 +277,7 @@ async function QualitySection() {
               <thead>
                 <tr>
                   <th>Decompiler</th>
-                  <th className={tableStyles.num}>Tested</th>
+                  <th className={tableStyles.num}>Observed / shared</th>
                   <th>Mean GED</th>
                   <th className={tableStyles.num}>Exact match (GED=0)</th>
                 </tr>
@@ -219,11 +291,16 @@ async function QualitySection() {
                     }
                   >
                     <td>{s.decompiler}</td>
-                    <td className={tableStyles.num}>{s.gedTestedRows}</td>
+                    <td className={tableStyles.num}>
+                      {s.gedTestedRows} / {s.gedSharedRows}
+                    </td>
                     <td>
                       <DistanceCell value={s.meanGed} />
                     </td>
-                    <td className={tableStyles.num}>{s.gedPerfectRows}</td>
+                    <td className={tableStyles.num}>
+                      {s.gedPerfectRows} / {s.gedSharedRows}{" "}
+                      (<RateCell value={s.gedPerfectRate} />)
+                    </td>
                   </tr>
                 ))}
               </tbody>
