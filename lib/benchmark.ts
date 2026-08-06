@@ -278,9 +278,16 @@ function isReleaseArtifact(envelope: BenchmarkEnvelope): boolean {
 }
 
 function isCanonicalPublication(envelope: BenchmarkEnvelope): boolean {
+  const releaseContract = envelope.run?.release_contract;
+  // v0.1.8 was published before release_contract became a required runner
+  // field.  Preserve that verified release artifact, but fail closed when a
+  // newer envelope declares a different contract instead of silently treating
+  // it as the canonical baseline.
+  const hasCompatibleContract =
+    releaseContract == null || releaseContract.id === "release-baseline-v1";
   return (
     isReleaseArtifact(envelope) &&
-    envelope.run?.release_contract?.id === "release-baseline-v1" &&
+    hasCompatibleContract &&
     envelope.run?.official === true &&
     envelope.validity?.valid === true &&
     envelope.validity?.publishable === true
@@ -328,9 +335,14 @@ export function selectLatestReleaseEnvelope(
   });
 
   eligible.sort((a, b) => {
-    // The default dashboard is multi-decompiler: prefer the broadest matrix
-    // within the same release, then the newest measurement. Publication-only
-    // callers have already filtered to official publishable envelopes.
+    // A diagnostic/smoke envelope must never shadow the canonical publication
+    // for the same release.  This matters for extension metrics such as GED:
+    // broad smoke matrices may contain more tools while carrying no GED rows.
+    // Keep those envelopes only as a development/failure fallback, then prefer
+    // matrix breadth and recency within the same publication class.
+    const publication =
+      Number(isCanonicalPublication(b)) - Number(isCanonicalPublication(a));
+    if (publication !== 0) return publication;
     const tools = decompilerCount(b) - decompilerCount(a);
     if (tools !== 0) return tools;
     return finishedAt(b) - finishedAt(a);
@@ -438,49 +450,74 @@ export function groupByDecompiler(data: BenchmarkEnvelope): MvpDecompilerStats[]
     | undefined;
 
   if (fromSummary && Object.keys(fromSummary).length > 0) {
+    const gedSharedRows = new Set(
+      data.rows
+        .filter((row) => row.ged_score !== null && row.ged_score !== undefined)
+        .map((row) => `${row.function_name}\u0000${row.compiler_variant}`),
+    ).size;
+    const typeMatchSharedRows = new Set(
+      data.rows
+        .filter(
+          (row) =>
+            row.type_match_score !== null && row.type_match_score !== undefined,
+        )
+        .map((row) => `${row.function_name}\u0000${row.compiler_variant}`),
+    ).size;
     return Object.entries(fromSummary)
-      .map(([decompiler, s]) => ({
-        decompiler,
-        attempted: s.coverage?.attempted ?? 0,
-        adapterClean: s.coverage?.adapter_clean ?? 0,
-        invalidBoundary: s.coverage?.invalid_boundary ?? 0,
-        semanticTested: s.coverage?.semantic_tested ?? s.semantic?.tested_rows ?? 0,
-        semanticSharedRows: s.semantic?.shared_rows ?? s.semantic?.tested_rows ?? 0,
-        noWrapper: s.coverage?.no_wrapper ?? 0,
-        meanSemantic:
-          s.semantic?.mean_pass_rate === undefined || s.semantic?.mean_pass_rate === null
-            ? null
-            : Number(s.semantic.mean_pass_rate),
-        perfectRows: s.semantic?.perfect_rows ?? 0,
-        meanTimeMs:
-          s.runtime?.mean_ms === undefined || s.runtime?.mean_ms === null
-            ? null
-            : Number(s.runtime.mean_ms),
-        taxonomy: s.fail_taxonomy ?? {},
-        oracleSubject: s.semantic?.oracle_subject ?? null,
-        meanTypeMatch:
-          s.type_match?.mean_accuracy === undefined || s.type_match?.mean_accuracy === null
-            ? null
-            : Number(s.type_match.mean_accuracy),
-        typeMatchTestedRows: s.type_match?.tested_rows ?? 0,
-        typeMatchSharedRows: s.type_match?.shared_rows ?? s.type_match?.tested_rows ?? 0,
-        typeMatchPerfectRows: s.type_match?.perfect_rows ?? 0,
-        typeMatchPerfectRate:
-          s.type_match?.perfect_rate === undefined || s.type_match?.perfect_rate === null
-            ? null
-            : Number(s.type_match.perfect_rate),
-        meanGed:
-          s.ged?.mean_ged === undefined || s.ged?.mean_ged === null
-            ? null
-            : Number(s.ged.mean_ged),
-        gedTestedRows: s.ged?.tested_rows ?? 0,
-        gedSharedRows: s.ged?.shared_rows ?? s.ged?.tested_rows ?? 0,
-        gedPerfectRows: s.ged?.perfect_rows ?? 0,
-        gedPerfectRate:
-          s.ged?.perfect_rate === undefined || s.ged?.perfect_rate === null
-            ? null
-            : Number(s.ged.perfect_rate),
-      }))
+      .map(([decompiler, s]) => {
+        const resolvedTypeSharedRows =
+          s.type_match?.shared_rows ?? typeMatchSharedRows;
+        const typePerfectRows = s.type_match?.perfect_rows ?? 0;
+        const resolvedGedSharedRows = s.ged?.shared_rows ?? gedSharedRows;
+        const gedPerfectRows = s.ged?.perfect_rows ?? 0;
+        return {
+          decompiler,
+          attempted: s.coverage?.attempted ?? 0,
+          adapterClean: s.coverage?.adapter_clean ?? 0,
+          invalidBoundary: s.coverage?.invalid_boundary ?? 0,
+          semanticTested: s.coverage?.semantic_tested ?? s.semantic?.tested_rows ?? 0,
+          semanticSharedRows: s.semantic?.shared_rows ?? s.semantic?.tested_rows ?? 0,
+          noWrapper: s.coverage?.no_wrapper ?? 0,
+          meanSemantic:
+            s.semantic?.mean_pass_rate === undefined || s.semantic?.mean_pass_rate === null
+              ? null
+              : Number(s.semantic.mean_pass_rate),
+          perfectRows: s.semantic?.perfect_rows ?? 0,
+          meanTimeMs:
+            s.runtime?.mean_ms === undefined || s.runtime?.mean_ms === null
+              ? null
+              : Number(s.runtime.mean_ms),
+          taxonomy: s.fail_taxonomy ?? {},
+          oracleSubject: s.semantic?.oracle_subject ?? null,
+          meanTypeMatch:
+            s.type_match?.mean_accuracy === undefined || s.type_match?.mean_accuracy === null
+              ? null
+              : Number(s.type_match.mean_accuracy),
+          typeMatchTestedRows: s.type_match?.tested_rows ?? 0,
+          typeMatchSharedRows: resolvedTypeSharedRows,
+          typeMatchPerfectRows: typePerfectRows,
+          typeMatchPerfectRate:
+            s.type_match?.perfect_rate !== undefined &&
+            s.type_match?.perfect_rate !== null
+              ? Number(s.type_match.perfect_rate)
+              : resolvedTypeSharedRows > 0
+                ? typePerfectRows / resolvedTypeSharedRows
+                : null,
+          meanGed:
+            s.ged?.mean_ged === undefined || s.ged?.mean_ged === null
+              ? null
+              : Number(s.ged.mean_ged),
+          gedTestedRows: s.ged?.tested_rows ?? 0,
+          gedSharedRows: resolvedGedSharedRows,
+          gedPerfectRows,
+          gedPerfectRate:
+            s.ged?.perfect_rate !== undefined && s.ged?.perfect_rate !== null
+              ? Number(s.ged.perfect_rate)
+              : resolvedGedSharedRows > 0
+                ? gedPerfectRows / resolvedGedSharedRows
+                : null,
+        };
+      })
       .sort((a, b) => {
         if (a.decompiler === "fission") return -1;
         if (b.decompiler === "fission") return 1;
