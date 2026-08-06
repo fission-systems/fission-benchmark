@@ -89,6 +89,40 @@ def semantic_precheck(
     return None
 
 
+def ged_source_contract(source_basis: str) -> str:
+    if source_basis == "published_source_cfg":
+        return "decbench-published-source-cfg-v1"
+    if source_basis == "external_source_cfg_unavailable":
+        return "unavailable_external_dataset"
+    return PREPROCESSED_TU_SCHEMA
+
+
+def resolve_ged_source(
+    corpus_split: str,
+    source_path: Path,
+    variant: Any,
+) -> tuple[Path, str]:
+    published_source_cfg = str(getattr(variant, "source_cfg", "") or "")
+    preprocessed_source = str(getattr(variant, "preprocessed_source", "") or "")
+    candidate_preprocessed = (
+        CORPUS_ROOT / corpus_split / preprocessed_source
+        if preprocessed_source
+        else source_path
+    )
+    if published_source_cfg:
+        return (
+            CORPUS_ROOT / corpus_split / published_source_cfg,
+            "published_source_cfg",
+        )
+    if corpus_split == "scale":
+        # DecBench intentionally publishes CFGs for a documented 96.9% subset.
+        # Missing pairs are excluded evidence, not authored-source fallbacks.
+        return source_path, "external_source_cfg_unavailable"
+    if preprocessed_source and candidate_preprocessed.is_file():
+        return candidate_preprocessed, "preprocessed_tu"
+    return source_path, "authored_source_fallback"
+
+
 def _host_fingerprint() -> dict[str, Any]:
     """Stable-enough host context for non-ranking local performance evidence."""
     memory_bytes = 0
@@ -282,11 +316,7 @@ async def decompile_batch_and_score(
         return {
             "source_basis": target[4],
             "source_path": source_rel,
-            "source_contract": (
-                "decbench-published-source-cfg-v1"
-                if target[4] == "published_source_cfg"
-                else PREPROCESSED_TU_SCHEMA
-            ),
+            "source_contract": ged_source_contract(target[4]),
         }
 
     def _failure_score(
@@ -454,18 +484,18 @@ async def decompile_batch_and_score(
         ged_metadata: dict[str, Any] = {
             "source_basis": ged_source_basis,
             "source_path": ged_source_rel,
-            "source_contract": (
-                "decbench-published-source-cfg-v1"
-                if ged_source_basis == "published_source_cfg"
-                else PREPROCESSED_TU_SCHEMA
-            ),
+            "source_contract": ged_source_contract(ged_source_basis),
         }
         ged_score: float | None = None
         if semantic_code and not error:
             source_cfgs = (
                 load_published_source_cfgs(str(ged_source_path))
                 if ged_source_basis == "published_source_cfg"
-                else extract_source_cfgs(str(ged_source_path))
+                else (
+                    {}
+                    if ged_source_basis == "external_source_cfg_unavailable"
+                    else extract_source_cfgs(str(ged_source_path))
+                )
             )
             source_cfg = source_cfgs.get(fn.name)
             decompiled_cfg = decompiled_cfgs.get(fn.name)
@@ -790,24 +820,9 @@ async def run_all(
         variants = fn.compiler_variants[:variant_limit] if variant_limit else fn.compiler_variants
         for variant in variants:
             binary_path = CORPUS_ROOT / corpus_split / variant.binary
-            published_source_cfg = str(getattr(variant, "source_cfg", "") or "")
-            preprocessed_source = str(
-                getattr(variant, "preprocessed_source", "") or ""
+            ged_source_path, ged_source_basis = resolve_ged_source(
+                corpus_split, source_path, variant
             )
-            candidate_ged_source = (
-                CORPUS_ROOT / corpus_split / preprocessed_source
-                if preprocessed_source
-                else source_path
-            )
-            if published_source_cfg:
-                ged_source_path = CORPUS_ROOT / corpus_split / published_source_cfg
-                ged_source_basis = "published_source_cfg"
-            elif preprocessed_source and candidate_ged_source.is_file():
-                ged_source_path = candidate_ged_source
-                ged_source_basis = "preprocessed_tu"
-            else:
-                ged_source_path = source_path
-                ged_source_basis = "authored_source_fallback"
             if not binary_path.exists():
                 missing_rows = []
                 for dname in decompilers:

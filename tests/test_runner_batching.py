@@ -40,6 +40,37 @@ def test_scale_semantic_precheck_preserves_adapter_failures() -> None:
     assert failed == (0.0, "preview_timeout", "adapter_error", 0, 0)
 
 
+def test_scale_missing_published_cfg_is_explicitly_unavailable(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    corpus_root = tmp_path / "corpus"
+    monkeypatch.setattr(benchmark_runner, "CORPUS_ROOT", corpus_root)
+    source_path = corpus_root / "scale" / "sources" / "nuttx"
+
+    path, basis = benchmark_runner.resolve_ged_source(
+        "scale",
+        source_path,
+        SimpleNamespace(source_cfg="", preprocessed_source=""),
+    )
+
+    assert path == source_path
+    assert basis == "external_source_cfg_unavailable"
+    assert benchmark_runner.ged_source_contract(basis) == "unavailable_external_dataset"
+
+
+def test_authored_corpus_retains_source_fallback(tmp_path: Path) -> None:
+    source_path = tmp_path / "fixture.c"
+    path, basis = benchmark_runner.resolve_ged_source(
+        "dev",
+        source_path,
+        SimpleNamespace(source_cfg="", preprocessed_source=""),
+    )
+
+    assert path == source_path
+    assert basis == "authored_source_fallback"
+
+
 def test_tool_binary_chunks_execute_sequentially(monkeypatch: pytest.MonkeyPatch) -> None:
     calls: list[list[int]] = []
     active = 0

@@ -156,6 +156,9 @@ cross-project name collisions. Published source CFGs are consumed directly,
 and DWARF addresses are resolved locally with a minimum 98% coverage gate.
 Published-CFG membership has a separate 95% minimum gate; the lock records the
 exact known-good count so a silent reduction still fails materialization.
+Rows outside that published-CFG subset use
+`ged_metadata.source_basis=external_source_cfg_unavailable`; they are excluded
+from GED denominators without attempting a misleading authored-source fallback.
 
 External binaries are never sent to the semantic execution oracle. The five
 real-malware DecBench projects are excluded by default and require an explicit
