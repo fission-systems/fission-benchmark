@@ -137,6 +137,31 @@ public class ExportParity extends GhidraScript {
         if (func == null) {
             func = currentProgram.getFunctionManager().getFunctionContaining(addr);
         }
+        if (func != null) {
+            return func;
+        }
+
+        // PIE ELF manifests use link-time virtual addresses/RVAs. Ghidra may
+        // load the program at a non-zero base (for example 0x100000), so retry
+        // below-base requests relative to the program's actual image base.
+        try {
+            String hex = addrStr.trim();
+            if (hex.startsWith("0x") || hex.startsWith("0X")) {
+                hex = hex.substring(2);
+            }
+            long offset = Long.parseUnsignedLong(hex, 16);
+            Address imageBase = currentProgram.getImageBase();
+            if (imageBase != null && imageBase.getOffset() != 0 &&
+                    Long.compareUnsigned(offset, imageBase.getOffset()) < 0) {
+                Address rebased = imageBase.add(offset);
+                func = currentProgram.getFunctionManager().getFunctionAt(rebased);
+                if (func == null) {
+                    func = currentProgram.getFunctionManager().getFunctionContaining(rebased);
+                }
+            }
+        } catch (Exception ignored) {
+            // Preserve the original null result for malformed/out-of-range input.
+        }
         return func;
     }
 

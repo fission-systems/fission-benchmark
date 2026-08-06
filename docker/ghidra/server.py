@@ -467,6 +467,7 @@ def health():
             "bundle_endpoint": "/parity_bundle",
             "headless_workers": _HEADLESS_WORKERS,
             "cache_key": "path+content_fingerprint",
+            "address_resolution": "direct_then_image_base_relative",
         },
         "pyghidra": {
             "available": _PYGHIDRA_AVAILABLE,
