@@ -580,8 +580,6 @@ async def decompile_batch_and_score(
             binary=binary_rel,
             function_name=_subject_name(fn),
             corpus=corpus_split,
-            function_symbol=fn.name,
-            project=getattr(fn, "project", "") or "",
             language=lang,
             fmt=isa_fmt.get("format"),
         )
