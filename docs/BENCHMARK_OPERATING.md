@@ -81,9 +81,11 @@ python runner/runner.py --corpus dev --profile smoke \
 ```
 
 The checkpoint contract binds the exact expected cells, corpus manifest,
-release contract, runner commit, and runner source hash. Each completed batch is
-fsync'd as JSONL before the next batch completes. GED and recompilation use the
-versioned content cache under `.cache/metric-cache`; set
+release contract, runner commit, runner source hash, and batch-size contract.
+Each completed function is fsync'd as JSONL before scoring continues. Transport
+failures and addresses omitted by a batch response are deliberately not marked
+complete, so `--resume` retries them. GED and recompilation use the versioned
+content cache under `.cache/metric-cache`; set
 `FISSION_BENCHMARK_NO_CACHE=1` to bypass it or
 `FISSION_BENCHMARK_CACHE_DIR=/path` to relocate it. CI restores and saves both
 caches even when a later benchmark step fails.
@@ -169,6 +171,7 @@ content-addressed checkpoint, then submit the completed envelope:
 
 ```bash
 FISSION_SOURCE=release FISSION_VERSION=vX.Y.Z \
+  BENCHMARK_MAX_BATCH_FUNCTIONS=128 \
   python runner/runner.py --corpus scale --profile decbench_scale_full \
   --run-mode local --decompilers fission,ghidra \
   --output results/scale_latest.json
@@ -183,6 +186,14 @@ and applies `runner/scale_submission.py`'s fail-closed dataset and matrix
 contract. It publishes only a small aggregate to
 `public/unofficial-corpus-latest.json` plus an append-only history snapshot.
 The raw rows remain in the immutable release asset.
+
+Scale runs default to at most 128 functions per tool/binary request because a
+single DecBench binary can contain more than 4,000 functions. Chunks for the
+same tool and binary execute sequentially to bound memory use; different
+tool/binary groups still use `BENCHMARK_HTTP_CONCURRENCY`. Override with
+`BENCHMARK_MAX_BATCH_FUNCTIONS=<N>`, or set it to `0` only when an unbounded
+batch is intentional. The resolved value is recorded in the envelope and the
+checkpoint contract, since changing it also changes timing amortization.
 
 The `/unofficial-corpus` dashboard route is explicitly non-ranking. It reports
 matrix completion, output coverage, CFG GED, DWARF type match, recompilation,

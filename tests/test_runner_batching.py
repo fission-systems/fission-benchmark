@@ -1,0 +1,136 @@
+import asyncio
+from pathlib import Path
+from types import SimpleNamespace
+
+import pytest
+
+from runner.checkpoint import BenchmarkCheckpoint
+from runner.scoring import FunctionScore
+from runner import runner as benchmark_runner
+
+
+def test_scale_batches_are_bounded_by_default(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("BENCHMARK_MAX_BATCH_FUNCTIONS", raising=False)
+
+    assert benchmark_runner.resolve_max_batch_functions("scale") == 128
+    assert benchmark_runner.resolve_max_batch_functions("dev") == 0
+    assert [len(chunk) for chunk in benchmark_runner.chunk_targets(list(range(260)), 128)] == [
+        128,
+        128,
+        4,
+    ]
+
+
+def test_batch_size_override_is_validated(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("BENCHMARK_MAX_BATCH_FUNCTIONS", "32")
+    assert benchmark_runner.resolve_max_batch_functions("scale") == 32
+
+    monkeypatch.setenv("BENCHMARK_MAX_BATCH_FUNCTIONS", "-1")
+    with pytest.raises(ValueError, match="non-negative integer"):
+        benchmark_runner.resolve_max_batch_functions("scale")
+
+
+def test_tool_binary_chunks_execute_sequentially(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: list[list[int]] = []
+    active = 0
+
+    async def fake_decompile(_client, _dname, _url, _binary, targets, _sem, _oracle, **_kwargs):
+        nonlocal active
+        active += 1
+        assert active == 1
+        calls.append(list(targets))
+        await asyncio.sleep(0)
+        active -= 1
+        return []
+
+    monkeypatch.setattr(
+        benchmark_runner, "decompile_batch_and_score", fake_decompile
+    )
+    asyncio.run(
+        benchmark_runner.decompile_target_group(
+            None,
+            "fission",
+            "http://fission",
+            Path("fixture.bin"),
+            list(range(5)),
+            asyncio.Semaphore(2),
+            None,
+            corpus_split="scale",
+            checkpoint=None,
+            max_batch_functions=2,
+        )
+    )
+
+    assert calls == [[0, 1], [2, 3], [4]]
+
+
+def test_transport_failure_is_not_checkpointed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    corpus_root = tmp_path / "corpus"
+    source = corpus_root / "scale" / "sources" / "fixture.c"
+    binary = corpus_root / "scale" / "binaries" / "fixture"
+    source.parent.mkdir(parents=True)
+    binary.parent.mkdir(parents=True)
+    source.write_text("int foo(void) { return 1; }", encoding="utf-8")
+    binary.write_bytes(b"fixture")
+    monkeypatch.setattr(benchmark_runner, "CORPUS_ROOT", corpus_root)
+
+    variant = SimpleNamespace(
+        compiler="gcc",
+        opt="-O0",
+        addr="0x1",
+        binary="binaries/fixture",
+        source_cfg="",
+        preprocessed_source="",
+    )
+    function = SimpleNamespace(
+        name="foo",
+        subject_name="decbench::fixture::foo",
+        source="sources/fixture.c",
+        compiler_variants=[variant],
+        language="c",
+        project="fixture",
+    )
+
+    async def fake_transport_failure(
+        _client, dname, _url, _binary, targets, _sem, _oracle, **_kwargs
+    ):
+        assert len(targets) == 1
+        return [
+            FunctionScore(
+                decompiler=dname,
+                function_name=function.subject_name,
+                compiler_variant="gcc -O0",
+                source_similarity=0.0,
+                goto_count=0,
+                nesting_depth=0,
+                time_ms=0,
+                error="Batch decompile error: timeout",
+                fail_category="adapter_error",
+            )
+        ]
+
+    monkeypatch.setattr(
+        benchmark_runner, "decompile_batch_and_score", fake_transport_failure
+    )
+    checkpoint = BenchmarkCheckpoint(
+        tmp_path / "checkpoint.jsonl", contract={"profile": "scale-test"}
+    )
+
+    rows = asyncio.run(
+        benchmark_runner.run_all(
+            [function],
+            {"fission": "http://fission"},
+            "scale",
+            None,
+            None,
+            None,
+            checkpoint,
+            max_batch_functions=128,
+        )
+    )
+
+    assert len(rows) == 1
+    assert rows[0].error == "Batch decompile error: timeout"
+    assert checkpoint.recovered_rows == []

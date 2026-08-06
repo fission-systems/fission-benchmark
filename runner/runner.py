@@ -374,8 +374,6 @@ async def decompile_batch_and_score(
                 "Address missing from batch result",
             )
             fn_scores.append(missing_score)
-            if checkpoint is not None:
-                checkpoint.append([missing_score])
             continue
 
         code = item.get("code", "") or ""
@@ -641,6 +639,76 @@ async def decompile_batch_and_score(
     return fn_scores
 
 
+def resolve_max_batch_functions(corpus_split: str) -> int:
+    """Return the transport/metric chunk size; ``0`` means unbounded.
+
+    DecBench contains binaries with thousands of functions. Keeping those in
+    one HTTP request makes a single timeout discard hours of work and asks
+    Joern to parse thousands of decompiled functions at once. Bound scale runs
+    by default while preserving the historical unbounded behavior elsewhere.
+    """
+    raw = os.environ.get("BENCHMARK_MAX_BATCH_FUNCTIONS", "").strip()
+    if not raw:
+        return 128 if corpus_split == "scale" else 0
+    try:
+        value = int(raw)
+    except ValueError as exc:
+        raise ValueError(
+            "BENCHMARK_MAX_BATCH_FUNCTIONS must be a non-negative integer"
+        ) from exc
+    if value < 0:
+        raise ValueError(
+            "BENCHMARK_MAX_BATCH_FUNCTIONS must be a non-negative integer"
+        )
+    return value
+
+
+def chunk_targets(targets: list[tuple], max_batch_functions: int) -> list[list[tuple]]:
+    if max_batch_functions <= 0 or len(targets) <= max_batch_functions:
+        return [targets]
+    return [
+        targets[offset : offset + max_batch_functions]
+        for offset in range(0, len(targets), max_batch_functions)
+    ]
+
+
+async def decompile_target_group(
+    client: httpx.AsyncClient,
+    dname: str,
+    url: str,
+    binary_path: Path,
+    targets: list[tuple],
+    sem: asyncio.Semaphore,
+    oracle_endpoint: str | None,
+    *,
+    corpus_split: str,
+    checkpoint: BenchmarkCheckpoint | None,
+    max_batch_functions: int,
+) -> list[FunctionScore]:
+    """Process bounded chunks sequentially for one tool/binary group.
+
+    Sequential chunks prevent several copies of the same large binary from
+    competing for memory. Successful functions are checkpointed by
+    ``decompile_batch_and_score`` before the next chunk starts.
+    """
+    rows: list[FunctionScore] = []
+    for chunk in chunk_targets(targets, max_batch_functions):
+        rows.extend(
+            await decompile_batch_and_score(
+                client,
+                dname,
+                url,
+                binary_path,
+                chunk,
+                sem,
+                oracle_endpoint,
+                corpus_split=corpus_split,
+                checkpoint=checkpoint,
+            )
+        )
+    return rows
+
+
 def load_function_source_text(source_path: Path) -> str:
     """Read corpus source text for similarity scoring.
 
@@ -691,6 +759,7 @@ async def run_all(
     variant_limit: int | None,
     oracle_endpoint: str | None,
     checkpoint: BenchmarkCheckpoint | None = None,
+    max_batch_functions: int = 0,
 ) -> list[FunctionScore]:
     fn_list = functions  # [:limit] already applied by caller — do not slice again
     all_scores: list[FunctionScore] = (
@@ -777,12 +846,17 @@ async def run_all(
         concurrency = max((os.cpu_count() or 4) * 2, 8)
     sem = asyncio.Semaphore(concurrency)
     typer.echo(f"Starting batch benchmark run with concurrency limit of {concurrency} workers.")
+    if max_batch_functions > 0:
+        typer.echo(
+            "  max functions per tool/binary batch: "
+            f"{max_batch_functions} (sequential chunks)"
+        )
 
     async with httpx.AsyncClient() as client:
         tasks = []
         for (dname, url, binary_path), targets in groups.items():
             tasks.append(
-                decompile_batch_and_score(
+                decompile_target_group(
                     client,
                     dname,
                     url,
@@ -792,14 +866,13 @@ async def run_all(
                     oracle_endpoint,
                     corpus_split=corpus_split,
                     checkpoint=checkpoint,
+                    max_batch_functions=max_batch_functions,
                 )
             )
 
         for task in asyncio.as_completed(tasks):
             rows = await task
             all_scores.extend(rows)
-            if checkpoint is not None:
-                checkpoint.append(rows)
 
     return assign_consensus_ranks(
         all_scores,
@@ -871,6 +944,13 @@ def run(
             profile_cfg = get_profile(profile_name)
         except KeyError as exc:
             raise typer.BadParameter(str(exc), param_hint="--profile") from exc
+
+    try:
+        max_batch_functions = resolve_max_batch_functions(corpus)
+    except ValueError as exc:
+        raise typer.BadParameter(
+            str(exc), param_hint="BENCHMARK_MAX_BATCH_FUNCTIONS"
+        ) from exc
 
     # Select decompilers
     all_dec = configured_decompilers()
@@ -1003,6 +1083,7 @@ def run(
         "run_mode": run_mode,
         "matrix_profile": profile_name,
         "release_contract_id": (release_contract or {}).get("id"),
+        "max_batch_functions": max_batch_functions,
         "expected_cells": expected_cells,
     }
     checkpoint_digest = hashlib.sha256(
@@ -1043,6 +1124,7 @@ def run(
             variant_limit,
             oracle_endpoint,
             checkpoint_store,
+            max_batch_functions,
         )
     )
 
@@ -1095,6 +1177,10 @@ def run(
                 "schema": CHECKPOINT_SCHEMA,
                 "contract_sha256": checkpoint_store.contract_sha256,
                 "recovered_rows": recovered_rows,
+            },
+            "execution": {
+                "max_batch_functions": max_batch_functions,
+                "batch_order": "sequential_per_tool_binary",
             },
             **(
                 {"external_dataset": external_dataset}
