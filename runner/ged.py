@@ -229,6 +229,28 @@ def load_published_source_cfgs(source_cfg_path: str) -> dict[str, Any]:
 # ── Decompiled CFG extraction (batched per binary+decompiler) ──────────────
 
 
+def _parse_decompiled_cfg_batch(functions: dict[str, str], parse_source: Any) -> dict[str, Any]:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".c", delete=False) as f:
+        for name, code in functions.items():
+            f.write(f"// Function: {name}\n")
+            f.write(sanitize_decompiled_c(code))
+            f.write("\n\n")
+        temp_path = Path(f.name)
+
+    try:
+        parsed = parse_source(temp_path)
+        cfgs: dict[str, Any] = {}
+        if parsed is not None:
+            for key, func in parsed.items():
+                func_name = func.name if hasattr(func, "name") else str(key)
+                cfg = func.cfg if hasattr(func, "cfg") else None
+                if cfg is not None:
+                    cfgs[func_name] = cfg
+        return cfgs
+    finally:
+        temp_path.unlink(missing_ok=True)
+
+
 def extract_decompiled_cfgs(functions: dict[str, str]) -> dict[str, Any]:
     """Parse ALL decompiled functions for one (binary, decompiler) batch in a
     single Joern invocation (mirrors decbench's per-binary batching -- one
@@ -249,25 +271,49 @@ def extract_decompiled_cfgs(functions: dict[str, str]) -> dict[str, Any]:
     if not functions:
         return cfgs
 
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".c", delete=False) as f:
-        for name, code in functions.items():
-            f.write(f"// Function: {name}\n")
-            f.write(sanitize_decompiled_c(code))
-            f.write("\n\n")
-        temp_path = Path(f.name)
+    def parse_with_isolation(items: list[tuple[str, str]]) -> dict[str, Any]:
+        batch = dict(items)
+        try:
+            parsed_cfgs = _parse_decompiled_cfg_batch(batch, parse_source)
+            missing = [item for item in items if item[0] not in parsed_cfgs]
+            if not missing:
+                return parsed_cfgs
+            if len(items) == 1:
+                logger.warning("CFG extraction omitted decompiled function %s", items[0][0])
+                return parsed_cfgs
+            if len(missing) == len(items):
+                midpoint = len(items) // 2
+                logger.warning(
+                    "CFG extraction omitted all %d decompiled functions; isolating halves",
+                    len(items),
+                )
+                return {
+                    **parse_with_isolation(items[:midpoint]),
+                    **parse_with_isolation(items[midpoint:]),
+                }
+            # Preserve functions Joern accepted and retry only omitted rows.
+            recovered = parse_with_isolation(missing)
+            return {**parsed_cfgs, **recovered}
+        except Exception as exc:
+            if len(items) == 1:
+                logger.warning(
+                    "CFG extraction failed for decompiled function %s: %s",
+                    items[0][0],
+                    exc,
+                )
+                return {}
+            midpoint = len(items) // 2
+            logger.warning(
+                "CFG extraction from %d-function batch failed; isolating halves: %s",
+                len(items),
+                exc,
+            )
+            return {
+                **parse_with_isolation(items[:midpoint]),
+                **parse_with_isolation(items[midpoint:]),
+            }
 
-    try:
-        parsed = parse_source(temp_path)
-        if parsed is not None:
-            for key, func in parsed.items():
-                func_name = func.name if hasattr(func, "name") else str(key)
-                cfg = func.cfg if hasattr(func, "cfg") else None
-                if cfg is not None:
-                    cfgs[func_name] = cfg
-    except Exception as e:
-        logger.warning("CFG extraction from decompiled batch failed: %s", e)
-    finally:
-        temp_path.unlink(missing_ok=True)
+    cfgs.update(parse_with_isolation(list(functions.items())))
 
     return cfgs
 

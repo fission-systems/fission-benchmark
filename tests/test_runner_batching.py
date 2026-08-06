@@ -30,6 +30,16 @@ def test_batch_size_override_is_validated(monkeypatch: pytest.MonkeyPatch) -> No
         benchmark_runner.resolve_max_batch_functions("scale")
 
 
+def test_scale_semantic_precheck_preserves_adapter_failures() -> None:
+    external = SimpleNamespace(semantic={"mode": "none"})
+
+    clean = benchmark_runner.semantic_precheck(external, None, ["register_pseudo_inputs"])
+    failed = benchmark_runner.semantic_precheck(external, "preview_timeout", [])
+
+    assert clean is not None and clean[0] is None and clean[2] == "no_wrapper"
+    assert failed == (0.0, "preview_timeout", "adapter_error", 0, 0)
+
+
 def test_tool_binary_chunks_execute_sequentially(monkeypatch: pytest.MonkeyPatch) -> None:
     calls: list[list[int]] = []
     active = 0

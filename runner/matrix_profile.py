@@ -55,6 +55,34 @@ def _norm_opt(opt: str) -> str:
     return (opt or "").strip()
 
 
+def _project_round_robin(functions: list[Any]) -> list[Any]:
+    """Deterministically interleave projects without random sampling.
+
+    External corpora are loaded in manifest order. A plain prefix limit then
+    spends most of a smoke profile on the first large project. Round-robin
+    selection keeps the cohort reproducible while exercising every project
+    before taking a second function from any project.
+    """
+    by_project: dict[str, list[Any]] = {}
+    for fn in functions:
+        project = str(getattr(fn, "project", "") or "(unlabelled)")
+        by_project.setdefault(project, []).append(fn)
+
+    ordered: list[Any] = []
+    project_names = sorted(by_project)
+    offset = 0
+    while True:
+        added = False
+        for project in project_names:
+            cohort = by_project[project]
+            if offset < len(cohort):
+                ordered.append(cohort[offset])
+                added = True
+        if not added:
+            return ordered
+        offset += 1
+
+
 def apply_profile_to_functions(
     functions: list[Any],
     profile: dict[str, Any],
@@ -74,6 +102,7 @@ def apply_profile_to_functions(
     allow_set = set(allow) if allow else None
     max_functions = int(profile.get("max_functions") or 0)
     max_variants = int(profile.get("max_variants_per_function") or 0)
+    sampling = str(profile.get("sampling") or "").strip()
 
     selected: list[Any] = []
     for fn in functions:
@@ -129,6 +158,10 @@ def apply_profile_to_functions(
     if allow:
         order = {name: i for i, name in enumerate(allow)}
         selected.sort(key=lambda f: (order.get(f.name, 10_000), f.name))
+    if sampling == "project_round_robin":
+        selected = _project_round_robin(selected)
+    elif sampling:
+        raise ValueError(f"Unknown matrix profile sampling strategy: {sampling!r}")
     if max_functions > 0:
         selected = selected[:max_functions]
     return selected

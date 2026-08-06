@@ -9,6 +9,8 @@ matching the convention in test_type_match.py/test_differential_oracle.py.
 from __future__ import annotations
 
 from pathlib import Path
+from types import SimpleNamespace
+import sys
 
 import pytest
 
@@ -173,6 +175,66 @@ def test_extract_decompiled_cfgs_batches_multiple_functions() -> None:
     cfgs = extract_decompiled_cfgs(functions)
     assert "add" in cfgs
     assert "sub" in cfgs
+
+
+def test_extract_decompiled_cfgs_isolates_one_malformed_function(
+    monkeypatch,
+) -> None:
+    calls: list[str] = []
+
+    def fake_parse_source(path: Path):
+        text = path.read_text(encoding="utf-8")
+        calls.append(text)
+        if "bad_marker" in text:
+            raise RuntimeError("synthetic parser failure")
+        return {"good": SimpleNamespace(name="good", cfg=object())}
+
+    monkeypatch.setitem(
+        sys.modules,
+        "pyjoern",
+        SimpleNamespace(parse_source=fake_parse_source),
+    )
+
+    cfgs = extract_decompiled_cfgs(
+        {
+            "good": "int good(void) { return 1; }",
+            "bad": "int bad(void) { bad_marker; }",
+        }
+    )
+
+    assert "good" in cfgs
+    assert "bad" not in cfgs
+    assert len(calls) == 3  # combined batch, then one isolated call per half
+
+
+def test_extract_decompiled_cfgs_splits_when_batch_omits_every_function(
+    monkeypatch,
+) -> None:
+    calls: list[str] = []
+
+    def fake_parse_source(path: Path):
+        text = path.read_text(encoding="utf-8")
+        calls.append(text)
+        if "int left" in text and "int right" in text:
+            return {}
+        name = "left" if "int left" in text else "right"
+        return {name: SimpleNamespace(name=name, cfg=object())}
+
+    monkeypatch.setitem(
+        sys.modules,
+        "pyjoern",
+        SimpleNamespace(parse_source=fake_parse_source),
+    )
+
+    cfgs = extract_decompiled_cfgs(
+        {
+            "left": "int left(void) { return 1; }",
+            "right": "int right(void) { return 2; }",
+        }
+    )
+
+    assert set(cfgs) == {"left", "right"}
+    assert len(calls) == 3
 
 
 def test_ged_distinguishes_real_fission_and_ghidra_structure() -> None:

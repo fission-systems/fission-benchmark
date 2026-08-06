@@ -59,6 +59,36 @@ def _subject_name(function: Any) -> str:
     return str(getattr(function, "subject_name", "") or function.name)
 
 
+def semantic_precheck(
+    function: Any,
+    error: object,
+    harness_blockers: list[str],
+) -> tuple[float | None, str, str, int, int] | None:
+    """Resolve non-oracle semantic states in evidence-preserving order."""
+    if error:
+        return 0.0, str(error), "adapter_error", 0, 0
+    if (getattr(function, "semantic", None) or {}).get("mode") == "none":
+        return (
+            None,
+            "External scale corpus has no executable semantic oracle",
+            "no_wrapper",
+            0,
+            0,
+        )
+    if harness_blockers:
+        # Known-unrunnable output must not reach the executable oracle. Empty
+        # oracle evidence keeps this infrastructure state out of ABI validity.
+        return (
+            0.0,
+            "Skipped: decompiled output has harness blockers: "
+            + ", ".join(harness_blockers),
+            "oracle_error",
+            0,
+            0,
+        )
+    return None
+
+
 def _host_fingerprint() -> dict[str, Any]:
     """Stable-enough host context for non-ranking local performance evidence."""
     memory_bytes = 0
@@ -348,7 +378,7 @@ async def decompile_batch_and_score(
     decompiled_by_function: dict[str, str] = {}
     for fn, variant, _, _ged_src, _ged_basis in targets:
         item = results_by_addr.get(_addr_key(variant.addr))
-        if not item:
+        if not item or item.get("error"):
             continue
         code = item.get("code", "") or ""
         code_nir = item.get("code_nir") or code or ""
@@ -483,32 +513,10 @@ async def decompile_batch_and_score(
         var_isa = getattr(variant, "isa", None) or ""
         var_abi = getattr(variant, "abi_profile", None) or ""
         harness_blockers = output_diagnostics.get("harness_blockers") or []
-        if harness_blockers:
-            # Known-unrunnable output (e.g. Ghidra "Unknown calling convention"
-            # dumps that declare named params but read raw `in_RCX`-style
-            # register pseudo-locals in the body instead): naively compiling
-            # and executing this as C reads uninitialized memory through
-            # whatever garbage lands in those locals, which crashes the
-            # oracle harness (a real wine page fault, not a semantic mismatch)
-            # and poisons the whole envelope's oracle.valid aggregate. Skip
-            # the compile-and-run attempt entirely; reuse the same
-            # oracle_error + empty-evidence shape that
-            # `_row_is_oracle_infra_failure_without_evidence` already
-            # excludes from that aggregate.
+        semantic_precheck_result = semantic_precheck(fn, error, harness_blockers)
+        if semantic_precheck_result is not None:
             sem_score, sem_err, fail_cat, cases_passed, cases_total = (
-                0.0,
-                f"Skipped: decompiled output has harness blockers: {', '.join(harness_blockers)}",
-                "oracle_error",
-                0,
-                0,
-            )
-        elif (getattr(fn, "semantic", None) or {}).get("mode") == "none":
-            sem_score, sem_err, fail_cat, cases_passed, cases_total = (
-                None,
-                "External scale corpus has no executable semantic oracle",
-                "no_wrapper",
-                0,
-                0,
+                semantic_precheck_result
             )
         elif not error and oracle_endpoint and fn.name in TEST_WRAPPERS:
             binary_bytes = binary_path.read_bytes()
@@ -537,8 +545,14 @@ async def decompile_batch_and_score(
             sem_score, sem_err, fail_cat, cases_passed, cases_total = await verify_semantic_correctness_async(
                 fn.name, semantic_code
             )
-        else:
-            sem_score, sem_err, fail_cat, cases_passed, cases_total = 0.0, error, "adapter_error", 0, 0
+        else:  # pragma: no cover - semantic_precheck handles every error
+            sem_score, sem_err, fail_cat, cases_passed, cases_total = (
+                0.0,
+                str(error),
+                "adapter_error",
+                0,
+                0,
+            )
 
         # C-2: prefer per-item timing from adapter if provided, fall back to apportioned batch time.
         item_time_ms = item.get("time_ms")

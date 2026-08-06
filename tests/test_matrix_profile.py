@@ -21,6 +21,56 @@ def test_profiles_yaml_loads_smoke_and_core() -> None:
     assert "c" in smoke["languages"]
     assert smoke["max_functions"] == 10
 
+    scale_smoke = get_profile("decbench_scale_smoke")
+    assert scale_smoke is not None
+    assert scale_smoke["sampling"] == "project_round_robin"
+
+
+def test_project_round_robin_sampling_balances_uneven_projects() -> None:
+    functions = []
+    for project, count in (("alpha", 5), ("beta", 2), ("gamma", 1)):
+        for index in range(count):
+            functions.append(
+                FunctionEntry(
+                    name=f"{project}_{index}",
+                    project=project,
+                    source=f"source/{project}.c",
+                    language="c",
+                    compiler_variants=[
+                        CompilerVariant(
+                            "gcc",
+                            "-O0",
+                            f"binaries/{project}",
+                            isa="x86_64",
+                            format="elf",
+                        )
+                    ],
+                )
+            )
+
+    out = apply_profile_to_functions(
+        functions,
+        {
+            "languages": ["c"],
+            "sampling": "project_round_robin",
+            "max_functions": 6,
+        },
+    )
+
+    assert [(fn.project, fn.name) for fn in out] == [
+        ("alpha", "alpha_0"),
+        ("beta", "beta_0"),
+        ("gamma", "gamma_0"),
+        ("alpha", "alpha_1"),
+        ("beta", "beta_1"),
+        ("alpha", "alpha_2"),
+    ]
+
+
+def test_unknown_sampling_strategy_fails_closed() -> None:
+    with pytest.raises(ValueError, match="Unknown matrix profile sampling strategy"):
+        apply_profile_to_functions([], {"sampling": "random"})
+
 
 def test_apply_profile_filters_opts_and_allowlist() -> None:
     fns = [

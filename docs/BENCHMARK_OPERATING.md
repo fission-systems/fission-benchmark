@@ -195,6 +195,12 @@ tool/binary groups still use `BENCHMARK_HTTP_CONCURRENCY`. Override with
 batch is intentional. The resolved value is recorded in the envelope and the
 checkpoint contract, since changing it also changes timing amortization.
 
+`decbench_scale_smoke` uses a deterministic project round-robin before its
+250-function cap. With the locked dataset this exercises all 33 non-malware
+projects instead of spending the canary on the first two alphabetically loaded
+projects. `decbench_scale_full` remains unsampled and retains all 34,097
+resolved functions.
+
 The `/unofficial-corpus` dashboard route is explicitly non-ranking. It reports
 matrix completion, output coverage, CFG GED, DWARF type match, recompilation,
 latency, failure taxonomy, project coverage, host fingerprint, and source asset
