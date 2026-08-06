@@ -30,6 +30,7 @@ for why this was still chosen over a lighter pycparser-based alternative.
 from __future__ import annotations
 
 import functools
+import json
 import logging
 import os
 import re
@@ -43,6 +44,27 @@ except ImportError:
     from metric_cache import load as cache_load, store as cache_store
 
 logger = logging.getLogger(__name__)
+
+
+class _PublishedCfgStatement:
+    """Marker preventing a real one-block published CFG from looking empty."""
+
+
+class _PublishedCfgNode:
+    def __init__(self, node_id: int, *, entry: bool, exit_: bool, real: bool) -> None:
+        self.id = node_id
+        self.is_entrypoint = entry
+        self.is_exitpoint = exit_
+        self.statements = (_PublishedCfgStatement(),) if real else ()
+
+    def __hash__(self) -> int:
+        return hash(self.id)
+
+    def __eq__(self, other: object) -> bool:
+        return isinstance(other, _PublishedCfgNode) and self.id == other.id
+
+    def __repr__(self) -> str:
+        return f"n{self.id}"
 
 
 # Exact GED is super-polynomial, so graphs above this node count fall back to
@@ -166,6 +188,42 @@ def extract_source_cfgs(source_path: str) -> dict[str, Any]:
     except Exception as e:
         logger.warning("CFG extraction from source %s failed: %s", source_path, e)
     return cfgs
+
+
+@functools.lru_cache(maxsize=1024)
+def load_published_source_cfgs(source_cfg_path: str) -> dict[str, Any]:
+    """Load DecBench's topology-preserving published source-CFG contract."""
+    try:
+        import networkx as nx
+
+        payload = json.loads(Path(source_cfg_path).read_text(encoding="utf-8"))
+    except (OSError, ValueError, ImportError) as exc:
+        logger.warning("Published source CFG %s failed: %s", source_cfg_path, exc)
+        return {}
+
+    output: dict[str, Any] = {}
+    for name, raw in (payload.get("functions") or {}).items():
+        if not isinstance(raw, dict):
+            continue
+        entries = {int(value) for value in raw.get("entry") or []}
+        exits = {int(value) for value in raw.get("exit") or []}
+        real = not bool(raw.get("degenerate", True))
+        nodes = {
+            int(value): _PublishedCfgNode(
+                int(value),
+                entry=int(value) in entries,
+                exit_=int(value) in exits,
+                real=real,
+            )
+            for value in raw.get("nodes") or []
+        }
+        graph = nx.DiGraph()
+        graph.add_nodes_from(nodes.values())
+        for edge in raw.get("edges") or []:
+            if len(edge) == 2 and int(edge[0]) in nodes and int(edge[1]) in nodes:
+                graph.add_edge(nodes[int(edge[0])], nodes[int(edge[1])])
+        output[str(name)] = graph
+    return output
 
 
 # ── Decompiled CFG extraction (batched per binary+decompiler) ──────────────

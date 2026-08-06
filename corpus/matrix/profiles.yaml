@@ -30,6 +30,24 @@ profiles:
     decompilers_default: fission,ghidra,boomerang,radare2,angr,snowman,revng,reko,retdec
     timeout_minutes: 40
 
+  decbench_scale_smoke:
+    description: "External DecBench scale canary (first 250 materialized subjects)"
+    languages: [c]
+    opts: ["-O0"]
+    max_functions: 250
+    max_variants_per_function: 1
+    decompilers_default: fission,ghidra
+    timeout_minutes: 180
+
+  decbench_scale_full:
+    description: "External DecBench-scale structural/type/recompile cohort"
+    languages: [c]
+    opts: []
+    max_functions: 0
+    max_variants_per_function: 0
+    decompilers_default: fission,ghidra
+    timeout_minutes: 1440
+
   # Official publication-proven cohort (C PE semantic).
   core_c_pe:
     description: "Full C PE x64+m32, O0/O2 — core ranking cohort"

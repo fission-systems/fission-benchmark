@@ -13,6 +13,9 @@ results/
 
 # Corpus binaries (compiled locally)
 corpus/*/binaries/
+corpus/scale/source_cfgs/
+corpus/scale/manifests/
+corpus/scale/inventory.json
 
 # Docker build cache
 .docker/

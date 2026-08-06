@@ -240,6 +240,12 @@
     radial-gradient(800px 180px at 0% 120%, rgba(99, 102, 241, 0.12), transparent),
     var(--bg-card);
 }
+.frameUnofficial {
+  border-color: rgba(245, 158, 11, 0.42);
+  background:
+    radial-gradient(1000px 220px at 10% -40%, rgba(245, 158, 11, 0.15), transparent),
+    var(--bg-card);
+}
 .frameTitle {
   font-size: 1.15rem;
   font-weight: 750;

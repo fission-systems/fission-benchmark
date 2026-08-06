@@ -35,6 +35,23 @@ export const RunMetaSchema = z.object({
   runner_commit: z.string().optional(),
   corpus: z.string().optional(),
   matrix_profile: z.string().nullable().optional(),
+  requested_run_mode: z.enum(["smoke", "local", "official"]).optional(),
+  external_dataset: z
+    .object({
+      schema: z.string(),
+      name: z.string(),
+      repository: z.string(),
+      revision: z.string(),
+      license: z.string(),
+      config: z.string(),
+      selected_binaries: z.number().int().nonnegative(),
+      requested_functions: z.number().int().nonnegative(),
+      resolved_functions: z.number().int().nonnegative(),
+      source_cfg_functions: z.number().int().nonnegative(),
+      source_cfg_coverage: z.number(),
+      malware_included: z.boolean(),
+    })
+    .optional(),
   release_contract: z
     .object({
       id: z.string(),
@@ -120,6 +137,8 @@ export const RowSchema = z
     track: z.string().optional(),
     isa_format: z.record(z.string(), z.string()).optional(),
     corpus: z.string().optional(),
+    function_symbol: z.string().optional(),
+    project: z.string().optional(),
     readability_metrics: z.record(z.string(), z.unknown()).optional(),
     readability_metrics_hir: z.record(z.string(), z.unknown()).optional(),
     readability_proxy_score: z.number().nullable().optional(),
@@ -181,6 +200,16 @@ export const ToolchainSchema = z.object({
   ci: z.string().optional(),
   github_run_id: z.string().optional(),
   github_actor: z.string().optional(),
+  host: z
+    .object({
+      system: z.string(),
+      release: z.string(),
+      machine: z.string(),
+      processor: z.string(),
+      cpu_count: z.number().int().nonnegative(),
+      memory_bytes: z.number().int().nonnegative(),
+    })
+    .optional(),
 });
 
 export const BenchmarkEnvelopeSchema = z.object({

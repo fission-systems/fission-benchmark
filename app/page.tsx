@@ -154,6 +154,15 @@ export default function Home() {
           </p>
           <div className={styles.cardCta}>Open releases →</div>
         </Link>
+        <Link href="/unofficial-corpus" className={styles.card}>
+          <div className={styles.cardKicker}>Non-ranking · scale</div>
+          <div className={styles.cardTitle}>Unofficial corpus</div>
+          <p className={styles.cardBody}>
+            CI-verified local DecBench runs: tens of thousands of functions,
+            CFG, type, recompilation, latency, and failures.
+          </p>
+          <div className={styles.cardCta}>Open scale diagnostics →</div>
+        </Link>
       </div>
 
       <Suspense fallback={<SkeletonMeta />}>

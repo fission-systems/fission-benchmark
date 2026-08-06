@@ -43,7 +43,7 @@ _PC_REL_MEM = re.compile(
 )
 
 
-@functools.lru_cache(maxsize=256)
+@functools.lru_cache(maxsize=1024)
 def _file_sha256(path: str, mtime_ns: int, size: int) -> str:
     _ = mtime_ns, size
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()

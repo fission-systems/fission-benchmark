@@ -38,6 +38,8 @@ python scripts/build_matrix.py --split dev --profile core_c_pe
 | `lang_cpp` / `lang_rust` / `lang_go` | Language tracks |
 | `multi_isa` | PE+ELF / multi-arch |
 | `full_matrix` | Fan-out core + languages + multi_isa, merge for diagnostics |
+| `decbench_scale_smoke` | 250 external subjects from `corpus/scale` |
+| `decbench_scale_full` | Materialized DecBench-scale non-ranking cohort |
 
 ```bash
 # Fan-out + merge (needs decompilers + oracle up)
@@ -80,3 +82,17 @@ CORPUS_TARGET=windows-x86_64 python scripts/build_matrix.py --split dev
 ```
 
 Legacy entrypoint: `scripts/build_corpus.py` delegates to `build_matrix.py`.
+
+## Tens-of-thousands scale track
+
+The authored fixtures intentionally stay small enough for executable semantic
+wrappers. A separate pinned DecBench materialization supplies tens of thousands
+of real-project functions without committing third-party binaries:
+
+```bash
+python scripts/materialize_scale_corpus.py --config unoptimized
+python runner/runner.py --corpus scale --profile decbench_scale_full \
+  --run-mode local --decompilers fission,ghidra
+```
+
+See `corpus/scale/README.md` for provenance and malware isolation rules.

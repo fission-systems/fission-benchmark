@@ -1,0 +1,155 @@
+name: Publish Unofficial Corpus Result
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Benchmark release tag containing the local result asset"
+        required: true
+        type: string
+      asset_name:
+        description: "Gzipped local scale benchmark envelope asset"
+        required: true
+        type: string
+      sha256:
+        description: "Expected SHA-256 of the uploaded asset"
+        required: true
+        type: string
+      fission_version:
+        description: "Fission release measured by the local run"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publish-unofficial-corpus
+  cancel-in-progress: false
+
+jobs:
+  validate-and-publish:
+    name: Validate local result and publish dashboard aggregate
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 2
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Require the current Fission release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REQUESTED_VERSION: ${{ inputs.fission_version }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          set -euo pipefail
+          latest="$(gh api repos/fission-systems/Fission/releases/latest --jq .tag_name)"
+          python - "$latest" "$REQUESTED_VERSION" "$RELEASE_TAG" <<'PY'
+          import re
+          import sys
+          def normalized(value):
+              match = re.fullmatch(r"v?(\d+)\.(\d+)\.(\d+)", value.strip())
+              if not match:
+                  raise SystemExit(f"invalid release version: {value!r}")
+              return "v" + ".".join(match.groups())
+          latest, requested = map(normalized, sys.argv[1:3])
+          release_tag = sys.argv[3]
+          if latest != requested:
+              raise SystemExit(
+                  f"refusing stale scale result: requested={requested}, latest={latest}"
+              )
+          if release_tag != f"benchmark-{requested}":
+              raise SystemExit(
+                  f"release tag must be benchmark-{requested}, got {release_tag!r}"
+              )
+          print(f"Current release confirmed: {latest}")
+          PY
+
+      - name: Download and hash-check the local submission
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+          ASSET_NAME: ${{ inputs.asset_name }}
+          EXPECTED_SHA256: ${{ inputs.sha256 }}
+        run: |
+          set -euo pipefail
+          python - "$ASSET_NAME" "$EXPECTED_SHA256" <<'PY'
+          import re
+          import sys
+          asset, digest = sys.argv[1:]
+          if not re.fullmatch(r"[A-Za-z0-9._-]+\.json\.gz", asset) or ".." in asset:
+              raise SystemExit(f"unsafe submission asset name: {asset!r}")
+          if not re.fullmatch(r"[0-9a-f]{64}", digest):
+              raise SystemExit("sha256 must be 64 lowercase hexadecimal characters")
+          PY
+          mkdir -p .cache/local-submission
+          gh release download "$RELEASE_TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --pattern "$ASSET_NAME" \
+            --dir .cache/local-submission
+          actual="$(sha256sum ".cache/local-submission/$ASSET_NAME" | awk '{print $1}')"
+          test "$actual" = "$EXPECTED_SHA256"
+
+      - name: Validate and build the non-ranking dashboard document
+        env:
+          ASSET_NAME: ${{ inputs.asset_name }}
+          EXPECTED_SHA256: ${{ inputs.sha256 }}
+          FISSION_VERSION: ${{ inputs.fission_version }}
+        run: |
+          set -euo pipefail
+          python scripts/publish_scale_submission.py \
+            ".cache/local-submission/$ASSET_NAME" \
+            --fission-version "$FISSION_VERSION" \
+            --source-asset "$ASSET_NAME" \
+            --source-sha256 "$EXPECTED_SHA256"
+
+      - name: Verify dashboard production build
+        run: |
+          npm ci
+          npm run build
+
+      - name: Commit versioned unofficial-corpus data
+        env:
+          FISSION_VERSION: ${{ inputs.fission_version }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin main
+          test "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)" || {
+            echo "main advanced during validation; rerun publication" >&2
+            exit 1
+          }
+          git add public/unofficial-corpus-latest.json public/unofficial-corpus-history/
+          if git diff --cached --quiet; then
+            echo "No publication change"
+            exit 0
+          fi
+          git commit -m "data: publish unofficial DecBench corpus for $FISSION_VERSION"
+          git push origin HEAD:main
+
+      - name: Write publication summary
+        if: always()
+        env:
+          FISSION_VERSION: ${{ inputs.fission_version }}
+          ASSET_NAME: ${{ inputs.asset_name }}
+        run: |
+          {
+            echo "## Unofficial corpus publication"
+            echo
+            echo "- Fission: \`$FISSION_VERSION\`"
+            echo "- Source asset: \`$ASSET_NAME\`"
+            echo "- Dataset: pinned DecBench, malware excluded"
+            echo "- Ranking: disabled"
+          } >> "$GITHUB_STEP_SUMMARY"

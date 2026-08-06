@@ -80,6 +80,8 @@ class FunctionScore:
     isa_format: dict[str, str] = field(default_factory=dict)
     binary: str = ""
     corpus: str = ""
+    function_symbol: str = ""  # actual binary symbol when function_name is namespaced
+    project: str = ""
 
 
 

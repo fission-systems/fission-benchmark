@@ -1,0 +1,47 @@
+{
+  "schema": "fission-external-dataset-lock-v1",
+  "dataset_repo": "noelo-lab/decbench-dataset",
+  "revision": "abee628fdb9f4b1622127bbdfc2ea6437fda288b",
+  "license": "BSD-2-Clause",
+  "upstream_totals": {
+    "projects": 39,
+    "binaries": 803,
+    "functions": 94575
+  },
+  "configs": {
+    "sample-set": {
+      "manifest": "configs/sample-set/manifest.json",
+      "functions": 250,
+      "binaries": 224
+    },
+    "large": {
+      "manifest": "configs/large/manifest.json",
+      "functions": 1984,
+      "binaries": 191
+    },
+    "unoptimized": {
+      "manifest": "configs/unoptimized/manifest.json",
+      "functions": 34406,
+      "binaries": 267,
+      "safe_functions": 34098,
+      "safe_binaries": 262,
+      "safe_resolved_functions": 34097,
+      "safe_source_cfg_functions": 33041
+    },
+    "optimized": {
+      "manifest": "configs/optimized/manifest.json",
+      "functions": 34593,
+      "binaries": 268
+    },
+    "inlined": {
+      "manifest": "configs/inlined/manifest.json",
+      "functions": 25576,
+      "binaries": 268
+    },
+    "full": {
+      "manifest": "configs/full/manifest.json",
+      "functions": 94575,
+      "binaries": 803
+    }
+  }
+}

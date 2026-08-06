@@ -51,6 +51,8 @@ on:
       - '**.md'
       - 'docs/**'
       - 'LICENSE'
+      - 'public/unofficial-corpus-latest.json'
+      - 'public/unofficial-corpus-history/**'
   workflow_dispatch:
     inputs:
       fission_version:

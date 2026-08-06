@@ -23,6 +23,7 @@ class CompilerVariant:
     format: str = ""  # pe | elf
     abi_profile: str = ""  # windows-x86_64 | linux-x86_64 | ...
     preprocessed_source: str = ""  # exact C/C++ TU used for source-CFG GED
+    source_cfg: str = ""  # optional published per-binary source-CFG JSON
 
 
 @dataclass
@@ -30,9 +31,16 @@ class FunctionEntry:
     name: str
     source: str  # relative path to source under corpus/{split}/
     compiler_variants: list[CompilerVariant]
-    split: str = "dev"  # "dev" | "holdout" | "realworld"
+    split: str = "dev"  # dev | holdout | realworld | scale
     language: str = "c"  # c | cpp | rust | go
     semantic: dict[str, Any] = field(default_factory=dict)
+    subject_id: str = ""  # globally unique row identity for external corpora
+    project: str = ""  # provenance label; empty for authored fixtures
+
+    @property
+    def subject_name(self) -> str:
+        """Stable matrix identity; symbol name remains the decompile target."""
+        return self.subject_id or self.name
 
 
 def _infer_language(source: str, explicit: str | None = None) -> str:
@@ -103,6 +111,8 @@ class Corpus:
                     compiler_variants=variants,
                     language=language,
                     semantic=dict(semantic or {}),
+                    subject_id=str(fn.get("subject_id") or ""),
+                    project=str(fn.get("project") or ""),
                 )
             )
         return cls(functions=functions)
@@ -119,10 +129,10 @@ class Corpus:
             dev = cls.load_all("dev")
             holdout = cls.load_all("holdout")
             return cls(functions=dev.functions + holdout.functions)
-        if split not in ("dev", "holdout", "realworld"):
+        if split not in ("dev", "holdout", "realworld", "scale"):
             raise ValueError(
                 f"Invalid corpus split: {split!r}. "
-                f"Must be one of 'dev', 'holdout', 'realworld', or 'full'."
+                "Must be one of 'dev', 'holdout', 'realworld', 'scale', or 'full'."
             )
         manifest_dir = CORPUS_ROOT / split / "manifests"
         all_functions: list[FunctionEntry] = []
@@ -133,18 +143,19 @@ class Corpus:
             c = cls.load(manifest)
             for fn in c.functions:
                 fn.split = split
-                if fn.name in seen_names:
+                identity = fn.subject_name
+                if identity in seen_names:
                     import warnings
 
                     warnings.warn(
-                        f"[corpus] Duplicate function name '{fn.name}' found in "
-                        f"'{manifest.name}' and '{seen_names[fn.name]}'. "
+                        f"[corpus] Duplicate function identity '{identity}' found in "
+                        f"'{manifest.name}' and '{seen_names[identity]}'. "
                         "This will produce duplicate cells and fail the matrix validity gate. "
                         "Rename one of the entries.",
                         stacklevel=2,
                     )
                 else:
-                    seen_names[fn.name] = manifest.name
+                    seen_names[identity] = manifest.name
                 all_functions.append(fn)
         return cls(functions=all_functions)
 
@@ -197,6 +208,8 @@ def split_corpus_to_holdout(
             "functions": [
                 {
                     "name": fn.name,
+                    "subject_id": fn.subject_id,
+                    "project": fn.project,
                     "language": fn.language,
                     "source": fn.source,
                     "semantic": fn.semantic or {

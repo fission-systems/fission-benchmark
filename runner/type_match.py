@@ -631,7 +631,7 @@ def _get_array_dims(die: Any) -> list[int | None]:
     return dims
 
 
-@functools.lru_cache(maxsize=64)
+@functools.lru_cache(maxsize=1024)
 def ground_truth_for_binary(binary_path: str) -> dict[str, list[dict[str, Any]]]:
     """Cached per-binary DWARF ground truth (many rows share one binary)."""
     return extract_ground_truth_types(Path(binary_path))

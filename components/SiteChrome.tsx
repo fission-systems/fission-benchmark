@@ -11,6 +11,7 @@ export type DashboardPage =
   | "measurement"
   | "quality"
   | "speed"
+  | "unofficial-corpus"
   | "parity"
   | "releases";
 
@@ -73,6 +74,12 @@ const NAV: {
     href: "/speed",
     label: "Speed",
     blurb: "Decompile latency",
+  },
+  {
+    id: "unofficial-corpus",
+    href: "/unofficial-corpus",
+    label: "Unofficial Corpus",
+    blurb: "DecBench scale",
   },
   {
     id: "parity",

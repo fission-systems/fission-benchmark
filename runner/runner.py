@@ -5,6 +5,7 @@ from collections import Counter
 import hashlib
 import json
 import os
+import platform
 import sys
 import time
 import uuid
@@ -34,7 +35,12 @@ from run_validity import build_envelope
 from test_wrappers import TEST_WRAPPERS
 from bare_compile import try_bare_compile, classify_track, classify_isa_format
 from type_match import calibrate_binary_shift, compute_type_match, ground_truth_for_binary
-from ged import compute_ged, extract_decompiled_cfgs, extract_source_cfgs
+from ged import (
+    compute_ged,
+    extract_decompiled_cfgs,
+    extract_source_cfgs,
+    load_published_source_cfgs,
+)
 from preprocessed_tu import PREPROCESSED_TU_SCHEMA
 from recompilation import measure_recompilation
 from checkpoint import BenchmarkCheckpoint, CHECKPOINT_SCHEMA
@@ -49,6 +55,51 @@ SOURCE_GOTO_COUNTS: dict[str, int] = {}
 SOURCE_NESTING_DEPTHS: dict[str, int] = {}
 
 
+def _subject_name(function: Any) -> str:
+    return str(getattr(function, "subject_name", "") or function.name)
+
+
+def _host_fingerprint() -> dict[str, Any]:
+    """Stable-enough host context for non-ranking local performance evidence."""
+    memory_bytes = 0
+    processor = platform.processor()
+    try:
+        memory_bytes = int(os.sysconf("SC_PAGE_SIZE")) * int(
+            os.sysconf("SC_PHYS_PAGES")
+        )
+    except (AttributeError, OSError, ValueError):
+        pass
+    if platform.system() == "Darwin":
+        try:
+            memory_bytes = int(
+                subprocess.check_output(["sysctl", "-n", "hw.memsize"])
+                .decode()
+                .strip()
+            )
+        except (OSError, ValueError, subprocess.SubprocessError):
+            pass
+        if not processor:
+            for key in ("machdep.cpu.brand_string", "hw.model"):
+                try:
+                    processor = (
+                        subprocess.check_output(["sysctl", "-n", key])
+                        .decode()
+                        .strip()
+                    )
+                except (OSError, subprocess.SubprocessError):
+                    continue
+                if processor:
+                    break
+    return {
+        "system": platform.system(),
+        "release": platform.release(),
+        "machine": platform.machine(),
+        "processor": processor,
+        "cpu_count": os.cpu_count() or 0,
+        "memory_bytes": memory_bytes,
+    }
+
+
 def filter_functions(functions: list, requested: str | None) -> list:
     """Select named functions while preserving corpus manifest order."""
     if not requested:
@@ -57,11 +108,29 @@ def filter_functions(functions: list, requested: str | None) -> list:
     if not names:
         raise ValueError("function filter is empty")
     requested_names = set(names)
-    available_names = {fn.name for fn in functions}
+    identities = {_subject_name(fn) for fn in functions}
+    symbols: dict[str, list] = {}
+    for fn in functions:
+        symbols.setdefault(fn.name, []).append(fn)
+    available_names = identities | set(symbols)
     missing = sorted(requested_names - available_names)
     if missing:
         raise ValueError(f"unknown function(s): {', '.join(missing)}")
-    return [fn for fn in functions if fn.name in requested_names]
+    ambiguous = sorted(
+        name
+        for name in requested_names
+        if name not in identities and len(symbols.get(name, [])) > 1
+    )
+    if ambiguous:
+        raise ValueError(
+            "ambiguous external symbol(s); use the namespaced subject id: "
+            + ", ".join(ambiguous)
+        )
+    return [
+        fn
+        for fn in functions
+        if _subject_name(fn) in requested_names or fn.name in requested_names
+    ]
 
 
 def format_semantic_score(score: float | None) -> str:
@@ -82,7 +151,7 @@ def build_expected_cells(
             for decompiler in decompiler_names:
                 cells.append({
                     "decompiler": decompiler,
-                    "function_name": function.name,
+                    "function_name": _subject_name(function),
                     "compiler_variant": f"{variant.compiler} {variant.opt}",
                 })
     return cells
@@ -183,7 +252,11 @@ async def decompile_batch_and_score(
         return {
             "source_basis": target[4],
             "source_path": source_rel,
-            "source_contract": PREPROCESSED_TU_SCHEMA,
+            "source_contract": (
+                "decbench-published-source-cfg-v1"
+                if target[4] == "published_source_cfg"
+                else PREPROCESSED_TU_SCHEMA
+            ),
         }
 
     def _failure_score(
@@ -192,7 +265,7 @@ async def decompile_batch_and_score(
         fn, variant = target[0], target[1]
         return FunctionScore(
             decompiler=dname,
-            function_name=fn.name,
+            function_name=_subject_name(fn),
             compiler_variant=f"{variant.compiler} {variant.opt}",
             source_similarity=0.0,
             goto_count=0,
@@ -205,6 +278,8 @@ async def decompile_batch_and_score(
             binary=binary_rel,
             corpus=corpus_split,
             language=getattr(fn, "language", None) or "c",
+            function_symbol=fn.name,
+            project=getattr(fn, "project", "") or "",
         )
 
     try:
@@ -217,13 +292,24 @@ async def decompile_batch_and_score(
     # Post to batch endpoint under semaphore
     async with sem:
         try:
+            timeout_key = (
+                "BENCHMARK_"
+                + dname.upper().replace("-", "_").replace(".", "_")
+                + "_TIMEOUT_S"
+            )
+            default_timeout = 1800.0 if corpus_split == "scale" else 300.0
+            timeout_s = float(
+                os.environ.get(timeout_key)
+                or os.environ.get("BENCHMARK_DECOMPILE_TIMEOUT_S")
+                or default_timeout
+            )
             resp = await client.post(
                 f"{url}/decompile_batch",
                 json={
                     "binary_b64": binary_b64,
                     "addresses": addresses,
                 },
-                timeout=300.0,
+                timeout=timeout_s,
             )
             if resp.status_code != 200:
                 raise RuntimeError(
@@ -340,11 +426,19 @@ async def decompile_batch_and_score(
         ged_metadata: dict[str, Any] = {
             "source_basis": ged_source_basis,
             "source_path": ged_source_rel,
-            "source_contract": PREPROCESSED_TU_SCHEMA,
+            "source_contract": (
+                "decbench-published-source-cfg-v1"
+                if ged_source_basis == "published_source_cfg"
+                else PREPROCESSED_TU_SCHEMA
+            ),
         }
         ged_score: float | None = None
         if semantic_code and not error:
-            source_cfgs = extract_source_cfgs(str(ged_source_path))
+            source_cfgs = (
+                load_published_source_cfgs(str(ged_source_path))
+                if ged_source_basis == "published_source_cfg"
+                else extract_source_cfgs(str(ged_source_path))
+            )
             source_cfg = source_cfgs.get(fn.name)
             decompiled_cfg = decompiled_cfgs.get(fn.name)
             ged_metadata["source_cfg_available"] = source_cfg is not None
@@ -407,6 +501,14 @@ async def decompile_batch_and_score(
                 0.0,
                 f"Skipped: decompiled output has harness blockers: {', '.join(harness_blockers)}",
                 "oracle_error",
+                0,
+                0,
+            )
+        elif (getattr(fn, "semantic", None) or {}).get("mode") == "none":
+            sem_score, sem_err, fail_cat, cases_passed, cases_total = (
+                None,
+                "External scale corpus has no executable semantic oracle",
+                "no_wrapper",
                 0,
                 0,
             )
@@ -476,15 +578,17 @@ async def decompile_batch_and_score(
         )
         track = classify_track(
             binary=binary_rel,
-            function_name=fn.name,
+            function_name=_subject_name(fn),
             corpus=corpus_split,
+            function_symbol=fn.name,
+            project=getattr(fn, "project", "") or "",
             language=lang,
             fmt=isa_fmt.get("format"),
         )
 
         completed_score = FunctionScore(
             decompiler=dname,
-            function_name=fn.name,
+            function_name=_subject_name(fn),
             compiler_variant=variant_label,
             source_similarity=sim,
             goto_count=gotos,
@@ -532,7 +636,7 @@ async def decompile_batch_and_score(
         cat_tag = f" [{fail_cat}]" if fail_cat else ""
         sem_text = format_semantic_score(sem_score)
         typer.echo(
-            f"  {status} {dname:10s} {fn.name:15s} [{variant_label}] "
+            f"  {status} {dname:10s} {_subject_name(fn):15s} [{variant_label}] "
             f"sim={sim:.3f} sem={sem_text} ({cases_passed}/{cases_total} cases){cat_tag} gotos={gotos}"
         )
 
@@ -605,6 +709,7 @@ async def run_all(
         variants = fn.compiler_variants[:variant_limit] if variant_limit else fn.compiler_variants
         for variant in variants:
             binary_path = CORPUS_ROOT / corpus_split / variant.binary
+            published_source_cfg = str(getattr(variant, "source_cfg", "") or "")
             preprocessed_source = str(
                 getattr(variant, "preprocessed_source", "") or ""
             )
@@ -613,7 +718,10 @@ async def run_all(
                 if preprocessed_source
                 else source_path
             )
-            if preprocessed_source and candidate_ged_source.is_file():
+            if published_source_cfg:
+                ged_source_path = CORPUS_ROOT / corpus_split / published_source_cfg
+                ged_source_basis = "published_source_cfg"
+            elif preprocessed_source and candidate_ged_source.is_file():
                 ged_source_path = candidate_ged_source
                 ged_source_basis = "preprocessed_tu"
             else:
@@ -622,12 +730,12 @@ async def run_all(
             if not binary_path.exists():
                 missing_rows = []
                 for dname in decompilers:
-                    key = (dname, fn.name, f"{variant.compiler} {variant.opt}")
+                    key = (dname, _subject_name(fn), f"{variant.compiler} {variant.opt}")
                     if checkpoint is not None and checkpoint.contains(key):
                         continue
                     missing_rows.append(FunctionScore(
                         decompiler=dname,
-                        function_name=fn.name,
+                        function_name=_subject_name(fn),
                         compiler_variant=f"{variant.compiler} {variant.opt}",
                         source_similarity=0.0,
                         goto_count=0,
@@ -636,6 +744,8 @@ async def run_all(
                         error=f"Missing binary: {variant.binary}",
                         semantic_error=f"Missing binary: {variant.binary}",
                         fail_category="fixture_error",
+                        function_symbol=fn.name,
+                        project=getattr(fn, "project", "") or "",
                     ))
                 all_scores.extend(missing_rows)
                 if checkpoint is not None:
@@ -643,7 +753,7 @@ async def run_all(
                 continue
 
             for dname, url in decompilers.items():
-                key = (dname, fn.name, f"{variant.compiler} {variant.opt}")
+                key = (dname, _subject_name(fn), f"{variant.compiler} {variant.opt}")
                 if checkpoint is not None and checkpoint.contains(key):
                     continue
                 key = (dname, url, binary_path)
@@ -803,7 +913,7 @@ def run(
     if function:
         typer.echo(
             "  focused functions: "
-            + ", ".join(fn.name for fn in selected_functions)
+            + ", ".join(_subject_name(fn) for fn in selected_functions)
         )
     if limit:
         typer.echo(f"  function limit: {limit}")
@@ -860,6 +970,31 @@ def run(
     for source_file in sorted(Path(__file__).parent.glob("*.py")):
         runner_source_hash.update(source_file.name.encode("utf-8"))
         runner_source_hash.update(source_file.read_bytes())
+    external_dataset = None
+    if corpus == "scale":
+        inventory_path = CORPUS_ROOT / corpus / "inventory.json"
+        try:
+            inventory = json.loads(inventory_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError) as exc:
+            raise typer.BadParameter(
+                "scale corpus inventory is missing or invalid; run "
+                "scripts/materialize_scale_corpus.py first",
+                param_hint="--corpus",
+            ) from exc
+        external_dataset = {
+            "schema": str(inventory.get("schema") or ""),
+            "name": str(inventory.get("dataset") or ""),
+            "repository": str(inventory.get("repository") or ""),
+            "revision": str(inventory.get("revision") or ""),
+            "license": str(inventory.get("license") or ""),
+            "config": str(inventory.get("config") or ""),
+            "selected_binaries": int(inventory.get("selected_binaries") or 0),
+            "requested_functions": int(inventory.get("requested_functions") or 0),
+            "resolved_functions": int(inventory.get("resolved_functions") or 0),
+            "source_cfg_functions": int(inventory.get("source_cfg_functions") or 0),
+            "source_cfg_coverage": float(inventory.get("source_cfg_coverage") or 0),
+            "malware_included": bool(inventory.get("malware_included")),
+        }
     checkpoint_contract = {
         "schema": CHECKPOINT_SCHEMA,
         "corpus": corpus,
@@ -947,7 +1082,11 @@ def run(
             "matrix_profile": profile_name,
             "release_contract": release_contract,
             "measurement_contracts": {
-                "source_cfg": PREPROCESSED_TU_SCHEMA,
+                "source_cfg": (
+                    "decbench-published-source-cfg-v1"
+                    if corpus == "scale"
+                    else PREPROCESSED_TU_SCHEMA
+                ),
                 "checkpoint": CHECKPOINT_SCHEMA,
                 "metric_cache": CACHE_SCHEMA,
                 "ged_cache_version": "v2-preprocessed-tu",
@@ -959,6 +1098,11 @@ def run(
                 "contract_sha256": checkpoint_store.contract_sha256,
                 "recovered_rows": recovered_rows,
             },
+            **(
+                {"external_dataset": external_dataset}
+                if external_dataset is not None
+                else {}
+            ),
             "limits": {
                 "limit": limit,
                 "variant_limit": variant_limit,
@@ -974,6 +1118,7 @@ def run(
             "ci": os.environ.get("CI", "false"),
             "github_run_id": os.environ.get("GITHUB_RUN_ID", ""),
             "github_actor": os.environ.get("GITHUB_ACTOR", ""),
+            "host": _host_fingerprint(),
         },
         matrix={
             "expected_decompilers": list(dec_map.keys()),

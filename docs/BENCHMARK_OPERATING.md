@@ -26,6 +26,8 @@ Cartesian products must not run on every push.
 | `lang_cpp` / `lang_rust` / `lang_go` | Language tracks |
 | `multi_isa` | PE + ELF x64/aarch64 structural slice |
 | `full_matrix` | Fan-out: core + lang_* + multi_isa, then merge |
+| `decbench_scale_smoke` | First 250 materialized external subjects; non-ranking |
+| `decbench_scale_full` | Tens-of-thousands external structural/type/recompile track |
 
 ```bash
 python runner/runner.py --corpus dev --profile smoke --decompilers fission,ghidra
@@ -126,6 +128,67 @@ unless a priced execution source is recorded.
 The dashboard data gate is backward-compatible for archived envelopes, but
 fail-closed once the P2 contract is stamped: a missing health block or missing
 `all.shared` / `all.intersection` views rejects publication.
+
+### P3 DecBench-scale corpus
+
+The small authored corpus remains the executable semantic oracle and official
+ranking contract. Scale measurement is a separate, non-ranking cohort sourced
+from the pinned public DecBench dataset:
+
+```bash
+python scripts/materialize_scale_corpus.py --config unoptimized
+python runner/runner.py --corpus scale --profile decbench_scale_smoke \
+  --run-mode local --decompilers fission,ghidra
+python runner/runner.py --corpus scale --profile decbench_scale_full \
+  --run-mode local --decompilers fission,ghidra
+```
+
+`corpus/scale/dataset-lock.json` pins the upstream revision and BSD-2-Clause
+license. The default upstream slice has 34,406 functions across 267 binaries;
+the malware-excluded materialization requests 34,098 functions across 262
+binaries and currently resolves 34,097 DWARF addresses. Of those, 33,041
+(96.90%) have a matching function in the published source CFGs. Generated
+binaries, CFGs, manifest shards, and inventory are gitignored.
+Subjects use `decbench::<project>::<binary>::<symbol>` identities to prevent
+cross-project name collisions. Published source CFGs are consumed directly,
+and DWARF addresses are resolved locally with a minimum 98% coverage gate.
+Published-CFG membership has a separate 95% minimum gate; the lock records the
+exact known-good count so a silent reduction still fails materialization.
+
+External binaries are never sent to the semantic execution oracle. The five
+real-malware DecBench projects are excluded by default and require an explicit
+`--include-malware`. Consequently this scale track measures output coverage,
+GED, type recovery, recompilation, failures, time, CPU, and memory, while
+`core_c_pe` remains the semantic ranking surface.
+
+#### Local scale submission; CI verification and publication
+
+Full DecBench-scale runs are release-triggered but execute on a stable local
+machine. Run `decbench_scale_full` with `run_mode=local`, preserving its
+content-addressed checkpoint, then submit the completed envelope:
+
+```bash
+FISSION_SOURCE=release FISSION_VERSION=vX.Y.Z \
+  python runner/runner.py --corpus scale --profile decbench_scale_full \
+  --run-mode local --decompilers fission,ghidra \
+  --output results/scale_latest.json
+python scripts/submit_scale_benchmark.py results/scale_latest.json \
+  --fission-version vX.Y.Z --execute
+```
+
+The helper uploads a gzip asset to the existing `benchmark-vX.Y.Z` GitHub
+Release and dispatches `publish-unofficial-corpus.yml`. The workflow downloads
+the asset, verifies its caller-supplied SHA-256, rejects stale Fission releases,
+and applies `runner/scale_submission.py`'s fail-closed dataset and matrix
+contract. It publishes only a small aggregate to
+`public/unofficial-corpus-latest.json` plus an append-only history snapshot.
+The raw rows remain in the immutable release asset.
+
+The `/unofficial-corpus` dashboard route is explicitly non-ranking. It reports
+matrix completion, output coverage, CFG GED, DWARF type match, recompilation,
+latency, failure taxonomy, project coverage, host fingerprint, and source asset
+hash. It never falls back to the official corpus or changes official release
+trends.
 
 ### Infra non-negotiables
 

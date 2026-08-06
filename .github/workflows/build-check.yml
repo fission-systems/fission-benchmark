@@ -9,6 +9,9 @@ env:
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - 'public/unofficial-corpus-latest.json'
+      - 'public/unofficial-corpus-history/**'
   pull_request:
     branches: [main]
 

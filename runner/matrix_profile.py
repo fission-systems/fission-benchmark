@@ -120,6 +120,8 @@ def apply_profile_to_functions(
                 split=fn.split,
                 language=lang,
                 semantic=getattr(fn, "semantic", None) or {},
+                subject_id=getattr(fn, "subject_id", "") or "",
+                project=getattr(fn, "project", "") or "",
             )
         )
 
