@@ -89,6 +89,54 @@ def semantic_precheck(
     return None
 
 
+def preflight_decompile_item(
+    function_name: str,
+    decompiler: str,
+    expected_addr: str,
+    item: dict[str, Any],
+    duplicate_count: int = 0,
+) -> dict[str, Any]:
+    """Normalize one adapter result and decide whether metrics may consume it.
+
+    This check runs before type calibration and Joern CFG extraction so an
+    output that already violates the target-function boundary cannot poison an
+    otherwise valid per-binary metric batch.
+    """
+    code = item.get("code", "") or ""
+    code_nir = item.get("code_nir") or code or ""
+    code_hir = item.get("code_hir") or ""
+    semantic_code = code_nir or code
+    output_diagnostics = (
+        analyze_output_diagnostics(
+            function_name,
+            decompiler,
+            semantic_code,
+            expected_addr=expected_addr,
+        )
+        if semantic_code
+        else {}
+    )
+    output_error = (
+        invalid_output_reason(
+            output_diagnostics,
+            semantic_code,
+            duplicate_count=duplicate_count,
+        )
+        if semantic_code
+        else None
+    )
+    error = item.get("error") or output_error
+    return {
+        "code_nir": code_nir,
+        "code_hir": code_hir,
+        "semantic_code": semantic_code,
+        "readability_code": code_hir or semantic_code,
+        "output_diagnostics": output_diagnostics,
+        "error": error,
+        "metric_eligible": bool(semantic_code and not error),
+    }
+
+
 def ged_source_contract(source_basis: str) -> str:
     if source_basis == "published_source_cfg":
         return "decbench-published-source-cfg-v1"
@@ -398,6 +446,19 @@ async def decompile_batch_and_score(
 
     results_by_addr = {_addr_key(item.get("addr")): item for item in batch_results}
     code_counts = Counter((item.get("code") or "").strip() for item in batch_results if (item.get("code") or "").strip())
+    preflight_by_addr: dict[str, dict[str, Any]] = {}
+    for fn, variant, _, _ged_src, _ged_basis in targets:
+        addr_key = _addr_key(variant.addr)
+        item = results_by_addr.get(addr_key)
+        if not item:
+            continue
+        preflight_by_addr[addr_key] = preflight_decompile_item(
+            fn.name,
+            dname,
+            variant.addr,
+            item,
+            duplicate_count=code_counts.get((item.get("code") or "").strip(), 0),
+        )
     fn_scores = []
 
     # Ground-truth-based metrics (type_match, ged) both need every function's
@@ -407,12 +468,10 @@ async def decompile_batch_and_score(
     # per-binary batching) instead of one parse call per function.
     decompiled_by_function: dict[str, str] = {}
     for fn, variant, _, _ged_src, _ged_basis in targets:
-        item = results_by_addr.get(_addr_key(variant.addr))
-        if not item or item.get("error"):
+        preflight = preflight_by_addr.get(_addr_key(variant.addr))
+        if not preflight or not preflight["metric_eligible"]:
             continue
-        code = item.get("code", "") or ""
-        code_nir = item.get("code_nir") or code or ""
-        decompiled_by_function[fn.name] = code_nir
+        decompiled_by_function[fn.name] = preflight["semantic_code"]
 
     # Type-match ground truth (DWARF) is per-binary, not per-function -- cached
     # across the whole run since many decompilers/batches share one binary.
@@ -436,26 +495,13 @@ async def decompile_batch_and_score(
             fn_scores.append(missing_score)
             continue
 
-        code = item.get("code", "") or ""
-        # Dual layers (Fission): semantic on NIR; readability prefers HIR.
-        code_nir = (item.get("code_nir") or code or "")
-        code_hir = (item.get("code_hir") or "")
-        # Semantic / diagnostics always use NIR-faithful primary.
-        semantic_code = code_nir or code
-        # Readability surface: HIR when present and non-empty, else primary.
-        readability_code = code_hir or semantic_code
-        adapter_error = item.get("error")
-        output_diagnostics = (
-            analyze_output_diagnostics(fn.name, dname, semantic_code, expected_addr=variant.addr)
-            if semantic_code
-            else {}
-        )
-        output_error = invalid_output_reason(
-            output_diagnostics,
-            semantic_code,
-            duplicate_count=code_counts.get((code or "").strip(), 0),
-        ) if semantic_code else None
-        error = adapter_error or output_error
+        preflight = preflight_by_addr[_addr_key(variant.addr)]
+        code_nir = preflight["code_nir"]
+        code_hir = preflight["code_hir"]
+        semantic_code = preflight["semantic_code"]
+        readability_code = preflight["readability_code"]
+        output_diagnostics = preflight["output_diagnostics"]
+        error = preflight["error"]
         sim = (
             source_similarity(function_source, semantic_code)
             if function_source and not error

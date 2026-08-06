@@ -40,6 +40,120 @@ def test_scale_semantic_precheck_preserves_adapter_failures() -> None:
     assert failed == (0.0, "preview_timeout", "adapter_error", 0, 0)
 
 
+def test_output_preflight_excludes_invalid_boundary_from_metrics() -> None:
+    code = "\n".join(
+        f"int unrelated_{index}(void) {{ return {index}; }}"
+        for index in range(4)
+    )
+
+    preflight = benchmark_runner.preflight_decompile_item(
+        "target_function",
+        "fission",
+        "0x401000",
+        {"code": code, "code_nir": code},
+        duplicate_count=1,
+    )
+
+    assert preflight["output_diagnostics"]["status"] == "whole_program_output"
+    assert preflight["error"] == (
+        "Decompiler returned whole-program or truncated output, not a target function"
+    )
+    assert preflight["metric_eligible"] is False
+
+
+def test_output_preflight_keeps_clean_function_metric_eligible() -> None:
+    code = "int target_function(void) { return 7; }"
+
+    preflight = benchmark_runner.preflight_decompile_item(
+        "target_function",
+        "ghidra",
+        "0x401000",
+        {"code": code},
+        duplicate_count=1,
+    )
+
+    assert preflight["output_diagnostics"]["status"] == "direct_function"
+    assert preflight["error"] is None
+    assert preflight["metric_eligible"] is True
+
+
+def test_invalid_boundary_never_reaches_joern_batch(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    code = "\n".join(
+        f"int unrelated_{index}(void) {{ return {index}; }}"
+        for index in range(4)
+    )
+    binary = tmp_path / "fixture.bin"
+    binary.write_bytes(b"fixture")
+    source = tmp_path / "fixture.c"
+    source.write_text("int target_function(void) { return 7; }", encoding="utf-8")
+    function = SimpleNamespace(
+        name="target_function",
+        subject_name="decbench::fixture::target_function",
+        language="c",
+        project="fixture",
+        semantic={"mode": "none"},
+    )
+    variant = SimpleNamespace(
+        addr="0x401000",
+        compiler="gcc",
+        opt="-O0",
+        format="elf",
+        isa="x86_64",
+        abi_profile="sysv_amd64",
+    )
+
+    class FakeResponse:
+        status_code = 200
+        text = ""
+
+        @staticmethod
+        def json():
+            return {
+                "results": [{"addr": variant.addr, "code": code, "time_ms": 1}],
+                "time_ms": 1,
+            }
+
+    class FakeClient:
+        @staticmethod
+        async def post(*_args, **_kwargs):
+            return FakeResponse()
+
+    joern_inputs: list[dict[str, str]] = []
+
+    def capture_joern_input(functions: dict[str, str]):
+        joern_inputs.append(functions)
+        return {}
+
+    monkeypatch.setattr(benchmark_runner, "extract_decompiled_cfgs", capture_joern_input)
+    monkeypatch.setattr(benchmark_runner, "ground_truth_for_binary", lambda _path: {})
+    monkeypatch.setattr(
+        benchmark_runner,
+        "measure_recompilation",
+        lambda *_args, **_kwargs: (None, {"category": "decompilation_error"}),
+    )
+
+    rows = asyncio.run(
+        benchmark_runner.decompile_batch_and_score(
+            FakeClient(),
+            "fission",
+            "http://fission",
+            binary,
+            [(function, variant, source.read_text(), source, "authored_source_fallback")],
+            asyncio.Semaphore(1),
+            None,
+        )
+    )
+
+    assert joern_inputs == [{}]
+    assert len(rows) == 1
+    assert rows[0].ged_score is None
+    assert rows[0].error == (
+        "Decompiler returned whole-program or truncated output, not a target function"
+    )
+
+
 def test_scale_missing_published_cfg_is_explicitly_unavailable(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
