@@ -142,7 +142,10 @@ jobs:
       release_version: ${{ steps.fission-version.outputs.version }}
     runs-on: ubuntu-latest
     # full_matrix fan-out needs headroom; smoke/core stay well under this.
-    timeout-minutes: ${{ (github.event.inputs.matrix_profile == 'full_matrix' || github.event_name == 'schedule') && 360 || 150 }}
+    # core_c_pe path is main dev-corpus run (up to 40m on push) + holdout
+    # benchmark (up to 120m, see "Run holdout benchmark" step) + setup/
+    # teardown -- 150 didn't leave enough room for both steps back-to-back.
+    timeout-minutes: ${{ (github.event.inputs.matrix_profile == 'full_matrix' || github.event_name == 'schedule') && 360 || 200 }}
     steps:
       - id: current
         name: Export current-run state
@@ -434,7 +437,12 @@ jobs:
       - name: Run holdout benchmark
         # Skip if validity gate failed — holdout on an invalid run wastes CI time.
         if: steps.fission-gate.outcome == 'success'
-        timeout-minutes: ${{ github.event_name == 'push' && 40 || 120 }}
+        # Was 40 on push, sized for the (broken) 0-function holdout run that
+        # used to fail instantly. Now that core_c_pe_holdout actually loads
+        # and evaluates its 5-function/6-variant cohort across every
+        # configured decompiler, that's not enough headroom -- push runs
+        # were timing out mid-run. Match the non-push default.
+        timeout-minutes: 120
         env:
           ORACLE_ENDPOINT: http://localhost:8010
           BENCHMARK_PROFILE: ${{ env.BENCHMARK_PROFILE }}
