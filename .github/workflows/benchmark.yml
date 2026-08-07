@@ -491,14 +491,15 @@ jobs:
           if [ -n "$BENCHMARK_VARIANT_LIMIT" ] && [ "$BENCHMARK_VARIANT_LIMIT" != "0" ]; then
             EXTRA_ARGS="$EXTRA_ARGS --variant-limit $BENCHMARK_VARIANT_LIMIT"
           fi
-          # Holdout is C-centric; always use core ranking profile under full_matrix.
-          HOLD_PROFILE="${BENCHMARK_PROFILE:-}"
-          if [ "$HOLD_PROFILE" = "full_matrix" ]; then
-            HOLD_PROFILE="core_c_pe"
-          fi
-          if [ -n "$HOLD_PROFILE" ]; then
-            EXTRA_ARGS="$EXTRA_ARGS --profile $HOLD_PROFILE"
-          fi
+          # Holdout is a small, fixed C-only validation slice with its own
+          # function cohort (see profiles.yaml core_c_pe_holdout) -- always
+          # use it here regardless of which profile the main dev-corpus run
+          # selected. (core_c_pe's function_allowlist shares zero names with
+          # what's actually in corpus/holdout/manifests/, so reusing it
+          # filtered every holdout function out before the release_contract
+          # check ever ran.)
+          HOLD_PROFILE="core_c_pe_holdout"
+          EXTRA_ARGS="$EXTRA_ARGS --profile $HOLD_PROFILE"
           python runner/runner.py --corpus holdout $EXTRA_ARGS --decompilers "$BENCHMARK_DECOMPILERS" --run-mode "$RUN_MODE" --output results/holdout_latest.json
 
       - name: Run overfitting check

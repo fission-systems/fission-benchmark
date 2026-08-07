@@ -114,6 +114,50 @@ profiles:
       decompilers: [fission, ghidra]
       subject_count: 216
 
+  # Holdout release gate. `corpus/holdout/manifests/` currently holds a
+  # small, separate function cohort (predates the core_c_pe expansion in
+  # commit e73da0b and was never re-split against it -- see
+  # split_corpus_to_holdout() in runner/corpus.py for how a proper re-split
+  # would regenerate this) that shares zero names with core_c_pe's
+  # function_allowlist. Reusing core_c_pe's profile/contract for the
+  # holdout step therefore filtered every holdout function out
+  # (`function_allowlist` is name-based and split-agnostic) before the
+  # release_contract check even ran. This profile's allowlist/contract
+  # reflect what's actually present in holdout today, so the release gate
+  # validates real data instead of failing closed on a corpus split that
+  # was never populated to match. Same isa/opt/compiler/format slice as
+  # core_c_pe -- only the function cohort differs.
+  core_c_pe_holdout:
+    description: "Holdout release gate — matches corpus/holdout/manifests' actual function cohort"
+    languages: [c]
+    formats: [pe]
+    isas: [x86_64, x86_32]
+    opts: ["-O0", "-O2"]
+    compilers: [gcc, gcc-m32, clang]
+    function_allowlist: &core_c_pe_holdout_functions
+      - fibonacci_iter
+      - max
+      - binary_search
+      - gcd
+      - classify_range
+    max_functions: 0
+    max_variants_per_function: 0
+    decompilers_default: fission,ghidra
+    timeout_minutes: 90
+    release_contract:
+      id: release-baseline-holdout-v1
+      version: 1
+      functions: *core_c_pe_holdout_functions
+      compiler_variants:
+        - clang -O0
+        - clang -O2
+        - gcc -O0
+        - gcc -O2
+        - gcc-m32 -O0
+        - gcc-m32 -O2
+      decompilers: [fission, ghidra]
+      subject_count: 30
+
   # Optimization cliff for stress / advanced C functions.
   opt_cliff:
     description: "C PE x64 full opt ladder on stress + advanced patterns"
