@@ -55,16 +55,16 @@
   "provenance": {
     "corpus": "dev",
     "decompilers": "fission,ghidra",
-    "generated_at": "2026-08-06T08:17:37.905576Z",
+    "generated_at": "2026-08-07T11:17:16.848772Z",
     "github_run_attempt": "1",
-    "github_run_id": "31081438190",
-    "newest_source_at": "2026-08-06T08:17:37.809761Z",
-    "oldest_source_at": "2026-08-06T07:35:08.541891Z",
-    "runner_commit": "73048d9e9c15959c9b3d2cef17bb5a178a091114",
+    "github_run_id": "31167692613",
+    "newest_source_at": "2026-08-07T11:17:16.717933Z",
+    "oldest_source_at": "2026-08-07T09:52:16.430723Z",
+    "runner_commit": "ac6247a378da85c93809cdbc1f3c0bc304403d29",
     "sources": [
       {
         "bytes": 6956,
-        "modified_at": "2026-08-06T08:17:37.808599Z",
+        "modified_at": "2026-08-07T11:17:16.716702Z",
         "path": "results/assembly_parity/latest.jsonl",
         "rows": 20,
         "sha256": "2de5822e257c66984575e2e91248892dcc2b66eed6558429cd7d3a086f56f7f0",
@@ -72,7 +72,7 @@
       },
       {
         "bytes": 11231,
-        "modified_at": "2026-08-06T08:17:37.808861Z",
+        "modified_at": "2026-08-07T11:17:16.717000Z",
         "path": "results/pcode_parity/latest.jsonl",
         "rows": 20,
         "sha256": "7c891f07a3b8fd3b07c3570daed2fd75a85439ccbf6a8d4dacf95179856bba4a",
@@ -80,7 +80,7 @@
       },
       {
         "bytes": 13363,
-        "modified_at": "2026-08-06T08:17:37.809119Z",
+        "modified_at": "2026-08-07T11:17:16.717347Z",
         "path": "results/cfg_parity/latest.jsonl",
         "rows": 20,
         "sha256": "3798cf7f49be0b1255e44a775b3d14928e32f003b2395fd739918233db924dc5",
@@ -88,7 +88,7 @@
       },
       {
         "bytes": 6572,
-        "modified_at": "2026-08-06T08:17:37.809457Z",
+        "modified_at": "2026-08-07T11:17:16.717617Z",
         "path": "results/function_discovery/latest.jsonl",
         "rows": 9,
         "sha256": "5c4f16905013e18a3b3179724df165be01bf358318b45d7aa962a93a0bcec696",
@@ -96,7 +96,7 @@
       },
       {
         "bytes": 7640,
-        "modified_at": "2026-08-06T08:17:37.809761Z",
+        "modified_at": "2026-08-07T11:17:16.717933Z",
         "path": "results/ir_invariants/latest.jsonl",
         "rows": 20,
         "sha256": "aed014fc46f42423e37b691e8ec0ddf1ce90915864f544c64a4011c2da377ad8",
@@ -104,7 +104,7 @@
       },
       {
         "bytes": 5653,
-        "modified_at": "2026-08-06T07:35:08.541891Z",
+        "modified_at": "2026-08-07T09:52:16.430723Z",
         "path": "results/golden_repros/latest.jsonl",
         "rows": 12,
         "sha256": "8f67e8a673cc2afa8295fc60899231357bea0e0476edfe5604f68340ccbd0370",
@@ -112,7 +112,7 @@
       }
     ],
     "tool_versions": {
-      "fission": "v0.1.8",
+      "fission": "v0.1.9",
       "ghidra": null
     }
   },
