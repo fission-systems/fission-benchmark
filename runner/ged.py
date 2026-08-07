@@ -176,8 +176,24 @@ def extract_source_cfgs(source_path: str) -> dict[str, Any]:
         raise ImportError("pyjoern is required for GED. Install with: pip install pyjoern")
 
     cfgs: dict[str, Any] = {}
+    src = Path(source_path)
+    # Joern's CPG generator is selected by file extension, and doesn't
+    # recognize `.i` (preprocessed-C translation units) -- only `.c`/`.h`/etc.
+    # `_parse_decompiled_cfg_batch` already routes through a `.c`-suffixed
+    # tempfile for this exact reason; do the same here whenever the real
+    # extension isn't one Joern accepts, instead of failing the whole
+    # invocation with "No suitable CPG generator found for: ...".
+    parse_path = src
+    temp_path: Path | None = None
+    if src.suffix.lower() not in {".c", ".h", ".cc", ".cpp", ".cxx", ".hpp"}:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".c", delete=False, encoding="utf-8"
+        ) as f:
+            f.write(src.read_text(encoding="utf-8"))
+            temp_path = Path(f.name)
+        parse_path = temp_path
     try:
-        parsed = parse_source(Path(source_path))
+        parsed = parse_source(parse_path)
         if parsed is None:
             return cfgs
         for key, func in parsed.items():
@@ -187,6 +203,9 @@ def extract_source_cfgs(source_path: str) -> dict[str, Any]:
                 cfgs[func_name] = cfg
     except Exception as e:
         logger.warning("CFG extraction from source %s failed: %s", source_path, e)
+    finally:
+        if temp_path is not None:
+            temp_path.unlink(missing_ok=True)
     return cfgs
 
 

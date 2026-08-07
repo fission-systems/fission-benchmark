@@ -166,6 +166,22 @@ def test_extract_source_cfgs_from_real_corpus_file() -> None:
     assert cfg.number_of_nodes() > 0
 
 
+def test_extract_source_cfgs_accepts_preprocessed_i_extension(tmp_path: Path) -> None:
+    """Real corpus paths are `.i` (preprocessed translation units), not `.c`.
+    Joern's CPG generator is dispatched by file extension and doesn't know
+    `.i`, raising "No suitable CPG generator found" if parsed in place --
+    caught in production on advanced_patterns_clang_O0.i. extract_source_cfgs
+    must route through a `.c`-suffixed tempfile the same way
+    extract_decompiled_cfgs already does."""
+    _require_pyjoern()
+    src_path = _require_sample_source()
+    i_path = tmp_path / "advanced_patterns_clang_O0.i"
+    i_path.write_text(src_path.read_text(encoding="utf-8"), encoding="utf-8")
+    cfgs = extract_source_cfgs(str(i_path))
+    assert "list_sum" in cfgs
+    assert cfgs["list_sum"].number_of_nodes() > 0
+
+
 def test_extract_decompiled_cfgs_batches_multiple_functions() -> None:
     _require_pyjoern()
     functions = {
