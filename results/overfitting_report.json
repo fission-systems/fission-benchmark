@@ -2,43 +2,43 @@
   "schema_version": 1,
   "passed": true,
   "threshold_pp": 10.0,
-  "dev_envelope_sha256": "f1d0368255e3e6aeaa509cdf5de0f083483f4e8126243750405a903a6576dde8",
-  "holdout_envelope_sha256": "6133167f3f14d9b48acecff1c9ecaadf08b95432d317bf44237d0ae4c0078948",
+  "dev_envelope_sha256": "6e325505f0dfacef4ca870f1f808d31a06ec21a4db31833117fec431ff0425a4",
+  "holdout_envelope_sha256": "3958707ab9583a56cc6350a725110f89f8829a5272627922377e92cea4fd38c0",
   "flagged_decompilers": [],
   "dev": {
-    "fission": {
-      "count": 210,
-      "correctness_tested": 210,
-      "semantic_tested": 210,
-      "avg_correctness": 0.6262809523809524,
-      "avg_similarity": 0.15326047619047609,
-      "avg_semantic": 0.626281179138322
-    },
     "ghidra": {
       "count": 215,
       "correctness_tested": 215,
       "semantic_tested": 215,
       "avg_correctness": 0.7255813953488373,
-      "avg_similarity": 0.3839911627906978,
+      "avg_similarity": 0.38399116279069745,
       "avg_semantic": 0.7255813953488373
+    },
+    "fission": {
+      "count": 211,
+      "correctness_tested": 211,
+      "semantic_tested": 211,
+      "avg_correctness": 0.6854668246445497,
+      "avg_similarity": 0.15627345971563986,
+      "avg_semantic": 0.6854660347551342
     }
   },
   "holdout": {
-    "fission": {
-      "count": 30,
-      "correctness_tested": 30,
-      "semantic_tested": 30,
-      "avg_correctness": 0.6399966666666667,
-      "avg_similarity": 0.18055666666666662,
-      "avg_semantic": 0.64
-    },
     "ghidra": {
       "count": 30,
       "correctness_tested": 30,
       "semantic_tested": 30,
-      "avg_correctness": 0.7666666666666667,
+      "avg_correctness": 0.8,
       "avg_similarity": 0.4316266666666667,
-      "avg_semantic": 0.7666666666666667
+      "avg_semantic": 0.8
+    },
+    "fission": {
+      "count": 30,
+      "correctness_tested": 30,
+      "semantic_tested": 30,
+      "avg_correctness": 0.6722199999999999,
+      "avg_similarity": 0.1902466666666667,
+      "avg_semantic": 0.6722222222222223
     }
   }
 }

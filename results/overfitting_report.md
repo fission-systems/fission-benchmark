@@ -8,5 +8,5 @@
 
 | Decompiler | Dev N | Dev Correctness | Holdout N | Holdout Correctness | Drop (pp) | Flag |
 |---|---|---|---|---|---|---|
-| **fission** | 210 | 0.626 | 30 | 0.640 | -1.4pp | ✅ |
-| **ghidra** | 215 | 0.726 | 30 | 0.767 | -4.1pp | ✅ |
+| **fission** | 211 | 0.685 | 30 | 0.672 | +1.3pp | ✅ |
+| **ghidra** | 215 | 0.726 | 30 | 0.800 | -7.4pp | ✅ |
