@@ -33,6 +33,18 @@ dependencies = [
 # rule set and turns hundreds of pre-existing style findings into hard errors;
 # upgrading it requires a separate, intentional repository-wide cleanup.
 dev = ["pytest>=8.0", "ruff==0.15.19"]
+# `scripts/decbench_local_eval.py`: runs DecBench's own real GED/type_match/
+# byte_match metric code against Fission (and optionally Ghidra/angr), as an
+# independent cross-check of this repo's own `runner/ged.py` reimplementation.
+# Not on PyPI -- MIT-licensed source at https://github.com/Noelo-Lab/decbench,
+# pinned to a commit so this stays reproducible against a moving upstream.
+# Install into a SEPARATE venv from this project's own (pulls in pyjoern's
+# ~1.8GB one-time Joern download again, angr/pyghidra if you also want those
+# comparison decompilers, and its own dependency set that may not agree with
+# fission-benchmark's own pins): `pip install -e ".[decbench-eval]"`.
+decbench-eval = [
+    "decbench @ git+https://github.com/Noelo-Lab/decbench.git@325046fd48c7c5338f140e6de4daaf72f9991884",
+]
 
 [build-system]
 requires = ["hatchling"]

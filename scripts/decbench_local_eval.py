@@ -87,6 +87,7 @@ import argparse
 import shutil
 import subprocess
 import sys
+import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -117,15 +118,38 @@ PROFILES: tuple[Profile, ...] = (
     Profile("ARM O0", ("aarch64-linux-musl-gcc", "aarch64-linux-gnu-gcc"), ("-O0",)),
 )
 
-# project/binary pairs to include in the `large` bucket, relative to
-# corpus/scale/{binaries,source_cfgs}/O0/. Materialize with
-# `materialize_scale_corpus.py --max-binaries N` first if these aren't
-# present yet -- this list is just what happened to land from a 3-binary
-# pull; edit freely once you've materialized a different/bigger slice.
-LARGE_BUCKET_TARGETS: tuple[tuple[str, str], ...] = (
-    ("bash", "mksignames"),
-    ("base-passwd", "update-passwd"),
-    ("bash", "bashversion"),
+# Held-out real-project buckets: corpus/scale materialized from
+# noelo-lab/decbench-dataset's real upstream open-source projects (bash,
+# coreutils, zlib, ... plus embedded-firmware ones for architecture spread:
+# betaflight/chibios/freertos/nuttx/riot-os/u-boot are all 32-bit ARM, not
+# aarch64 -- decbench-dataset has no 64-bit ARM track, so this is real ARM
+# diversity but not literally "ARM64"). Unlike `corpus/dev`'s 8 files, none
+# of these have ever been used to guide a Fission bug fix -- they are a
+# genuinely held-out signal, not a training-set replay.
+#
+# Sampled per-project (not just the first N alphabetically): candidates are
+# ranked by published-CFG size (nodes+edges) and taken at even spacing
+# across that ranking, so a project contributes a small/medium/large spread
+# instead of e.g. all-trivial one-liners.
+HELDOUT_OPTS: tuple[str, ...] = ("O0", "O2-noinline")
+HELDOUT_MAX_PROJECTS = 25
+HELDOUT_FUNCS_PER_PROJECT = 6
+
+# Pinned crash-regression targets: found via held-out testing (a Fission
+# stack overflow in lower_varnode_inner's cross-site cycle-detection
+# redirect -- fixed in 2652c2219), NOT reachable from `corpus/dev`'s 8-file
+# synthetic corpus, and NOT guaranteed to keep landing in HELDOUT_*'s
+# size-based random sample if its parameters change later. Checked as a
+# decompile-only smoke test (no metric scoring) via `--regression-check`,
+# separate from the main sweep since the whole-binary entries are slow
+# (cleanflight/crazyflie have thousands of functions -- the exact crashing
+# one was never pinned down, only that the binary no longer crashes).
+# `func` narrows to one address-verified function when known (fast); `None`
+# means "run --all on the whole binary" (slow, ~15-70 min each).
+REGRESSION_TARGETS: tuple[tuple[str, str, str | None], ...] = (
+    ("binaries/O0/coreutils/cksum", "algorithm_from_tag", "algorithm_from_tag"),
+    ("binaries/O0/cleanflight/cleanflight_DALRCF405.elf", "cleanflight (whole binary)", None),
+    ("binaries/O0/crazyflie/cf2.elf", "crazyflie cf2 (whole binary)", None),
 )
 
 
@@ -227,28 +251,110 @@ def _compile_core_profile(
     return units
 
 
-def _large_bucket_units(load_published_source_cfgs) -> list[CompiledUnit]:
-    units: list[CompiledUnit] = []
-    for project, binary in LARGE_BUCKET_TARGETS:
-        elf = SCALE_DIR / "binaries" / "O0" / project / binary
-        cfg_path = SCALE_DIR / "source_cfgs" / "O0" / project / f"{binary}.json"
-        if not elf.is_file() or not cfg_path.is_file():
-            print(
-                f"skipping large bucket target {project}/{binary}: not materialized "
-                f"(run: python scripts/materialize_scale_corpus.py --config unoptimized "
-                f"--max-binaries N)",
-                file=sys.stderr,
-            )
+def _manifests_by_project(opt: str) -> dict[str, list[dict]]:
+    """project -> parsed manifest payloads materialized for this opt config.
+
+    Each manifest file is one (opt, project, binary); the project name comes
+    from the payload's own `functions[0]["project"]`, not the filename (the
+    filename's readable prefix is sanitized/truncated and not reliably
+    parseable back into a project name that can itself contain underscores).
+    """
+    import json as _json
+
+    manifests_dir = SCALE_DIR / "manifests"
+    by_project: dict[str, list[dict]] = {}
+    for path in sorted(manifests_dir.glob(f"{opt}__*.json")):
+        try:
+            payload = _json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
             continue
-        source_cfgs = load_published_source_cfgs(str(cfg_path))
-        units.append(
-            CompiledUnit(
-                stem=f"{project}/{binary}",
-                elf=elf,
-                source_cfgs=source_cfgs,
-                target_names=set(source_cfgs.keys()),
-            )
+        functions = payload.get("functions") or []
+        if not functions:
+            continue
+        project = functions[0].get("project")
+        if not project:
+            continue
+        by_project.setdefault(project, []).append(payload)
+    return by_project
+
+
+def _sample_heldout_units(
+    opt: str, max_projects: int, per_project: int, load_published_source_cfgs
+) -> list[CompiledUnit]:
+    by_project = _manifests_by_project(opt)
+    if not by_project:
+        print(
+            f"skipping held-out {opt}: no manifests materialized "
+            f"(run: python scripts/materialize_scale_corpus.py "
+            f"--config {'unoptimized' if opt == 'O0' else 'optimized'} --max-binaries N)",
+            file=sys.stderr,
         )
+        return []
+
+    units: list[CompiledUnit] = []
+    for project in sorted(by_project)[:max_projects]:
+        # (binary_rel, function_name, cfg_size) across every binary this
+        # project contributed manifests for, so the per-project sample can
+        # draw from all of them, not just the first binary encountered.
+        candidates: list[tuple[str, str, int]] = []
+        cfg_cache: dict[str, dict] = {}
+        for payload in by_project[project]:
+            for func in payload.get("functions", []):
+                variants = func.get("compiler_variants") or []
+                if not variants:
+                    continue
+                variant = variants[0]
+                binary_rel = variant.get("binary")
+                cfg_rel = variant.get("source_cfg")
+                name = func.get("name")
+                if not binary_rel or not cfg_rel or not name:
+                    continue
+                if binary_rel not in cfg_cache:
+                    cfg_path = SCALE_DIR / cfg_rel
+                    if not cfg_path.is_file():
+                        cfg_cache[binary_rel] = {}
+                    else:
+                        cfg_cache[binary_rel] = load_published_source_cfgs(str(cfg_path))
+                graph = cfg_cache[binary_rel].get(name)
+                if graph is None:
+                    continue
+                size = graph.number_of_nodes() + graph.number_of_edges()
+                candidates.append((binary_rel, name, size))
+
+        if not candidates:
+            continue
+        candidates.sort(key=lambda c: c[2])
+        k = min(per_project, len(candidates))
+        if k >= len(candidates):
+            picked = candidates
+        elif k == 1:
+            picked = [candidates[len(candidates) // 2]]
+        else:
+            picked = [
+                candidates[round(i * (len(candidates) - 1) / (k - 1))] for i in range(k)
+            ]
+        seen: set[tuple[str, str]] = set()
+        by_binary: dict[str, list[str]] = {}
+        for binary_rel, name, _size in picked:
+            key = (binary_rel, name)
+            if key in seen:
+                continue
+            seen.add(key)
+            by_binary.setdefault(binary_rel, []).append(name)
+
+        for binary_rel, names in by_binary.items():
+            elf = SCALE_DIR / binary_rel
+            if not elf.is_file():
+                continue
+            units.append(
+                CompiledUnit(
+                    stem=f"{project}/{Path(binary_rel).name}",
+                    elf=elf,
+                    source_cfgs=cfg_cache[binary_rel],
+                    target_names=set(names),
+                )
+            )
+
     return units
 
 
@@ -305,11 +411,59 @@ def _print_table(title: str, rows: list[tuple[str, str, BucketStats]]) -> None:
         last_bucket = bucket_label
 
 
+def _run_regression_check(decompiler_ids: list[str], decompile_binary) -> bool:
+    """Decompile-only crash smoke test for REGRESSION_TARGETS. No metric
+    scoring -- this only asks "did it crash," not "was it correct." Returns
+    True iff every target decompiled without raising, for every decompiler."""
+    all_ok = True
+    for dec_id in decompiler_ids:
+        print(f"\n### regression check: {dec_id} ###", file=sys.stderr)
+        for binary_rel, label, func_name in REGRESSION_TARGETS:
+            elf = SCALE_DIR / binary_rel
+            if not elf.is_file():
+                print(f"  [{dec_id}] {label}: SKIPPED (not materialized: {binary_rel})")
+                continue
+            functions = [(func_name, 0)] if func_name else None
+            start = time.time()
+            try:
+                result = decompile_binary(elf, dec_id, None, functions=functions)
+                elapsed = time.time() - start
+                if functions is not None and not result.functions:
+                    all_ok = False
+                    print(f"  [{dec_id}] {label}: FAILED -- target function not produced")
+                else:
+                    print(f"  [{dec_id}] {label}: OK ({elapsed:.1f}s, {len(result.functions)} functions)")
+            except Exception as e:  # noqa: BLE001
+                all_ok = False
+                elapsed = time.time() - start
+                print(f"  [{dec_id}] {label}: FAILED after {elapsed:.1f}s -- {e}")
+    return all_ok
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--decompilers", default="fission",
         help="comma-separated decbench decompiler ids, e.g. fission,ghidra,angr",
+    )
+    parser.add_argument(
+        "--skip-core", action="store_true",
+        help="skip the corpus/dev 8-file synthetic profiles (x86 O0/O2/O2-noinline, ARM O0) "
+        "and only run the held-out real-project buckets. Those 8 files have shaped Fission's "
+        "own development (fission-benchmark's own long-running CI corpus), so a score against "
+        "them is a training-set replay, not a held-out signal -- use this flag when that's what "
+        "you actually want to measure.",
+    )
+    parser.add_argument(
+        "--skip-heldout", action="store_true",
+        help="skip the corpus/scale held-out real-project buckets",
+    )
+    parser.add_argument(
+        "--regression-check", action="store_true",
+        help="run ONLY the pinned REGRESSION_TARGETS decompile-only smoke test (no metric "
+        "scoring, no core/held-out buckets) and exit. Fast for the single-function targets; "
+        "the whole-binary ones (cleanflight, crazyflie) take ~15-70 min each -- this is for "
+        "occasional confirmation a known crash hasn't come back, not routine use.",
     )
     args = parser.parse_args()
     decompiler_ids = [d.strip() for d in args.decompilers.split(",") if d.strip()]
@@ -341,35 +495,56 @@ def main() -> int:
         except Exception as e:  # noqa: BLE001
             print(f"WARNING: decompiler '{dec_id}' could not be resolved: {e}", file=sys.stderr)
 
+    if args.regression_check:
+        ok = _run_regression_check(decompiler_ids, decompile_binary)
+        print("\nregression check:", "PASS" if ok else "FAIL")
+        return 0 if ok else 1
+
     WORK.mkdir(parents=True, exist_ok=True)
 
     print("### compiling corpora (once, shared across decompilers) ###", file=sys.stderr)
     bucket_units: list[tuple[str, list[CompiledUnit]]] = []
-    for profile in PROFILES:
-        cross_gcc = _find_cross_gcc(profile)
-        if cross_gcc is None:
-            print(
-                f"skipping {profile.label}: no cross compiler found "
-                f"({' / '.join(profile.cross_gcc_candidates)})",
-                file=sys.stderr,
+    if args.skip_core:
+        print("  skipping core synthetic profiles (--skip-core)", file=sys.stderr)
+    else:
+        for profile in PROFILES:
+            cross_gcc = _find_cross_gcc(profile)
+            if cross_gcc is None:
+                print(
+                    f"skipping {profile.label}: no cross compiler found "
+                    f"({' / '.join(profile.cross_gcc_candidates)})",
+                    file=sys.stderr,
+                )
+                continue
+            print(f"  compiling {profile.label} ({cross_gcc})", file=sys.stderr)
+            units = _compile_core_profile(
+                profile, cross_gcc, extract_cfgs_from_source, extract_ground_truth_types
             )
-            continue
-        print(f"  compiling {profile.label} ({cross_gcc})", file=sys.stderr)
-        units = _compile_core_profile(
-            profile, cross_gcc, extract_cfgs_from_source, extract_ground_truth_types
-        )
-        bucket_units.append((profile.label, units))
+            bucket_units.append((profile.label, units))
 
-    print("  resolving large bucket", file=sys.stderr)
     sys.path.insert(0, str(REPO_ROOT))
+    if args.skip_heldout:
+        print("  skipping held-out real-project buckets (--skip-heldout)", file=sys.stderr)
     try:
         from runner.ged import load_published_source_cfgs
 
-        large_units = _large_bucket_units(load_published_source_cfgs)
-        if large_units:
-            bucket_units.append(("large", large_units))
+        for opt in ([] if args.skip_heldout else HELDOUT_OPTS):
+            label = f"held-out {opt}"
+            print(f"  sampling {label} (held-out real projects)", file=sys.stderr)
+            units = _sample_heldout_units(
+                opt, HELDOUT_MAX_PROJECTS, HELDOUT_FUNCS_PER_PROJECT, load_published_source_cfgs
+            )
+            if units:
+                n_projects = len({u.stem.split("/", 1)[0] for u in units})
+                n_targets = sum(len(u.target_names) for u in units)
+                print(
+                    f"  {label}: {n_projects} projects, {len(units)} binaries, "
+                    f"{n_targets} target functions",
+                    file=sys.stderr,
+                )
+                bucket_units.append((label, units))
     except ImportError as e:
-        print(f"skipping large bucket: cannot import runner.ged: {e}", file=sys.stderr)
+        print(f"skipping held-out buckets: cannot import runner.ged: {e}", file=sys.stderr)
 
     # target_ids[bucket] -- fixed by the source, identical for every decompiler.
     # raw_results[dec_id][bucket][(stem, fn_name)] -- absent means that
