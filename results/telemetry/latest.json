@@ -1,35 +1,33 @@
 {
   "by_mismatch_kind": {
-    "block_count": 1,
-    "none": 180
+    "none": 101
   },
   "by_pair": {
-    "ghidra\u2192fission": 141,
-    "invariants\u2192fission": 40
+    "ghidra\u2192fission": 81,
+    "invariants\u2192fission": 20
   },
   "by_stage": {
-    "assembly_parity": 40,
-    "cfg_parity": 40,
+    "assembly_parity": 20,
+    "cfg_parity": 20,
     "function_discovery": 9,
     "golden_repros": 12,
-    "ir_invariants": 40,
-    "pcode_parity": 40
+    "ir_invariants": 20,
+    "pcode_parity": 20
   },
   "by_status": {
     "error": 12,
-    "match": 168,
-    "mismatch": 1
+    "match": 89
   },
   "by_variant": {
-    "clang -O0": 17,
-    "clang -O2": 17,
-    "gcc -O0": 32,
-    "gcc -O1": 21,
-    "gcc -O2": 22,
-    "gcc -O3": 17,
-    "gcc -Os": 21,
-    "gcc-m32 -O0": 17,
-    "gcc-m32 -O2": 17
+    "clang -O0": 9,
+    "clang -O2": 9,
+    "gcc -O0": 24,
+    "gcc -O1": 13,
+    "gcc -O2": 10,
+    "gcc -O3": 9,
+    "gcc -Os": 9,
+    "gcc-m32 -O0": 9,
+    "gcc-m32 -O2": 9
   },
   "canonicalize_mode": "strict",
   "non_publishable_stages": [
@@ -57,56 +55,56 @@
   "provenance": {
     "corpus": "dev",
     "decompilers": "fission,ghidra",
-    "generated_at": "2026-08-07T18:37:46.427853Z",
+    "generated_at": "2026-08-08T06:21:59.165205Z",
     "github_run_attempt": "1",
-    "github_run_id": "31199597204",
-    "newest_source_at": "2026-08-07T18:37:46.321245Z",
-    "oldest_source_at": "2026-08-07T16:52:11.336032Z",
-    "runner_commit": "02d0c201a4e291598782f34dfb4c5b1bfbaac51f",
+    "github_run_id": "31239316337",
+    "newest_source_at": "2026-08-08T06:21:59.081138Z",
+    "oldest_source_at": "2026-08-08T04:23:13.537382Z",
+    "runner_commit": "aeee5e2f61a14f5c9d38ba146e668e56dcca3b89",
     "sources": [
       {
-        "bytes": 13906,
-        "modified_at": "2026-08-07T18:37:46.319996Z",
+        "bytes": 6956,
+        "modified_at": "2026-08-08T06:21:59.080009Z",
         "path": "results/assembly_parity/latest.jsonl",
-        "rows": 40,
-        "sha256": "f3fb192644f8b969f7c8c01b0bdbce80b99f06d38e002d3879b42f6280b8c1e0",
+        "rows": 20,
+        "sha256": "2de5822e257c66984575e2e91248892dcc2b66eed6558429cd7d3a086f56f7f0",
         "stage": "assembly_parity"
       },
       {
-        "bytes": 22444,
-        "modified_at": "2026-08-07T18:37:46.320303Z",
+        "bytes": 11231,
+        "modified_at": "2026-08-08T06:21:59.080290Z",
         "path": "results/pcode_parity/latest.jsonl",
-        "rows": 40,
-        "sha256": "923f36de67f3473d217f78edbe9f3cfe5fb82698b33dd548704c6842da08da6a",
+        "rows": 20,
+        "sha256": "7c891f07a3b8fd3b07c3570daed2fd75a85439ccbf6a8d4dacf95179856bba4a",
         "stage": "pcode_parity"
       },
       {
-        "bytes": 26739,
-        "modified_at": "2026-08-07T18:37:46.320687Z",
+        "bytes": 13363,
+        "modified_at": "2026-08-08T06:21:59.080565Z",
         "path": "results/cfg_parity/latest.jsonl",
-        "rows": 40,
-        "sha256": "f3bb9e99c5caebed6afe0a01cbe27d9a5121dd56d673420389e7814dda91d3aa",
+        "rows": 20,
+        "sha256": "3798cf7f49be0b1255e44a775b3d14928e32f003b2395fd739918233db924dc5",
         "stage": "cfg_parity"
       },
       {
         "bytes": 6572,
-        "modified_at": "2026-08-07T18:37:46.321038Z",
+        "modified_at": "2026-08-08T06:21:59.080890Z",
         "path": "results/function_discovery/latest.jsonl",
         "rows": 9,
-        "sha256": "2297181c1ee389ede90c7b260dfff1772c03dcf993f64f57c297de19bb2e4761",
+        "sha256": "5c4f16905013e18a3b3179724df165be01bf358318b45d7aa962a93a0bcec696",
         "stage": "function_discovery"
       },
       {
-        "bytes": 15285,
-        "modified_at": "2026-08-07T18:37:46.321245Z",
+        "bytes": 7640,
+        "modified_at": "2026-08-08T06:21:59.081138Z",
         "path": "results/ir_invariants/latest.jsonl",
-        "rows": 40,
-        "sha256": "536fbb6b8bb4d3a831ff1c415f2bd001f20f0a821baba93d1c26d81db8bb536e",
+        "rows": 20,
+        "sha256": "aed014fc46f42423e37b691e8ec0ddf1ce90915864f544c64a4011c2da377ad8",
         "stage": "ir_invariants"
       },
       {
         "bytes": 5653,
-        "modified_at": "2026-08-07T16:52:11.336032Z",
+        "modified_at": "2026-08-08T04:23:13.537382Z",
         "path": "results/golden_repros/latest.jsonl",
         "rows": 12,
         "sha256": "8f67e8a673cc2afa8295fc60899231357bea0e0476edfe5604f68340ccbd0370",
@@ -120,13 +118,13 @@
   },
   "publishable": {
     "definition": "Headline quality = assembly + pcode + cfg + function_discovery (Ghidra inventory). Decode/IR/golden are diagnostic or meta.",
-    "match": 128,
-    "match_rate_comparable": 0.9922,
-    "mismatch": 1,
+    "match": 69,
+    "match_rate_comparable": 1.0,
+    "mismatch": 0,
     "pcode_dual": {
       "literal_full_match_rate": 0.0,
       "loose_full_match_rate": 1.0,
-      "n": 40,
+      "n": 20,
       "note": "strict (primary): abstract LOAD/STORE space-selector offsets; literal: raw tool space-table ids; loose: stub selector entirely.",
       "opcode_sequence_match_rate": 1.0,
       "space_id_policy": "selector_abstract_under_strict",
@@ -137,12 +135,12 @@
         "both_empty_invalid": 0,
         "by_mismatch_kind": {},
         "by_status": {
-          "match": 40
+          "match": 20
         },
         "candidate_empty": 0,
         "error_or_other": 0,
         "fetch_error": 0,
-        "match": 40,
+        "match": 20,
         "match_rate": 1.0,
         "match_rate_attempted": 1.0,
         "match_rate_comparable": 1.0,
@@ -151,37 +149,34 @@
         "primary_quality": true,
         "reference_empty": 0,
         "skipped": 0,
-        "total": 40,
+        "total": 20,
         "usable_coverage": 1.0
       },
       "cfg_parity": {
         "both_empty_invalid": 0,
-        "by_mismatch_kind": {
-          "block_count": 1
-        },
+        "by_mismatch_kind": {},
         "by_status": {
-          "match": 39,
-          "mismatch": 1
+          "match": 20
         },
         "candidate_empty": 0,
         "dual": {
-          "mean_block_start_jaccard": 0.995,
-          "mean_edge_pair_jaccard": 0.9875,
-          "n": 40,
+          "mean_block_start_jaccard": 1.0,
+          "mean_edge_pair_jaccard": 1.0,
+          "n": 20,
           "note": "Jaccard on block starts and kind-agnostic (src,tgt) edges; status match still requires full canonical equality."
         },
         "error_or_other": 0,
         "fetch_error": 0,
-        "match": 39,
-        "match_rate": 0.975,
-        "match_rate_attempted": 0.975,
-        "match_rate_comparable": 0.975,
-        "mismatch": 1,
-        "mismatch_rate": 0.025,
+        "match": 20,
+        "match_rate": 1.0,
+        "match_rate_attempted": 1.0,
+        "match_rate_comparable": 1.0,
+        "mismatch": 0,
+        "mismatch_rate": 0.0,
         "primary_quality": true,
         "reference_empty": 0,
         "skipped": 0,
-        "total": 40,
+        "total": 20,
         "usable_coverage": 1.0
       },
       "function_discovery": {
@@ -216,13 +211,13 @@
         "both_empty_invalid": 0,
         "by_mismatch_kind": {},
         "by_status": {
-          "match": 40
+          "match": 20
         },
         "candidate_empty": 0,
         "dual": {
           "literal_full_match_rate": 0.0,
           "loose_full_match_rate": 1.0,
-          "n": 40,
+          "n": 20,
           "note": "strict (primary): abstract LOAD/STORE space-selector offsets; literal: raw tool space-table ids; loose: stub selector entirely.",
           "opcode_sequence_match_rate": 1.0,
           "space_id_policy": "selector_abstract_under_strict",
@@ -230,7 +225,7 @@
         },
         "error_or_other": 0,
         "fetch_error": 0,
-        "match": 40,
+        "match": 20,
         "match_rate": 1.0,
         "match_rate_attempted": 1.0,
         "match_rate_comparable": 1.0,
@@ -239,19 +234,19 @@
         "primary_quality": true,
         "reference_empty": 0,
         "skipped": 0,
-        "total": 40,
+        "total": 20,
         "usable_coverage": 1.0
       }
     },
-    "total_rows": 129,
+    "total_rows": 69,
     "usable_coverage": 1.0
   },
   "reliability": {
     "fetch_error_rate": 0.0,
-    "match_rate_attempted": 0.9282,
-    "match_rate_comparable": 0.9941,
+    "match_rate_attempted": 0.8812,
+    "match_rate_comparable": 1.0,
     "skipped_rate": 0.0,
-    "usable_coverage": 0.9337
+    "usable_coverage": 0.8812
   },
   "reliability_critique": {
     "demoted_stages": [
@@ -298,12 +293,12 @@
       "both_empty_invalid": 0,
       "by_mismatch_kind": {},
       "by_status": {
-        "match": 40
+        "match": 20
       },
       "candidate_empty": 0,
       "error_or_other": 0,
       "fetch_error": 0,
-      "match": 40,
+      "match": 20,
       "match_rate": 1.0,
       "match_rate_attempted": 1.0,
       "match_rate_comparable": 1.0,
@@ -312,37 +307,34 @@
       "primary_quality": true,
       "reference_empty": 0,
       "skipped": 0,
-      "total": 40,
+      "total": 20,
       "usable_coverage": 1.0
     },
     "cfg_parity": {
       "both_empty_invalid": 0,
-      "by_mismatch_kind": {
-        "block_count": 1
-      },
+      "by_mismatch_kind": {},
       "by_status": {
-        "match": 39,
-        "mismatch": 1
+        "match": 20
       },
       "candidate_empty": 0,
       "dual": {
-        "mean_block_start_jaccard": 0.995,
-        "mean_edge_pair_jaccard": 0.9875,
-        "n": 40,
+        "mean_block_start_jaccard": 1.0,
+        "mean_edge_pair_jaccard": 1.0,
+        "n": 20,
         "note": "Jaccard on block starts and kind-agnostic (src,tgt) edges; status match still requires full canonical equality."
       },
       "error_or_other": 0,
       "fetch_error": 0,
-      "match": 39,
-      "match_rate": 0.975,
-      "match_rate_attempted": 0.975,
-      "match_rate_comparable": 0.975,
-      "mismatch": 1,
-      "mismatch_rate": 0.025,
+      "match": 20,
+      "match_rate": 1.0,
+      "match_rate_attempted": 1.0,
+      "match_rate_comparable": 1.0,
+      "mismatch": 0,
+      "mismatch_rate": 0.0,
       "primary_quality": true,
       "reference_empty": 0,
       "skipped": 0,
-      "total": 40,
+      "total": 20,
       "usable_coverage": 1.0
     },
     "function_discovery": {
@@ -398,12 +390,12 @@
       "both_empty_invalid": 0,
       "by_mismatch_kind": {},
       "by_status": {
-        "match": 40
+        "match": 20
       },
       "candidate_empty": 0,
       "error_or_other": 0,
       "fetch_error": 0,
-      "match": 40,
+      "match": 20,
       "match_rate": 1.0,
       "match_rate_attempted": 1.0,
       "match_rate_comparable": 1.0,
@@ -413,20 +405,20 @@
       "reference_empty": 0,
       "reliability_note": "Structural CFG checks only (empty blocks / edge sources); not full IR equivalence.",
       "skipped": 0,
-      "total": 40,
+      "total": 20,
       "usable_coverage": 1.0
     },
     "pcode_parity": {
       "both_empty_invalid": 0,
       "by_mismatch_kind": {},
       "by_status": {
-        "match": 40
+        "match": 20
       },
       "candidate_empty": 0,
       "dual": {
         "literal_full_match_rate": 0.0,
         "loose_full_match_rate": 1.0,
-        "n": 40,
+        "n": 20,
         "note": "strict (primary): abstract LOAD/STORE space-selector offsets; literal: raw tool space-table ids; loose: stub selector entirely.",
         "opcode_sequence_match_rate": 1.0,
         "space_id_policy": "selector_abstract_under_strict",
@@ -434,7 +426,7 @@
       },
       "error_or_other": 0,
       "fetch_error": 0,
-      "match": 40,
+      "match": 20,
       "match_rate": 1.0,
       "match_rate_attempted": 1.0,
       "match_rate_comparable": 1.0,
@@ -443,9 +435,9 @@
       "primary_quality": true,
       "reference_empty": 0,
       "skipped": 0,
-      "total": 40,
+      "total": 20,
       "usable_coverage": 1.0
     }
   },
-  "total_rows": 181
+  "total_rows": 101
 }
