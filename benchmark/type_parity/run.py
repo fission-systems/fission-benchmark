@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import re
 from typing import Any, Optional
 
 import typer
@@ -15,6 +16,22 @@ app = typer.Typer(pretty_exceptions_enable=False)
 STAGE = "type_parity"
 
 
+def _normalize_type_name(value: object) -> str:
+    """Canonicalize spelling only; preserve semantic distinctions."""
+    text = re.sub(r"\s+", " ", str(value).strip().lower())
+    text = re.sub(r"\bstruct\s+", "", text)
+    text = re.sub(r"\s*\*\s*", "*", text)
+    aliases = {
+        "uchar": "unsigned char",
+        "ushort": "unsigned short",
+        "uint": "unsigned int",
+        "ulong": "unsigned long",
+        "longlong": "long long",
+        "ulonglong": "unsigned long long",
+    }
+    return aliases.get(text, text)
+
+
 def _type_tokens(payload: object) -> set[str]:
     if not isinstance(payload, dict):
         return set()
@@ -22,10 +39,10 @@ def _type_tokens(payload: object) -> set[str]:
         return set()
     tokens: list[str] = []
     if payload.get("return_type"):
-        tokens.append(f"ret:{str(payload.get('return_type')).lower()}")
+        tokens.append(f"ret:{_normalize_type_name(payload.get('return_type'))}")
     for p in payload.get("parameters") or []:
         if isinstance(p, dict) and p.get("type") is not None:
-            tokens.append(f"p{p.get('index')}:{str(p.get('type')).lower()}")
+            tokens.append(f"p{p.get('index')}:{_normalize_type_name(p.get('type'))}")
     return as_str_set(tokens)
 
 
@@ -54,15 +71,24 @@ def _field_keys(payload: object) -> set[str]:
 def _layout_keys_hard(payload: object) -> set[str]:
     if not isinstance(payload, dict):
         return set()
-    out: set[str] = set()
+    layouts: list[tuple[int, tuple[tuple[int, int], ...]]] = []
     for st in payload.get("structs") or []:
         if not isinstance(st, dict):
             continue
-        sname = str(st.get("name") or "struct").lower()
+        fields: list[tuple[int, int]] = []
         for f in st.get("fields") or []:
             if not isinstance(f, dict):
                 continue
-            out.add(f"{sname}|{int(f.get('offset') or 0)}|{int(f.get('size') or 0)}")
+            fields.append((int(f.get("offset") or 0), int(f.get("size") or 0)))
+        if fields:
+            layouts.append((int(st.get("size") or 0), tuple(sorted(fields))))
+    # Struct names are a separate name-recovery concern. Compare the ordered
+    # multiset of sizes and field positions so anonymous/synthetic aggregate
+    # names do not turn identical layouts into false mismatches.
+    out: set[str] = set()
+    for ordinal, (struct_size, fields) in enumerate(sorted(layouts)):
+        for offset, size in fields:
+            out.add(f"{ordinal}|{struct_size}|{offset}|{size}")
     return out
 
 

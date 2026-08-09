@@ -79,3 +79,47 @@ def test_symbol_coverage_does_not_hide_core_metadata_parity():
     assert row.metrics["core_metadata_match"] == 1
     assert row.metrics["symbol_reference_recall"] == 0.5
     assert row.metrics["symbol_candidate_precision"] == 1.0
+
+
+def test_generated_ghidra_labels_are_not_loader_symbol_mismatches():
+    expected = payload()
+    expected["symbols"] = [
+        {"address": 0x1000, "source": "imported"},
+        {"address": 0x1030, "source": "default"},
+        {"address": 0x1040, "source": "analysis"},
+    ]
+    actual = payload()
+    actual["symbols"] = [
+        {
+            "address": 0x1000,
+            "provenance": {"source": "symbol_table"},
+        }
+    ]
+
+    row = compare_metadata(SUBJECT, "ghidra", "fission", expected, actual)
+
+    assert row.status == "match"
+    assert row.metrics["symbol_reference_recall"] == 1.0
+    assert row.metrics["ref_generated_symbols"] == 2
+    assert row.metrics["raw_symbol_address_jaccard"] == 0.3333
+
+
+def test_provenanced_loader_symbol_gap_remains_a_mismatch():
+    expected = payload()
+    expected["symbols"] = [
+        {"address": 0x1000, "source": "imported"},
+        {"address": 0x1030, "source": "imported"},
+    ]
+    actual = payload()
+    actual["symbols"] = [
+        {
+            "address": 0x1000,
+            "provenance": {"source": "symbol_table"},
+        }
+    ]
+
+    row = compare_metadata(SUBJECT, "ghidra", "fission", expected, actual)
+
+    assert row.status == "mismatch"
+    assert row.mismatch_kind == "symbol_addresses"
+    assert row.metrics["symbol_reference_recall"] == 0.5

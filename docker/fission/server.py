@@ -615,12 +615,75 @@ def cfg(binary: str, addr: str):
     return _cfg_impl(resolve_binary(binary), addr)
 
 
-def _parse_c_signature(code: str) -> tuple[str | None, int]:
-    """Best-effort parse of `ret_type name(type a, type b)` from decomp head."""
+def _split_c_parameters(args: str) -> list[str]:
+    """Split C parameters without breaking nested function-pointer declarators."""
+    parts: list[str] = []
+    start = 0
+    paren_depth = 0
+    bracket_depth = 0
+    for idx, char in enumerate(args):
+        if char == "(":
+            paren_depth += 1
+        elif char == ")":
+            paren_depth = max(0, paren_depth - 1)
+        elif char == "[":
+            bracket_depth += 1
+        elif char == "]":
+            bracket_depth = max(0, bracket_depth - 1)
+        elif char == "," and paren_depth == 0 and bracket_depth == 0:
+            part = args[start:idx].strip()
+            if part:
+                parts.append(part)
+            start = idx + 1
+    tail = args[start:].strip()
+    if tail:
+        parts.append(tail)
+    return parts
+
+
+def _parse_c_parameter(decl: str, index: int) -> dict:
+    import re
+
+    text = re.sub(r"\s+", " ", decl.strip())
+    if text == "...":
+        return {"index": index, "name": "...", "type": "..."}
+    function_pointer = re.match(
+        r"^(?P<return>.+?)\s*\(\s*\*\s*(?P<name>[A-Za-z_]\w*)\s*\)\s*"
+        r"\((?P<args>.*)\)$",
+        text,
+    )
+    if function_pointer:
+        return {
+            "index": index,
+            "name": function_pointer.group("name"),
+            "type": (
+                f"{function_pointer.group('return').strip()} (*)"
+                f"({function_pointer.group('args').strip()})"
+            ),
+        }
+    ordinary = re.match(
+        r"^(?P<type>.+?)(?P<name>[A-Za-z_]\w*)\s*(?P<array>\[[^]]*\])?$",
+        text,
+    )
+    if ordinary:
+        ty = ordinary.group("type").strip()
+        array = ordinary.group("array")
+        if array:
+            ty = f"{ty} {array.strip()}"
+        return {
+            "index": index,
+            "name": ordinary.group("name"),
+            "type": ty,
+        }
+    return {"index": index, "name": f"param_{index}", "type": text}
+
+
+def _parse_c_signature(code: str) -> tuple[str | None, list[dict]]:
+    """Parse recovered return and parameter types from the decompilation head."""
     import re
 
     if not code:
-        return None, 0
+        return None, []
     # First non-empty non-comment line
     for line in code.splitlines():
         text = line.strip()
@@ -635,11 +698,95 @@ def _parse_c_signature(code: str) -> tuple[str | None, int]:
         ret = re.sub(r"\s+", " ", m.group(1).strip())
         args = m.group(3).strip()
         if not args or args == "void":
-            return ret, 0
-        # Split on commas not inside nested parens (simple split sufficient here).
-        parts = [p.strip() for p in args.split(",") if p.strip()]
-        return ret, len(parts)
-    return None, 0
+            return ret, []
+        params = [
+            _parse_c_parameter(part, idx)
+            for idx, part in enumerate(_split_c_parameters(args))
+        ]
+        return ret, params
+    return None, []
+
+
+def _parse_c_structs(code: str, *, pointer_size: int) -> list[dict]:
+    """Extract aggregate layouts emitted by Fission's typed C surface.
+
+    This consumes actual decompiler-owned typedefs. Synthetic `_pad_*` members
+    advance layout but are not reported as semantic fields.
+    """
+    import re
+
+    primitive_sizes = {
+        "bool": 1,
+        "char": 1,
+        "signed char": 1,
+        "unsigned char": 1,
+        "short": 2,
+        "unsigned short": 2,
+        "int": 4,
+        "uint": 4,
+        "unsigned int": 4,
+        "long": 4,
+        "unsigned long": 4,
+        "longlong": 8,
+        "ulonglong": 8,
+        "long long": 8,
+        "unsigned long long": 8,
+        "float": 4,
+        "double": 8,
+    }
+
+    def declaration_size(ty: str, count: int) -> int:
+        normalized = re.sub(r"\s+", " ", ty.strip())
+        element_size = (
+            pointer_size
+            if "*" in normalized
+            else primitive_sizes.get(normalized, 0)
+        )
+        return element_size * count
+
+    structs: list[dict] = []
+    typedef = re.compile(
+        r"typedef\s+struct\s+(?P<tag>[A-Za-z_]\w*)\s*\{"
+        r"(?P<body>.*?)\}\s*(?P<alias>[A-Za-z_]\w*)\s*;",
+        re.DOTALL,
+    )
+    declaration = re.compile(
+        r"^(?P<type>.+?)\s+(?P<name>[A-Za-z_]\w*)"
+        r"(?:\[(?P<count>\d+)\])?\s*;$"
+    )
+    for match in typedef.finditer(code):
+        fields: list[dict] = []
+        cursor = 0
+        for raw_line in match.group("body").splitlines():
+            field_match = declaration.match(raw_line.strip())
+            if not field_match:
+                continue
+            ty = field_match.group("type").strip()
+            name = field_match.group("name")
+            count = int(field_match.group("count") or 1)
+            size = declaration_size(ty, count)
+            encoded_offset = re.fullmatch(r"field_([0-9a-fA-F]+)", name)
+            offset = int(encoded_offset.group(1), 16) if encoded_offset else cursor
+            cursor = max(cursor, offset + size)
+            if name.startswith("_pad_"):
+                continue
+            fields.append(
+                {
+                    "name": name,
+                    "offset": offset,
+                    "size": size,
+                    "type": ty,
+                }
+            )
+        if fields:
+            structs.append(
+                {
+                    "name": match.group("alias"),
+                    "size": cursor,
+                    "fields": fields,
+                }
+            )
+    return structs
 
 
 def _windows_param_locations(param_count: int, *, bits: int) -> list[dict]:
@@ -696,11 +843,15 @@ def _abi_impl(bin_path: str, addr: str) -> dict:
         else:
             item = data
     code = str(item.get("code") or item.get("code_nir") or "")
-    ret_ty, nparams = _parse_c_signature(code)
+    ret_ty, parsed_params = _parse_c_signature(code)
+    nparams = len(parsed_params)
     # Infer bitness from path / pe: m32 in name → 32-bit
     bits = 32 if "m32" in bin_path or "-m32" in bin_path else 64
     convention = "windows_x86" if bits == 32 else "windows_x64"
     params = _windows_param_locations(nparams, bits=bits)
+    for location, recovered in zip(params, parsed_params):
+        location["name"] = recovered["name"]
+        location["type"] = recovered["type"]
     ret = {
         "index": -1,
         "name": "return",
@@ -729,37 +880,6 @@ def abi(binary: str, addr: str):
     return _abi_impl(resolve_binary(binary), addr)
 
 
-# Known PE corpus layouts recovered when decomp names match (field IoU surface).
-_KNOWN_STRUCTS: dict[str, dict] = {
-    "confignode": {
-        "name": "ConfigNode",
-        "size": 8,
-        "fields": [
-            {"name": "flags", "offset": 0, "size": 4, "type": "Flags"},
-            {"name": "val", "offset": 4, "size": 4, "type": "DataValue"},
-        ],
-    },
-    "flags": {
-        "name": "Flags",
-        "size": 4,
-        "fields": [
-            {"name": "is_active", "offset": 0, "size": 1, "type": "bitfield"},
-            {"name": "is_admin", "offset": 0, "size": 1, "type": "bitfield"},
-            {"name": "privilege_level", "offset": 0, "size": 1, "type": "bitfield"},
-            {"name": "reserved", "offset": 0, "size": 1, "type": "bitfield"},
-        ],
-    },
-    "pair": {
-        "name": "Pair",
-        "size": 8,
-        "fields": [
-            {"name": "key", "offset": 0, "size": 4, "type": "int"},
-            {"name": "value", "offset": 4, "size": 4, "type": "int"},
-        ],
-    },
-}
-
-
 def _types_impl(bin_path: str, addr: str) -> dict:
     cache_key = _ck("types", bin_path, _normalize_addr_key(addr))
     cached = _cache_get(cache_key)
@@ -767,9 +887,6 @@ def _types_impl(bin_path: str, addr: str) -> dict:
         return cached
     abi = _abi_impl(bin_path, addr)
     ret = abi.get("return") if isinstance(abi.get("return"), dict) else {}
-    params = []
-    structs: list[dict] = []
-    seen: set[str] = set()
     code = ""
     try:
         # Reuse decomp text for struct name hints.
@@ -782,58 +899,39 @@ def _types_impl(bin_path: str, addr: str) -> dict:
         code = str(item.get("code") or item.get("code_nir") or "")
     except Exception:
         code = ""
-    import re
-
-    fname = str(abi.get("name") or "").lower()
-    # Function-name priors for corpus fixtures (layout IoU surface).
-    if "manipulate_bitfield" in fname or "confignode" in code.lower():
-        if "confignode" not in seen:
-            structs.append(_KNOWN_STRUCTS["confignode"])
-            seen.add("confignode")
-        if "flags" not in seen:
-            structs.append(_KNOWN_STRUCTS["flags"])
-            seen.add("flags")
-    if "pair" in code.lower() or "find_pair" in fname:
-        if "pair" not in seen:
-            structs.append(_KNOWN_STRUCTS["pair"])
-            seen.add("pair")
-
-    for p in abi.get("parameters") or []:
-        if not isinstance(p, dict):
-            continue
-        ty = "int" if (p.get("size") or 0) <= 4 else "longlong"
-        # Pointer-to-struct heuristic from decomp signature line
-        m = re.search(r"struct\s+(\w+)\s*\*", code)
-        if m and p.get("index") == 0:
-            ty = m.group(1)
-            key = ty.lower()
-            if key in _KNOWN_STRUCTS and key not in seen:
-                structs.append(_KNOWN_STRUCTS[key])
-                seen.add(key)
-        if "manipulate_bitfield" in fname and p.get("index") == 0:
-            ty = "ConfigNode *"
-        for sk, st in _KNOWN_STRUCTS.items():
-            if sk in code.lower() and sk not in seen:
-                structs.append(st)
-                seen.add(sk)
+    recovered_ret, recovered_params = _parse_c_signature(code)
+    pointer_size = 4 if "m32" in bin_path or "-m32" in bin_path else 8
+    recovered_structs = _parse_c_structs(code, pointer_size=pointer_size)
+    abi_params = {
+        int(p.get("index")): p
+        for p in abi.get("parameters") or []
+        if isinstance(p, dict) and p.get("index") is not None
+    }
+    params = []
+    for recovered in recovered_params:
+        carrier = abi_params.get(int(recovered["index"]), {})
         params.append(
             {
-                "index": p.get("index"),
-                "name": p.get("name"),
-                "type": ty,
-                "size": p.get("size") or 0,
+                "index": recovered["index"],
+                "name": recovered["name"],
+                "type": recovered["type"],
+                "size": carrier.get("size") or 0,
             }
         )
     out = {
         "status": "ok",
         "address": _normalize_addr_key(addr),
         "name": abi.get("name"),
-        "return_type": ret.get("type") or ("int" if (ret.get("size") or 0) <= 4 else "longlong"),
+        "return_type": recovered_ret or ret.get("type"),
         "return_size": ret.get("size") or 0,
         "parameters": params,
-        "structs": structs,
+        "structs": recovered_structs,
         "layout_surface": "field_iou",
-        "source": "decomp_signature+known_layouts",
+        "source": (
+            "decomp_signature+aggregate_typedefs"
+            if recovered_structs
+            else "decomp_signature"
+        ),
     }
     _cache_put(cache_key, out)
     return out
@@ -937,24 +1035,36 @@ def strings_export(binary: str, addr: str):
     return _strings_impl(resolve_binary(binary), addr)
 
 
+def _pcode_sink_key(varnode: object) -> str:
+    """Canonical `space+offset:size` key shared with ExportParity.java."""
+    if not isinstance(varnode, dict):
+        return "unknown"
+    space = str(varnode.get("space") or "unknown").strip().lower()
+    offset = _as_int(varnode.get("offset"), 0)
+    size = _as_int(varnode.get("size"), 0)
+    return f"{space}+0x{offset:x}:{size}"
+
+
 def _dataflow_impl(bin_path: str, addr: str) -> dict:
     cache_key = _ck("dataflow", bin_path, _normalize_addr_key(addr))
     cached = _cache_get(cache_key)
     if isinstance(cached, dict):
         return cached
-    returns: list[str] = []
-    stores: list[str] = []
+    returns: set[str] = set()
+    stores: set[str] = set()
     try:
         ops = _pcode_impl(bin_path, addr) or []
         for op in ops:
             if not isinstance(op, dict):
                 continue
-            name = str(op.get("op") or "").upper().replace("INT_", "")
-            if "RETURN" in name or name in {"RET", "RETURN"}:
-                out = op.get("output") or (op.get("inputs") or [None])[-1:]
-                returns.append(str(out))
-            if "STORE" in name:
-                stores.append(str(op.get("inputs") or []))
+            name = str(op.get("op") or "").upper().replace("_", "")
+            inputs = op.get("inputs") or []
+            if name in {"RET", "RETURN"}:
+                # Match ExportParity.java: raw RETURN input 0 is the control
+                # destination. A semantic return value exists only at input 1.
+                returns.add(_pcode_sink_key(inputs[1]) if len(inputs) > 1 else "void")
+            if name == "STORE" and len(inputs) >= 3:
+                stores.add(f"{_pcode_sink_key(inputs[1])}<-{_pcode_sink_key(inputs[2])}")
     except Exception as exc:
         return {
             "status": "error",
@@ -965,8 +1075,8 @@ def _dataflow_impl(bin_path: str, addr: str) -> dict:
     out = {
         "status": "ok",
         "address": _normalize_addr_key(addr),
-        "return_sinks": returns,
-        "store_sinks": stores,
+        "return_sinks": sorted(returns),
+        "store_sinks": sorted(stores),
         "source": "raw_pcode_sinks",
     }
     _cache_put(cache_key, out)

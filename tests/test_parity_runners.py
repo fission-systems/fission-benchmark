@@ -250,6 +250,21 @@ def test_type_and_callgraph_and_string_extension_compares() -> None:
     }
     assert compare_types(subject(), "ghidra", "fission", exp_t, act_t).status == "match"
 
+    # Formatting aliases are not semantic type differences.
+    alias_t = {
+        "status": "ok",
+        "return_type": "unsigned long long",
+        "parameters": [{"index": 0, "type": "struct Node*"}],
+        "structs": [],
+    }
+    recovered_t = {
+        "status": "ok",
+        "return_type": "ulonglong",
+        "parameters": [{"index": 0, "type": "Node *"}],
+        "structs": [],
+    }
+    assert compare_types(subject(), "ghidra", "fission", alias_t, recovered_t).status == "match"
+
     # Field layout IoU: same offsets/sizes match
     exp_layout = {
         "status": "ok",
@@ -282,6 +297,14 @@ def test_type_and_callgraph_and_string_extension_compares() -> None:
         ],
     }
     assert compare_types(subject(), "ghidra", "fission", exp_layout, act_layout).status == "match"
+    renamed_layout = {
+        **act_layout,
+        "structs": [{**act_layout["structs"][0], "name": "fission_agg8"}],
+    }
+    assert (
+        compare_types(subject(), "ghidra", "fission", exp_layout, renamed_layout).status
+        == "match"
+    )
     act_bad = {
         "status": "ok",
         "return_type": "int",
@@ -305,6 +328,32 @@ def test_type_and_callgraph_and_string_extension_compares() -> None:
     exp_s = {"status": "ok", "strings": ["hello", "world"]}
     act_s = {"status": "ok", "strings": []}
     assert compare_strings(subject(), "ghidra", "fission", exp_s, act_s).status == "mismatch"
+
+
+def test_dataflow_requires_typed_sink_contract() -> None:
+    from benchmark.dataflow_parity.run import compare_dataflow
+
+    expected = {
+        "status": "ok",
+        "return_sinks": ["void"],
+        "store_sinks": ["register+0x20:8<-unique+0x4f900:4"],
+    }
+    actual = {
+        "status": "ok",
+        "return_sinks": ["void"],
+        "store_sinks": ["register+0x20:8<-unique+0x4f900:4"],
+    }
+    assert compare_dataflow(subject(), "ghidra", "fission", expected, actual).status == "match"
+
+    malformed = {
+        "status": "ok",
+        "return_sinks": ["[{'space': 'register', 'offset': '0x288', 'size': 8}]"],
+        "store_sinks": [],
+    }
+    invalid = compare_dataflow(subject(), "ghidra", "fission", expected, malformed)
+    assert invalid.status == "error"
+    assert invalid.mismatch_kind == "sink_contract_invalid"
+    assert invalid.metrics["reliability"] == "not_scored"
 
 
 def test_pe_runtime_function_and_string_scan() -> None:

@@ -60,6 +60,43 @@ def _address_keys(payload: object, table: str, field: str) -> set[int]:
     return {_as_int(row.get(field)) for row in _rows(payload, table)}
 
 
+def _symbol_source(row: dict[str, Any]) -> str:
+    source = row.get("source")
+    if source is None and isinstance(row.get("provenance"), dict):
+        source = row["provenance"].get("source")
+    return str(source or "").strip().lower()
+
+
+def _loader_symbol_address_keys(payload: object) -> set[int]:
+    rows = _rows(payload, "symbols")
+    sources = {_symbol_source(row) for row in rows}
+    if not any(sources):
+        # Compatibility for providers predating symbol provenance.
+        return {_as_int(row.get("address")) for row in rows}
+
+    ghidra_sources = {"imported"}
+    fission_sources = {
+        "symbol_table",
+        "import_table",
+        "export_table",
+        "debug_info",
+    }
+    comparable_sources = ghidra_sources | fission_sources
+    return {
+        _as_int(row.get("address"))
+        for row in rows
+        if _symbol_source(row) in comparable_sources
+    }
+
+
+def _generated_symbol_address_keys(payload: object) -> set[int]:
+    return {
+        _as_int(row.get("address"))
+        for row in _rows(payload, "symbols")
+        if _symbol_source(row) in {"default", "analysis"}
+    }
+
+
 def _relocation_address_keys(payload: object) -> set[int]:
     return {
         _as_int(row.get("address"))
@@ -118,8 +155,11 @@ def compare_metadata(
     cand_block_starts = _block_start_keys(actual)
     ref_functions = _address_keys(expected, "functions", "entry")
     cand_functions = _address_keys(actual, "functions", "entry")
-    ref_symbols = _address_keys(expected, "symbols", "address")
-    cand_symbols = _address_keys(actual, "symbols", "address")
+    ref_raw_symbols = _address_keys(expected, "symbols", "address")
+    cand_raw_symbols = _address_keys(actual, "symbols", "address")
+    ref_symbols = _loader_symbol_address_keys(expected)
+    cand_symbols = _loader_symbol_address_keys(actual)
+    ref_generated_symbols = _generated_symbol_address_keys(expected)
     ref_relocations = _relocation_address_keys(expected)
     cand_relocations = _relocation_address_keys(actual)
     shared_functions = len(ref_functions & cand_functions)
@@ -170,6 +210,9 @@ def compare_metadata(
             if cand_functions
             else 1.0,
             "symbol_address_jaccard": jaccard(ref_symbols, cand_symbols),
+            "raw_symbol_address_jaccard": jaccard(
+                ref_raw_symbols, cand_raw_symbols
+            ),
             "symbol_reference_recall": round(shared_symbols / len(ref_symbols), 4)
             if ref_symbols
             else 1.0,
@@ -190,6 +233,9 @@ def compare_metadata(
             "cand_functions": len(cand_functions),
             "ref_symbols": len(ref_symbols),
             "cand_symbols": len(cand_symbols),
+            "ref_raw_symbols": len(ref_raw_symbols),
+            "cand_raw_symbols": len(cand_raw_symbols),
+            "ref_generated_symbols": len(ref_generated_symbols),
             "ref_relocations": len(ref_relocations),
             "cand_relocations": len(cand_relocations),
         },

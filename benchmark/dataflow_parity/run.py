@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import re
 from typing import Optional
 
 import typer
@@ -12,6 +13,8 @@ from benchmark.common.set_compare import as_str_set, compare_payload_sets, jacca
 
 app = typer.Typer(pretty_exceptions_enable=False)
 STAGE = "dataflow_parity"
+_VARNODE_KEY = r"[a-z0-9_.-]+\+0x[0-9a-f]+:[0-9]+"
+_SINK_KEY_RE = re.compile(rf"^(?:void|{_VARNODE_KEY}(?:<-{_VARNODE_KEY})?)$", re.IGNORECASE)
 
 
 def _sinks(payload: object) -> set[str]:
@@ -21,6 +24,10 @@ def _sinks(payload: object) -> set[str]:
     return as_str_set(tokens)
 
 
+def _invalid_sink_tokens(payload: object) -> set[str]:
+    return {token for token in _sinks(payload) if not _SINK_KEY_RE.fullmatch(token)}
+
+
 def compare_dataflow(
     subject: BenchmarkSubject,
     reference_name: str,
@@ -28,6 +35,32 @@ def compare_dataflow(
     expected: object,
     actual: object,
 ) -> BenchmarkResult:
+    invalid_reference = _invalid_sink_tokens(expected)
+    invalid_candidate = _invalid_sink_tokens(actual)
+    if invalid_reference or invalid_candidate:
+        side = (
+            "both"
+            if invalid_reference and invalid_candidate
+            else "reference"
+            if invalid_reference
+            else "candidate"
+        )
+        return BenchmarkResult(
+            subject=subject,
+            stage=STAGE,
+            status="error",
+            reference=reference_name,
+            candidate=candidate_name,
+            mismatch_kind="sink_contract_invalid",
+            expected=expected,
+            actual=actual,
+            metrics={
+                "invalid_reference_tokens": len(invalid_reference),
+                "invalid_candidate_tokens": len(invalid_candidate),
+                "reliability": "not_scored",
+            },
+            error=f"Malformed typed dataflow sink token on {side} side",
+        )
     row = compare_payload_sets(
         subject,
         STAGE,

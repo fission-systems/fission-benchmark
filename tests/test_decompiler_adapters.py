@@ -185,6 +185,130 @@ def test_fission_dual_layer_falls_back_when_only_code_present() -> None:
     assert item.code_hir == item.code
 
 
+def test_fission_type_contract_preserves_recovered_signature_types(monkeypatch) -> None:
+    server = load_module("fission_server_types", ROOT / "docker/fission/server.py")
+    monkeypatch.setattr(
+        server,
+        "_abi_impl",
+        lambda _path, _addr: {
+            "status": "ok",
+            "name": "list_sum",
+            "parameters": [
+                {"index": 0, "name": "param_1", "location": "rcx", "size": 8}
+            ],
+            "return": {"type": "ulonglong", "location": "rax", "size": 8},
+        },
+    )
+    monkeypatch.setattr(
+        server,
+        "run_fission_cli",
+        lambda _command: [
+            {
+                "name": "list_sum",
+                "code": "ulonglong list_sum(int * param_1)\n{\n    return *param_1;\n}",
+            }
+        ],
+    )
+
+    payload = server._types_impl("/missing/type-contract.bin", "0x1000")
+
+    assert payload["return_type"] == "ulonglong"
+    assert payload["parameters"] == [
+        {"index": 0, "name": "param_1", "type": "int *", "size": 8}
+    ]
+    assert payload["structs"] == []
+    assert payload["source"] == "decomp_signature"
+
+
+def test_fission_signature_parser_keeps_function_pointer_parameter_together() -> None:
+    server = load_module("fission_server_signature", ROOT / "docker/fission/server.py")
+
+    ret, params = server._parse_c_signature(
+        "int apply_binop(int (*callback)(int, int), int lhs, unsigned int rhs)\n{"
+    )
+
+    assert ret == "int"
+    assert params == [
+        {"index": 0, "name": "callback", "type": "int (*)(int, int)"},
+        {"index": 1, "name": "lhs", "type": "int"},
+        {"index": 2, "name": "rhs", "type": "unsigned int"},
+    ]
+
+
+def test_fission_type_contract_extracts_emitted_aggregate_layout(monkeypatch) -> None:
+    server = load_module("fission_server_aggregate_types", ROOT / "docker/fission/server.py")
+    monkeypatch.setattr(
+        server,
+        "_abi_impl",
+        lambda _path, _addr: {
+            "status": "ok",
+            "name": "list_sum",
+            "parameters": [{"index": 0, "location": "rcx", "size": 8}],
+            "return": {"type": "ulonglong", "location": "rax", "size": 8},
+        },
+    )
+    monkeypatch.setattr(
+        server,
+        "run_fission_cli",
+        lambda _command: [
+            {
+                "name": "list_sum",
+                "code": """typedef struct fission_agg16 {
+    uint field_0;
+    unsigned char _pad_4[4];
+    ulonglong field_8;
+} fission_agg16;
+
+ulonglong list_sum(fission_agg16 * param_1) { return 0; }
+""",
+            }
+        ],
+    )
+
+    payload = server._types_impl("/missing/aggregate-contract.bin", "0x1000")
+
+    assert payload["structs"] == [
+        {
+            "name": "fission_agg16",
+            "size": 16,
+            "fields": [
+                {"name": "field_0", "offset": 0, "size": 4, "type": "uint"},
+                {"name": "field_8", "offset": 8, "size": 8, "type": "ulonglong"},
+            ],
+        }
+    ]
+    assert payload["source"] == "decomp_signature+aggregate_typedefs"
+
+
+def test_fission_dataflow_contract_uses_typed_sink_keys(monkeypatch) -> None:
+    server = load_module("fission_server_dataflow", ROOT / "docker/fission/server.py")
+    monkeypatch.setattr(
+        server,
+        "_pcode_impl",
+        lambda _path, _addr: [
+            {
+                "op": "Store",
+                "inputs": [
+                    {"space": "const", "offset": "0x3", "size": 8},
+                    {"space": "register", "offset": "0x20", "size": 8},
+                    {"space": "unique", "offset": "0x4f900", "size": 4},
+                ],
+            },
+            {
+                "op": "Return",
+                "inputs": [
+                    {"space": "register", "offset": "0x288", "size": 8}
+                ],
+            },
+        ],
+    )
+
+    payload = server._dataflow_impl("/missing/dataflow-contract.bin", "0x1000")
+
+    assert payload["return_sinks"] == ["void"]
+    assert payload["store_sinks"] == ["register+0x20:8<-unique+0x4f900:4"]
+
+
 def test_ghidra_extracts_marker_from_info_prefixed_line(monkeypatch, tmp_path) -> None:
     # Module import creates PROJECT_CACHE; keep it off the host root FS.
     monkeypatch.setenv("GHIDRA_PROJECT_CACHE", str(tmp_path / "ghidra-projects"))
