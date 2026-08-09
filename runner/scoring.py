@@ -49,9 +49,16 @@ class FunctionScore:
     decompiled_code_hir: str = ""
     pseudocode_layer: str = ""          # adapter-reported layer selection, e.g. "nir"
     readability_metrics: dict[str, Any] = field(default_factory=dict)
+    # Explicit per-surface evidence. `readability_metrics` remains the
+    # backward-compatible primary view and prefers HIR when available.
+    readability_metrics_nir: dict[str, Any] = field(default_factory=dict)
+    readability_proxy_score_nir: float | None = None
     # Optional second readability pass on HIR (when dual surfaces differ).
     readability_metrics_hir: dict[str, Any] = field(default_factory=dict)
     readability_proxy_score_hir: float | None = None
+    dual_layer_delta: dict[str, Any] = field(default_factory=dict)
+    # Diagnostic-only executable guard for HIR. Never enters correctness rank.
+    hir_semantic_guard: dict[str, Any] = field(default_factory=dict)
     ast_similarity: dict[str, Any] = field(default_factory=dict)
     # Type correctness vs DWARF ground truth. None = no ground truth
     # available for this function (no debug info, or DWARF extraction

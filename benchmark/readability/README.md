@@ -68,14 +68,25 @@ because code can differ from the original and still be easier to understand.
 Every result row may include:
 
 - `readability_metrics`: Phase 1 proxy families, raw and normalized.
+- `readability_metrics_nir` / `readability_proxy_score_nir`: explicit NIR
+  readability evidence.
+- `readability_metrics_hir` / `readability_proxy_score_hir`: explicit HIR
+  readability evidence.
+- `dual_layer_delta`: factual `HIR - NIR` changes in bytes, LOC, gotos,
+  nesting, temporaries, generic identifiers, and the unvalidated proxy.
+- `hir_semantic_guard`: diagnostic execution against the same cases used for
+  NIR. It never enters correctness ranking.
 - `ast_similarity`: Phase 2 corpus-only AST similarity views.
 
 For Fission dual printers (when the adapter supplies both surfaces):
 
 - Semantic correctness still runs on **NIR** (`decompiled_code` / `code_nir`).
 - Primary `readability_metrics` prefer the **HIR** surface when available.
-- Optional `readability_metrics_hir` / `readability_proxy_score_hir` record an
-  explicit HIR-only proxy pass when NIR and HIR text differ.
+- Explicit NIR/HIR metric families and `dual_layer_delta` retain both surfaces
+  even though the backward-compatible primary readability view prefers HIR.
+- A differing HIR surface is executed as a non-ranking semantic guard whenever
+  the row has an executable oracle. This catches presentation-contract losses
+  without replacing NIR as the semantic oracle.
 
 No result row should include a final `readability_score` until Phase 3 and Phase
 4 are complete. Dual NIR/HIR capture is evidence plumbing only — it does not

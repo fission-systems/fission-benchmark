@@ -1,6 +1,7 @@
 from runner.readability import (
     analyze_readability,
     ast_structure_similarity,
+    compare_readability_layers,
     summarize_readability_proxy_score,
 )
 
@@ -51,3 +52,21 @@ def test_readability_proxy_summary_uses_normalized_artifact_value() -> None:
     }
 
     assert summarize_readability_proxy_score(metrics) == 0.8
+
+
+def test_dual_layer_delta_keeps_nir_and_hir_evidence_separate() -> None:
+    nir = "int f(int x) { int tmp; tmp = x; goto done; done: return tmp; }"
+    hir = "int f(int x) { return x; }"
+    nir_metrics = analyze_readability(nir, "fission")
+    hir_metrics = analyze_readability(hir, "fission")
+
+    comparison = compare_readability_layers(nir, hir, nir_metrics, hir_metrics)
+
+    assert comparison["available"] is True
+    assert comparison["text_differs"] is True
+    assert comparison["interpretation"] == "hir_minus_nir"
+    assert comparison["nir"]["goto_count"] == 1
+    assert comparison["hir"]["goto_count"] == 0
+    assert comparison["delta"]["goto_count"] == -1
+    assert comparison["delta"]["bytes"] < 0
+    assert comparison["validated_against_humans"] is False

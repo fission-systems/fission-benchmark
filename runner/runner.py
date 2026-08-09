@@ -29,7 +29,12 @@ from scoring import (
 )
 from semantic import verify_semantic_correctness_async
 from differential_oracle import aggregate_oracle_evidence, verify_with_oracle
-from readability import analyze_readability, ast_structure_similarity, summarize_readability_proxy_score
+from readability import (
+    analyze_readability,
+    ast_structure_similarity,
+    compare_readability_layers,
+    summarize_readability_proxy_score,
+)
 from output_diagnostics import analyze_output_diagnostics, invalid_output_reason
 from run_validity import build_envelope
 from test_wrappers import TEST_WRAPPERS
@@ -391,7 +396,9 @@ async def decompile_batch_and_score(
         )
 
     try:
-        binary_b64 = base64.b64encode(binary_path.read_bytes()).decode()
+        binary_bytes = binary_path.read_bytes()
+        binary_b64 = base64.b64encode(binary_bytes).decode()
+        binary_sha256 = hashlib.sha256(binary_bytes).hexdigest()
     except Exception as e:
         return [
             _failure_score(t, f"Failed to read binary: {e}") for t in targets
@@ -559,24 +566,28 @@ async def decompile_batch_and_score(
         else:
             ged_metadata["source_cfg_available"] = False
             ged_metadata["decompiled_cfg_available"] = False
-        # Primary readability metrics: prefer HIR for Fission dual printers.
+        readability_metrics_nir = (
+            analyze_readability(code_nir, dname) if code_nir and not error else {}
+        )
+        readability_score_nir = summarize_readability_proxy_score(
+            readability_metrics_nir
+        )
+        readability_metrics_hir = (
+            analyze_readability(code_hir, dname) if code_hir and not error else {}
+        )
+        readability_score_hir = summarize_readability_proxy_score(
+            readability_metrics_hir
+        )
+        # Backward-compatible primary readability view still prefers HIR.
         readability_metrics = (
-            analyze_readability(readability_code, dname)
+            readability_metrics_hir or readability_metrics_nir
             if readability_code and not error
             else {}
         )
         readability_score = summarize_readability_proxy_score(readability_metrics)
-        readability_metrics_hir = {}
-        readability_score_hir = None
-        if (
-            not error
-            and code_hir
-            and code_nir
-            and code_hir.strip() != code_nir.strip()
-        ):
-            # Explicit HIR pass when dual surfaces differ (evidence only; not ranking).
-            readability_metrics_hir = analyze_readability(code_hir, dname)
-            readability_score_hir = summarize_readability_proxy_score(readability_metrics_hir)
+        dual_layer_delta = compare_readability_layers(
+            code_nir, code_hir, readability_metrics_nir, readability_metrics_hir
+        )
         ast_similarity = (
             ast_structure_similarity(function_source, semantic_code)
             if function_source and semantic_code and not error
@@ -595,7 +606,6 @@ async def decompile_batch_and_score(
                 semantic_precheck_result
             )
         elif not error and oracle_endpoint and fn.name in TEST_WRAPPERS:
-            binary_bytes = binary_path.read_bytes()
             differential = await verify_with_oracle(
                 client,
                 oracle_endpoint,
@@ -604,9 +614,9 @@ async def decompile_batch_and_score(
                 candidate_code=semantic_code,
                 cases=TEST_WRAPPERS[fn.name],
                 compiler_variant=variant_label,
-                reference_binary_sha256=hashlib.sha256(binary_bytes).hexdigest(),
+                reference_binary_sha256=binary_sha256,
                 # Bind oracle evidence to the corpus binary under test (PE or ELF).
-                reference_binary_b64=base64.b64encode(binary_bytes).decode("ascii"),
+                reference_binary_b64=binary_b64,
                 function_addr=variant.addr,
                 target_abi=var_abi or None,
                 binary_format=var_fmt or None,
@@ -629,6 +639,87 @@ async def decompile_batch_and_score(
                 0,
                 0,
             )
+
+        hir_semantic_guard: dict[str, Any] = {
+            "available": False,
+            "ranking_input": False,
+            "status": "missing_hir",
+        }
+        if code_hir:
+            if semantic_precheck_result is not None:
+                hir_semantic_guard.update(
+                    status="not_testable",
+                    reason=semantic_precheck_result[1],
+                    category=semantic_precheck_result[2],
+                )
+            elif code_hir.strip() == semantic_code.strip():
+                hir_semantic_guard = {
+                    "available": sem_score is not None,
+                    "ranking_input": False,
+                    "status": "identical_to_nir",
+                    "score": sem_score,
+                    "error": sem_err,
+                    "category": fail_cat,
+                    "cases_passed": cases_passed,
+                    "cases_total": cases_total,
+                    "matches_nir": True,
+                    "oracle_reused": True,
+                }
+            elif not error and oracle_endpoint and fn.name in TEST_WRAPPERS:
+                hir_differential = await verify_with_oracle(
+                    client,
+                    oracle_endpoint,
+                    function_name=fn.name,
+                    reference_code=function_source,
+                    candidate_code=code_hir,
+                    cases=TEST_WRAPPERS[fn.name],
+                    compiler_variant=variant_label,
+                    reference_binary_sha256=binary_sha256,
+                    reference_binary_b64=binary_b64,
+                    function_addr=variant.addr,
+                    target_abi=var_abi or None,
+                    binary_format=var_fmt or None,
+                )
+                hir_semantic_guard = {
+                    "available": hir_differential.score is not None,
+                    "ranking_input": False,
+                    "status": "measured",
+                    "score": hir_differential.score,
+                    "error": hir_differential.error,
+                    "category": hir_differential.category,
+                    "cases_passed": hir_differential.cases_passed,
+                    "cases_total": hir_differential.cases_total,
+                    "matches_nir": (
+                        hir_differential.score == sem_score
+                        and hir_differential.cases_passed == cases_passed
+                        and hir_differential.cases_total == cases_total
+                    ),
+                    "oracle_reused": False,
+                }
+            elif not error:
+                (
+                    hir_score,
+                    hir_error,
+                    hir_category,
+                    hir_cases_passed,
+                    hir_cases_total,
+                ) = await verify_semantic_correctness_async(fn.name, code_hir)
+                hir_semantic_guard = {
+                    "available": hir_score is not None,
+                    "ranking_input": False,
+                    "status": "measured",
+                    "score": hir_score,
+                    "error": hir_error,
+                    "category": hir_category,
+                    "cases_passed": hir_cases_passed,
+                    "cases_total": hir_cases_total,
+                    "matches_nir": (
+                        hir_score == sem_score
+                        and hir_cases_passed == cases_passed
+                        and hir_cases_total == cases_total
+                    ),
+                    "oracle_reused": False,
+                }
 
         # C-2: prefer per-item timing from adapter if provided, fall back to apportioned batch time.
         item_time_ms = item.get("time_ms")
@@ -693,8 +784,12 @@ async def decompile_batch_and_score(
             pseudocode_layer=str(item.get("layer") or ""),
             readability_metrics=readability_metrics,
             readability_proxy_score=readability_score,
+            readability_metrics_nir=readability_metrics_nir,
+            readability_proxy_score_nir=readability_score_nir,
             readability_metrics_hir=readability_metrics_hir,
             readability_proxy_score_hir=readability_score_hir,
+            dual_layer_delta=dual_layer_delta,
+            hir_semantic_guard=hir_semantic_guard,
             ast_similarity=ast_similarity,
             type_match_score=type_match_score,
             type_match_metadata=type_match_metadata,

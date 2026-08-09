@@ -27,7 +27,11 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from report import generate_report
 from output_diagnostics import analyze_output_diagnostics, invalid_output_reason
-from readability import summarize_readability_proxy_score
+from readability import (
+    analyze_readability,
+    compare_readability_layers,
+    summarize_readability_proxy_score,
+)
 from semantic import verify_semantic_correctness
 from test_wrappers import TEST_WRAPPERS
 from scoring import FunctionScore, assign_consensus_ranks, check_uses_intrinsics, compute_correctness_score
@@ -80,6 +84,33 @@ def _normalise_scores(data: list[dict], recompute_derived: bool = False, rerun_s
     )
     for score in scores:
         if recompute_derived:
+            if score.decompiled_code_nir and not score.readability_metrics_nir:
+                score.readability_metrics_nir = analyze_readability(
+                    score.decompiled_code_nir, score.decompiler
+                )
+            if score.readability_metrics_nir and score.readability_proxy_score_nir is None:
+                score.readability_proxy_score_nir = summarize_readability_proxy_score(
+                    score.readability_metrics_nir
+                )
+            if score.decompiled_code_hir and not score.readability_metrics_hir:
+                score.readability_metrics_hir = analyze_readability(
+                    score.decompiled_code_hir, score.decompiler
+                )
+            if score.readability_metrics_hir and score.readability_proxy_score_hir is None:
+                score.readability_proxy_score_hir = summarize_readability_proxy_score(
+                    score.readability_metrics_hir
+                )
+            if (
+                score.decompiled_code_nir
+                and score.decompiled_code_hir
+                and not score.dual_layer_delta
+            ):
+                score.dual_layer_delta = compare_readability_layers(
+                    score.decompiled_code_nir,
+                    score.decompiled_code_hir,
+                    score.readability_metrics_nir,
+                    score.readability_metrics_hir,
+                )
             if score.readability_metrics and score.readability_proxy_score is None:
                 score.readability_proxy_score = summarize_readability_proxy_score(
                     score.readability_metrics

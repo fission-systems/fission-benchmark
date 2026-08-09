@@ -77,6 +77,106 @@ def test_output_preflight_keeps_clean_function_metric_eligible() -> None:
     assert preflight["metric_eligible"] is True
 
 
+def test_dual_layer_hir_guard_is_measured_without_replacing_nir_score(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    binary = tmp_path / "fixture.bin"
+    source = tmp_path / "fixture.c"
+    binary.write_bytes(b"fixture")
+    source.write_text("int target_function(int x) { return x; }", encoding="utf-8")
+    nir = "int target_function(int x) { int tmp; tmp = x; goto done; done: return tmp; }"
+    hir = "int target_function(int x) { return 0; }"
+    function = SimpleNamespace(
+        name="target_function",
+        subject_name="target_function",
+        language="c",
+        project="fixture",
+        semantic={},
+    )
+    variant = SimpleNamespace(
+        addr="0x401000",
+        compiler="gcc",
+        opt="-O0",
+        format="elf",
+        isa="x86_64",
+        abi_profile="sysv_amd64",
+    )
+
+    class FakeResponse:
+        status_code = 200
+        text = ""
+
+        @staticmethod
+        def json():
+            return {
+                "results": [
+                    {
+                        "addr": variant.addr,
+                        "code": nir,
+                        "code_nir": nir,
+                        "code_hir": hir,
+                        "layer": "nir",
+                        "time_ms": 1,
+                    }
+                ],
+                "time_ms": 1,
+            }
+
+    class FakeClient:
+        @staticmethod
+        async def post(*_args, **_kwargs):
+            return FakeResponse()
+
+    semantic_inputs: list[str] = []
+
+    async def fake_verify(_name: str, code: str):
+        semantic_inputs.append(code)
+        if code == nir:
+            return 1.0, None, None, 2, 2
+        return 0.0, "wrong result", "assertion_fail", 0, 2
+
+    monkeypatch.setattr(benchmark_runner, "extract_decompiled_cfgs", lambda _items: {})
+    monkeypatch.setattr(benchmark_runner, "extract_source_cfgs", lambda _path: {})
+    monkeypatch.setattr(benchmark_runner, "ground_truth_for_binary", lambda _path: {})
+    monkeypatch.setattr(
+        benchmark_runner,
+        "measure_recompilation",
+        lambda *_args, **_kwargs: (None, {"category": "not_measured"}),
+    )
+    monkeypatch.setattr(
+        benchmark_runner,
+        "try_bare_compile",
+        lambda _code: {"ok": True, "category": "ok"},
+    )
+    monkeypatch.setattr(
+        benchmark_runner, "verify_semantic_correctness_async", fake_verify
+    )
+
+    rows = asyncio.run(
+        benchmark_runner.decompile_batch_and_score(
+            FakeClient(),
+            "fission",
+            "http://fission",
+            binary,
+            [(function, variant, source.read_text(), source, "authored_source_fallback")],
+            asyncio.Semaphore(1),
+            None,
+        )
+    )
+
+    assert semantic_inputs == [nir, hir]
+    assert len(rows) == 1
+    row = rows[0]
+    assert row.semantic_score == 1.0
+    assert row.cases_passed == 2
+    assert row.hir_semantic_guard["ranking_input"] is False
+    assert row.hir_semantic_guard["score"] == 0.0
+    assert row.hir_semantic_guard["matches_nir"] is False
+    assert row.readability_metrics_nir
+    assert row.readability_metrics_hir
+    assert row.dual_layer_delta["delta"]["goto_count"] == -1
+
+
 def test_invalid_boundary_never_reaches_joern_batch(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

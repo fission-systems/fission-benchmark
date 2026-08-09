@@ -519,6 +519,84 @@ def summarize_readability_proxy_score(metrics: dict[str, Any]) -> float | None:
     return round(sum(numeric) / len(numeric), 4)
 
 
+def compare_readability_layers(
+    code_nir: str,
+    code_hir: str,
+    metrics_nir: dict[str, Any],
+    metrics_hir: dict[str, Any],
+) -> dict[str, Any]:
+    """Record factual NIR/HIR deltas without declaring either surface better."""
+
+    if not code_nir or not code_hir:
+        return {
+            "available": False,
+            "text_differs": False,
+            "reason": "missing_nir_or_hir",
+        }
+
+    def raw(metrics: dict[str, Any], family: str, key: str) -> int:
+        value = metrics.get(family, {}).get("raw", {}).get(key, 0)
+        return int(value) if isinstance(value, (int, float)) else 0
+
+    nir = {
+        "bytes": len(code_nir.encode("utf-8")),
+        "loc": raw(metrics_nir, "expression_complexity", "loc"),
+        "goto_count": raw(metrics_nir, "structured_control_flow", "goto_count"),
+        "nesting_depth": raw(
+            metrics_nir, "structured_control_flow", "nesting_depth"
+        ),
+        "temporary_identifiers": raw(
+            metrics_nir, "expression_complexity", "temporary_identifier_count"
+        ),
+        "generic_identifiers": raw(
+            metrics_nir, "generic_naming_ratio", "generic"
+        ),
+        "proxy_score": summarize_readability_proxy_score(metrics_nir),
+    }
+    hir = {
+        "bytes": len(code_hir.encode("utf-8")),
+        "loc": raw(metrics_hir, "expression_complexity", "loc"),
+        "goto_count": raw(metrics_hir, "structured_control_flow", "goto_count"),
+        "nesting_depth": raw(
+            metrics_hir, "structured_control_flow", "nesting_depth"
+        ),
+        "temporary_identifiers": raw(
+            metrics_hir, "expression_complexity", "temporary_identifier_count"
+        ),
+        "generic_identifiers": raw(
+            metrics_hir, "generic_naming_ratio", "generic"
+        ),
+        "proxy_score": summarize_readability_proxy_score(metrics_hir),
+    }
+    integer_fields = (
+        "bytes",
+        "loc",
+        "goto_count",
+        "nesting_depth",
+        "temporary_identifiers",
+        "generic_identifiers",
+    )
+    delta: dict[str, int | float | None] = {
+        field: hir[field] - nir[field] for field in integer_fields
+    }
+    nir_score = nir["proxy_score"]
+    hir_score = hir["proxy_score"]
+    delta["proxy_score"] = (
+        round(hir_score - nir_score, 4)
+        if isinstance(nir_score, float) and isinstance(hir_score, float)
+        else None
+    )
+    return {
+        "available": True,
+        "text_differs": code_nir.strip() != code_hir.strip(),
+        "interpretation": "hir_minus_nir",
+        "validated_against_humans": False,
+        "nir": nir,
+        "hir": hir,
+        "delta": delta,
+    }
+
+
 def analyze_readability(code: str, decompiler: str) -> dict[str, Any]:
     parsed = parse_c(code)
     return {
