@@ -732,10 +732,20 @@ def _find_definition_params(code: str, func_name: str) -> str | None:
 
     The definition is the occurrence whose matching ``)`` is followed by
     ``{`` (a call or prototype ending in ``;`` is not).
+
+    32-bit PE decorates cdecl symbols with a leading underscore, so a manifest
+    naming ``list_sum`` must still find a definition printed ``_list_sum``.
+    ``\b`` will not straddle that underscore -- it is a word character -- so the
+    decorated spelling is tried as its own candidate.
     """
     if not func_name:
         return None
-    for m in re.finditer(r"\b" + re.escape(func_name) + r"\s*\(", code):
+    candidates = [func_name]
+    for alt in ("_" + func_name, func_name.lstrip("_")):
+        if alt and alt not in candidates:
+            candidates.append(alt)
+    pattern = "|".join(re.escape(c) for c in candidates)
+    for m in re.finditer(r"(?<![A-Za-z0-9])(?:" + pattern + r")\s*\(", code):
         open_i = code.index("(", m.start())
         depth = 0
         close_i: int | None = None
