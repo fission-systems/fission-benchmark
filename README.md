@@ -280,9 +280,11 @@ fission-benchmark/
 
 ## Fission Release Tracking
 
-CI sets `FISSION_SOURCE=release` and pins `FISSION_VERSION=v0.1.6` by default.
-This keeps scheduled, push, and manual runs reproducible until the repository's
-declared baseline is deliberately advanced. The `/health` probe must report
+CI sets `FISSION_SOURCE=release` and leaves `FISSION_VERSION=latest`, which the
+workflow resolves to Fission's newest GitHub Release at run time (see
+`benchmark.yml`'s resolve step) and then pins for the rest of that run. Pass an
+explicit `fission_version` to hold a run to a specific release instead. The
+current release is `v0.2.1`. The `/health` probe must report
 `"source": "release"` (CI fails on `local-*`).
 
 ### Preferred operator path (GitHub CLI)
@@ -295,12 +297,12 @@ does the chain automatically after a successful fission bake):
 gh workflow run "Publish Images" \
   --repo fission-systems/fission-benchmark \
   -f services=fission \
-  -f fission_version=v0.1.6
+  -f fission_version=v0.2.1
 
 # 2) Official ranking + Pages (fast path: fission+ghidra only)
 gh workflow run "Benchmark & Deploy" \
   --repo fission-systems/fission-benchmark \
-  -f fission_version=v0.1.6 \
+  -f fission_version=v0.2.1 \
   -f corpus=dev \
   -f run_mode=official \
   -f publish_results=true \
@@ -311,7 +313,7 @@ gh workflow run "Benchmark & Deploy" \
 # 3) Multi-decomp UI snapshot (slow: 9 tools; smoke or core as needed)
 gh workflow run "Benchmark & Deploy" \
   --repo fission-systems/fission-benchmark \
-  -f fission_version=v0.1.6 \
+  -f fission_version=v0.2.1 \
   -f run_mode=official \
   -f publish_results=false \
   -f matrix_profile=smoke \
@@ -320,7 +322,7 @@ gh workflow run "Benchmark & Deploy" \
 # 4) Language pivots (weekly default: full_matrix, 2-tool parallel fan-out)
 gh workflow run "Benchmark & Deploy" \
   --repo fission-systems/fission-benchmark \
-  -f fission_version=v0.1.6 \
+  -f fission_version=v0.2.1 \
   -f run_mode=official \
   -f publish_results=true \
   -f matrix_profile=full_matrix \
@@ -349,7 +351,7 @@ racing Benchmark before the image exists). After bake, CI runs
 gh api repos/fission-systems/fission-benchmark/dispatches --input - <<'EOF'
 {
   "event_type": "fission-release",
-  "client_payload": { "fission_version": "v0.1.6" }
+  "client_payload": { "fission_version": "v0.2.1" }
 }
 EOF
 ```
@@ -383,7 +385,7 @@ Response: { "status": "ok", "decompiler": "ghidra", "version": "12.0" }
 
 # Fission also reports provenance:
 # { "status": "ok", "decompiler": "fission", "version": "...",
-#   "release_version": "v0.1.6"|"local-<sha>",
+#   "release_version": "v0.2.1"|"local-<sha>",
 #   "source": "release"|"local", "git_sha": "<optional>" }
 ```
 
@@ -579,7 +581,7 @@ python -m runner.speed_microbench \
 
 # CI
 gh workflow run "Speed Smoke" --repo fission-systems/fission-benchmark \
-  -f fission_version=v0.1.6 \
+  -f fission_version=v0.2.1 \
   -f trials=5 \
   -f decompilers=fission,ghidra
 ```

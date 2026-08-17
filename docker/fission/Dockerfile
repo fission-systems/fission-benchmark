@@ -15,7 +15,7 @@ WORKDIR /app
 # FISSION_SOURCE=local: image has server only; CLI+utils come from runtime mount
 #   via entrypoint.sh (/opt/fission-local).
 ARG FISSION_SOURCE=release
-ARG FISSION_VERSION=v0.1.3
+ARG FISSION_VERSION=v0.2.1
 ENV FISSION_RELEASE_VERSION=${FISSION_VERSION}
 ENV FISSION_SOURCE=${FISSION_SOURCE}
 
