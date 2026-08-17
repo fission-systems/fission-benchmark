@@ -242,6 +242,38 @@ TYPE_MAP: dict[str, str] = {
 
 QUALIFIERS = ["unsigned", "signed", "const", "volatile", "register", "static", "extern"]
 
+# A trailing run of ``*``s, so TYPE_MAP can be applied to the POINTEE.
+_PTR_SUFFIX = re.compile(r"^(.*?)((?:\s*\*)+)$")
+
+# One C++ namespace/class qualifier, e.g. the ``leveldb::`` of
+# ``leveldb::TableBuilder *``. Digits cannot start a token, so a Ghidra symbol
+# version prefix like ``GLIBC_2.2.5::`` is left alone.
+_NAMESPACE_QUALIFIER = re.compile(r"\b[A-Za-z_]\w*\s*::\s*")
+
+
+def _map_pointee(form: str) -> str:
+    """``TYPE_MAP`` applied through a pointer spelling: ``uchar *`` -> ``char*``.
+
+    The scalar rows already normalize ``uchar``, but a pointer spelling never
+    reached them, so a decompiler writing ``uchar *`` could not match DWARF's
+    ``char*`` while one writing ``char *`` could.
+    """
+    m = _PTR_SUFFIX.match(form)
+    if m is None:
+        return form
+    mapped = TYPE_MAP.get(m.group(1).strip())
+    return form if mapped is None else mapped + m.group(2)
+
+
+def _strip_namespaces(form: str) -> str:
+    """``leveldb::TableBuilder*`` -> ``TableBuilder*``.
+
+    DWARF records a C++ class/typedef under its UNQUALIFIED ``DW_AT_name``, so
+    a decompiler printing the fully-qualified name could never match ground
+    truth on a C++ target.
+    """
+    return _NAMESPACE_QUALIFIER.sub("", form).strip()
+
 
 def normalize_type(type_str: str) -> set[str]:
     """Normalize a type string to a set of equivalent representations.
@@ -280,6 +312,10 @@ def normalize_type(type_str: str) -> set[str]:
     forms = {re.sub(r"\s+", " ", f).strip() for f in forms if f.strip()}
     forms |= {re.sub(r"\s*\*", "*", f) for f in forms}
     forms |= {TYPE_MAP[f] for f in forms if f in TYPE_MAP}
+    forms |= {_map_pointee(f) for f in forms}
+    forms |= {_strip_namespaces(f) for f in forms}
+    forms |= {re.sub(r"\s*\*", "*", f) for f in forms}
+    forms = {f for f in forms if f.strip()}
 
     return forms
 
