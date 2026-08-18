@@ -1,0 +1,497 @@
+{
+  "_comment": "Functions trafficking in Win32 status and error codes. Added so constant-name recovery has targets: scanning 447 decompiled functions for the 3,155 distinctive values in the Win32 constant table finds zero occurrences, which makes that recovery unmeasurable rather than absent. clang/elf/aarch64 variants omitted -- this machine has no mingw sysroot for clang cross-compilation and no linux or aarch64 cross-gcc.",
+  "functions": [
+    {
+      "name": "open_missing_is_not_found",
+      "source": "source/c/win32_status.c",
+      "language": "c",
+      "compiler_variants": [
+        {
+          "compiler": "gcc",
+          "opt": "-O0",
+          "binary": "binaries/c/win32_status_gcc_O0.exe",
+          "addr": "0x140001450",
+          "isa": "x86_64",
+          "format": "pe",
+          "abi_profile": "windows-x86_64",
+          "preprocessed_source": "preprocessed/c/win32_status_gcc_O0.i"
+        },
+        {
+          "compiler": "gcc",
+          "opt": "-O1",
+          "binary": "binaries/c/win32_status_gcc_O1.exe",
+          "addr": "0x140001450",
+          "isa": "x86_64",
+          "format": "pe",
+          "abi_profile": "windows-x86_64",
+          "preprocessed_source": "preprocessed/c/win32_status_gcc_O1.i"
+        },
+        {
+          "compiler": "gcc",
+          "opt": "-O2",
+          "binary": "binaries/c/win32_status_gcc_O2.exe",
+          "addr": "0x140001450",
+          "isa": "x86_64",
+          "format": "pe",
+          "abi_profile": "windows-x86_64",
+          "preprocessed_source": "preprocessed/c/win32_status_gcc_O2.i"
+        },
+        {
+          "compiler": "gcc",
+          "opt": "-Os",
+          "binary": "binaries/c/win32_status_gcc_Os.exe",
+          "addr": "0x140001450",
+          "isa": "x86_64",
+          "format": "pe",
+          "abi_profile": "windows-x86_64",
+          "preprocessed_source": "preprocessed/c/win32_status_gcc_Os.i"
+        },
+        {
+          "compiler": "gcc",
+          "opt": "-O3",
+          "binary": "binaries/c/win32_status_gcc_O3.exe",
+          "addr": "0x140001450",
+          "isa": "x86_64",
+          "format": "pe",
+          "abi_profile": "windows-x86_64",
+          "preprocessed_source": "preprocessed/c/win32_status_gcc_O3.i"
+        },
+        {
+          "compiler": "gcc-m32",
+          "opt": "-O0",
+          "binary": "binaries/c/win32_status_gcc-m32_O0.exe",
+          "addr": "0x401460",
+          "isa": "x86_32",
+          "format": "pe",
+          "abi_profile": "windows-x86",
+          "preprocessed_source": "preprocessed/c/win32_status_gcc-m32_O0.i"
+        },
+        {
+          "compiler": "gcc-m32",
+          "opt": "-O2",
+          "binary": "binaries/c/win32_status_gcc-m32_O2.exe",
+          "addr": "0x401460",
+          "isa": "x86_32",
+          "format": "pe",
+          "abi_profile": "windows-x86",
+          "preprocessed_source": "preprocessed/c/win32_status_gcc-m32_O2.i"
+        }
+      ],
+      "semantic": {
+        "mode": "c_wrapper",
+        "wrapper_id": "open_missing_is_not_found",
+        "oracle": "pe_wine"
+      }
+    },
+    {
+      "name": "buffer_too_small",
+      "source": "source/c/win32_status.c",
+      "language": "c",
+      "compiler_variants": [
+        {
+          "compiler": "gcc",
+          "opt": "-O0",
+          "binary": "binaries/c/win32_status_gcc_O0.exe",
+          "addr": "0x1400014d0",
+          "isa": "x86_64",
+          "format": "pe",
+          "abi_profile": "windows-x86_64",
+          "preprocessed_source": "preprocessed/c/win32_status_gcc_O0.i"
+        },
+        {
+          "compiler": "gcc",
+          "opt": "-O1",
+          "binary": "binaries/c/win32_status_gcc_O1.exe",
+          "addr": "0x1400014b3",
+          "isa": "x86_64",
+          "format": "pe",
+          "abi_profile": "windows-x86_64",
+          "preprocessed_source": "preprocessed/c/win32_status_gcc_O1.i"
+        },
+        {
+          "compiler": "gcc",
+          "opt": "-O2",
+          "binary": "binaries/c/win32_status_gcc_O2.exe",
+          "addr": "0x1400014c0",
+          "isa": "x86_64",
+          "format": "pe",
+          "abi_profile": "windows-x86_64",
+          "preprocessed_source": "preprocessed/c/win32_status_gcc_O2.i"
+        },
+        {
+          "compiler": "gcc",
+          "opt": "-Os",
+          "binary": "binaries/c/win32_status_gcc_Os.exe",
+          "addr": "0x1400014ab",
+          "isa": "x86_64",
+          "format": "pe",
+          "abi_profile": "windows-x86_64",
+          "preprocessed_source": "preprocessed/c/win32_status_gcc_Os.i"
+        },
+        {
+          "compiler": "gcc",
+          "opt": "-O3",
+          "binary": "binaries/c/win32_status_gcc_O3.exe",
+          "addr": "0x1400014c0",
+          "isa": "x86_64",
+          "format": "pe",
+          "abi_profile": "windows-x86_64",
+          "preprocessed_source": "preprocessed/c/win32_status_gcc_O3.i"
+        },
+        {
+          "compiler": "gcc-m32",
+          "opt": "-O0",
+          "binary": "binaries/c/win32_status_gcc-m32_O0.exe",
+          "addr": "0x4014d8",
+          "isa": "x86_32",
+          "format": "pe",
+          "abi_profile": "windows-x86",
+          "preprocessed_source": "preprocessed/c/win32_status_gcc-m32_O0.i"
+        },
+        {
+          "compiler": "gcc-m32",
+          "opt": "-O2",
+          "binary": "binaries/c/win32_status_gcc-m32_O2.exe",
+          "addr": "0x4014e0",
+          "isa": "x86_32",
+          "format": "pe",
+          "abi_profile": "windows-x86",
+          "preprocessed_source": "preprocessed/c/win32_status_gcc-m32_O2.i"
+        }
+      ],
+      "semantic": {
+        "mode": "c_wrapper",
+        "wrapper_id": "buffer_too_small",
+        "oracle": "pe_wine"
+      }
+    },
+    {
+      "name": "reserve_guarded",
+      "source": "source/c/win32_status.c",
+      "language": "c",
+      "compiler_variants": [
+        {
+          "compiler": "gcc",
+          "opt": "-O0",
+          "binary": "binaries/c/win32_status_gcc_O0.exe",
+          "addr": "0x1400014f0",
+          "isa": "x86_64",
+          "format": "pe",
+          "abi_profile": "windows-x86_64",
+          "preprocessed_source": "preprocessed/c/win32_status_gcc_O0.i"
+        },
+        {
+          "compiler": "gcc",
+          "opt": "-O1",
+          "binary": "binaries/c/win32_status_gcc_O1.exe",
+          "addr": "0x1400014bd",
+          "isa": "x86_64",
+          "format": "pe",
+          "abi_profile": "windows-x86_64",
+          "preprocessed_source": "preprocessed/c/win32_status_gcc_O1.i"
+        },
+        {
+          "compiler": "gcc",
+          "opt": "-O2",
+          "binary": "binaries/c/win32_status_gcc_O2.exe",
+          "addr": "0x1400014d0",
+          "isa": "x86_64",
+          "format": "pe",
+          "abi_profile": "windows-x86_64",
+          "preprocessed_source": "preprocessed/c/win32_status_gcc_O2.i"
+        },
+        {
+          "compiler": "gcc",
+          "opt": "-Os",
+          "binary": "binaries/c/win32_status_gcc_Os.exe",
+          "addr": "0x1400014b5",
+          "isa": "x86_64",
+          "format": "pe",
+          "abi_profile": "windows-x86_64",
+          "preprocessed_source": "preprocessed/c/win32_status_gcc_Os.i"
+        },
+        {
+          "compiler": "gcc",
+          "opt": "-O3",
+          "binary": "binaries/c/win32_status_gcc_O3.exe",
+          "addr": "0x1400014d0",
+          "isa": "x86_64",
+          "format": "pe",
+          "abi_profile": "windows-x86_64",
+          "preprocessed_source": "preprocessed/c/win32_status_gcc_O3.i"
+        },
+        {
+          "compiler": "gcc-m32",
+          "opt": "-O0",
+          "binary": "binaries/c/win32_status_gcc-m32_O0.exe",
+          "addr": "0x4014f1",
+          "isa": "x86_32",
+          "format": "pe",
+          "abi_profile": "windows-x86",
+          "preprocessed_source": "preprocessed/c/win32_status_gcc-m32_O0.i"
+        },
+        {
+          "compiler": "gcc-m32",
+          "opt": "-O2",
+          "binary": "binaries/c/win32_status_gcc-m32_O2.exe",
+          "addr": "0x401500",
+          "isa": "x86_32",
+          "format": "pe",
+          "abi_profile": "windows-x86",
+          "preprocessed_source": "preprocessed/c/win32_status_gcc-m32_O2.i"
+        }
+      ],
+      "semantic": {
+        "mode": "c_wrapper",
+        "wrapper_id": "reserve_guarded",
+        "oracle": "pe_wine"
+      }
+    },
+    {
+      "name": "describe_error",
+      "source": "source/c/win32_status.c",
+      "language": "c",
+      "compiler_variants": [
+        {
+          "compiler": "gcc",
+          "opt": "-O0",
+          "binary": "binaries/c/win32_status_gcc_O0.exe",
+          "addr": "0x14000155e",
+          "isa": "x86_64",
+          "format": "pe",
+          "abi_profile": "windows-x86_64",
+          "preprocessed_source": "preprocessed/c/win32_status_gcc_O0.i"
+        },
+        {
+          "compiler": "gcc",
+          "opt": "-O1",
+          "binary": "binaries/c/win32_status_gcc_O1.exe",
+          "addr": "0x140001515",
+          "isa": "x86_64",
+          "format": "pe",
+          "abi_profile": "windows-x86_64",
+          "preprocessed_source": "preprocessed/c/win32_status_gcc_O1.i"
+        },
+        {
+          "compiler": "gcc",
+          "opt": "-O2",
+          "binary": "binaries/c/win32_status_gcc_O2.exe",
+          "addr": "0x140001530",
+          "isa": "x86_64",
+          "format": "pe",
+          "abi_profile": "windows-x86_64",
+          "preprocessed_source": "preprocessed/c/win32_status_gcc_O2.i"
+        },
+        {
+          "compiler": "gcc",
+          "opt": "-Os",
+          "binary": "binaries/c/win32_status_gcc_Os.exe",
+          "addr": "0x140001508",
+          "isa": "x86_64",
+          "format": "pe",
+          "abi_profile": "windows-x86_64",
+          "preprocessed_source": "preprocessed/c/win32_status_gcc_Os.i"
+        },
+        {
+          "compiler": "gcc",
+          "opt": "-O3",
+          "binary": "binaries/c/win32_status_gcc_O3.exe",
+          "addr": "0x140001530",
+          "isa": "x86_64",
+          "format": "pe",
+          "abi_profile": "windows-x86_64",
+          "preprocessed_source": "preprocessed/c/win32_status_gcc_O3.i"
+        },
+        {
+          "compiler": "gcc-m32",
+          "opt": "-O0",
+          "binary": "binaries/c/win32_status_gcc-m32_O0.exe",
+          "addr": "0x401561",
+          "isa": "x86_32",
+          "format": "pe",
+          "abi_profile": "windows-x86",
+          "preprocessed_source": "preprocessed/c/win32_status_gcc-m32_O0.i"
+        },
+        {
+          "compiler": "gcc-m32",
+          "opt": "-O2",
+          "binary": "binaries/c/win32_status_gcc-m32_O2.exe",
+          "addr": "0x401570",
+          "isa": "x86_32",
+          "format": "pe",
+          "abi_profile": "windows-x86",
+          "preprocessed_source": "preprocessed/c/win32_status_gcc-m32_O2.i"
+        }
+      ],
+      "semantic": {
+        "mode": "c_wrapper",
+        "wrapper_id": "describe_error",
+        "oracle": "pe_wine"
+      }
+    },
+    {
+      "name": "probe_registry_key",
+      "source": "source/c/win32_status.c",
+      "language": "c",
+      "compiler_variants": [
+        {
+          "compiler": "gcc",
+          "opt": "-O0",
+          "binary": "binaries/c/win32_status_gcc_O0.exe",
+          "addr": "0x1400015b8",
+          "isa": "x86_64",
+          "format": "pe",
+          "abi_profile": "windows-x86_64",
+          "preprocessed_source": "preprocessed/c/win32_status_gcc_O0.i"
+        },
+        {
+          "compiler": "gcc",
+          "opt": "-O1",
+          "binary": "binaries/c/win32_status_gcc_O1.exe",
+          "addr": "0x14000155e",
+          "isa": "x86_64",
+          "format": "pe",
+          "abi_profile": "windows-x86_64",
+          "preprocessed_source": "preprocessed/c/win32_status_gcc_O1.i"
+        },
+        {
+          "compiler": "gcc",
+          "opt": "-O2",
+          "binary": "binaries/c/win32_status_gcc_O2.exe",
+          "addr": "0x140001590",
+          "isa": "x86_64",
+          "format": "pe",
+          "abi_profile": "windows-x86_64",
+          "preprocessed_source": "preprocessed/c/win32_status_gcc_O2.i"
+        },
+        {
+          "compiler": "gcc",
+          "opt": "-Os",
+          "binary": "binaries/c/win32_status_gcc_Os.exe",
+          "addr": "0x14000154b",
+          "isa": "x86_64",
+          "format": "pe",
+          "abi_profile": "windows-x86_64",
+          "preprocessed_source": "preprocessed/c/win32_status_gcc_Os.i"
+        },
+        {
+          "compiler": "gcc",
+          "opt": "-O3",
+          "binary": "binaries/c/win32_status_gcc_O3.exe",
+          "addr": "0x140001590",
+          "isa": "x86_64",
+          "format": "pe",
+          "abi_profile": "windows-x86_64",
+          "preprocessed_source": "preprocessed/c/win32_status_gcc_O3.i"
+        },
+        {
+          "compiler": "gcc-m32",
+          "opt": "-O0",
+          "binary": "binaries/c/win32_status_gcc-m32_O0.exe",
+          "addr": "0x4015ad",
+          "isa": "x86_32",
+          "format": "pe",
+          "abi_profile": "windows-x86",
+          "preprocessed_source": "preprocessed/c/win32_status_gcc-m32_O0.i"
+        },
+        {
+          "compiler": "gcc-m32",
+          "opt": "-O2",
+          "binary": "binaries/c/win32_status_gcc-m32_O2.exe",
+          "addr": "0x401590",
+          "isa": "x86_32",
+          "format": "pe",
+          "abi_profile": "windows-x86",
+          "preprocessed_source": "preprocessed/c/win32_status_gcc-m32_O2.i"
+        }
+      ],
+      "semantic": {
+        "mode": "c_wrapper",
+        "wrapper_id": "probe_registry_key",
+        "oracle": "pe_wine"
+      }
+    },
+    {
+      "name": "wait_for_one",
+      "source": "source/c/win32_status.c",
+      "language": "c",
+      "compiler_variants": [
+        {
+          "compiler": "gcc",
+          "opt": "-O0",
+          "binary": "binaries/c/win32_status_gcc_O0.exe",
+          "addr": "0x14000161a",
+          "isa": "x86_64",
+          "format": "pe",
+          "abi_profile": "windows-x86_64",
+          "preprocessed_source": "preprocessed/c/win32_status_gcc_O0.i"
+        },
+        {
+          "compiler": "gcc",
+          "opt": "-O1",
+          "binary": "binaries/c/win32_status_gcc_O1.exe",
+          "addr": "0x1400015b2",
+          "isa": "x86_64",
+          "format": "pe",
+          "abi_profile": "windows-x86_64",
+          "preprocessed_source": "preprocessed/c/win32_status_gcc_O1.i"
+        },
+        {
+          "compiler": "gcc",
+          "opt": "-O2",
+          "binary": "binaries/c/win32_status_gcc_O2.exe",
+          "addr": "0x1400015f0",
+          "isa": "x86_64",
+          "format": "pe",
+          "abi_profile": "windows-x86_64",
+          "preprocessed_source": "preprocessed/c/win32_status_gcc_O2.i"
+        },
+        {
+          "compiler": "gcc",
+          "opt": "-Os",
+          "binary": "binaries/c/win32_status_gcc_Os.exe",
+          "addr": "0x14000159c",
+          "isa": "x86_64",
+          "format": "pe",
+          "abi_profile": "windows-x86_64",
+          "preprocessed_source": "preprocessed/c/win32_status_gcc_Os.i"
+        },
+        {
+          "compiler": "gcc",
+          "opt": "-O3",
+          "binary": "binaries/c/win32_status_gcc_O3.exe",
+          "addr": "0x1400015f0",
+          "isa": "x86_64",
+          "format": "pe",
+          "abi_profile": "windows-x86_64",
+          "preprocessed_source": "preprocessed/c/win32_status_gcc_O3.i"
+        },
+        {
+          "compiler": "gcc-m32",
+          "opt": "-O0",
+          "binary": "binaries/c/win32_status_gcc-m32_O0.exe",
+          "addr": "0x40160a",
+          "isa": "x86_32",
+          "format": "pe",
+          "abi_profile": "windows-x86",
+          "preprocessed_source": "preprocessed/c/win32_status_gcc-m32_O0.i"
+        },
+        {
+          "compiler": "gcc-m32",
+          "opt": "-O2",
+          "binary": "binaries/c/win32_status_gcc-m32_O2.exe",
+          "addr": "0x4015f0",
+          "isa": "x86_32",
+          "format": "pe",
+          "abi_profile": "windows-x86",
+          "preprocessed_source": "preprocessed/c/win32_status_gcc-m32_O2.i"
+        }
+      ],
+      "semantic": {
+        "mode": "c_wrapper",
+        "wrapper_id": "wait_for_one",
+        "oracle": "pe_wine"
+      }
+    }
+  ]
+}
