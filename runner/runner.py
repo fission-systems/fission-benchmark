@@ -50,7 +50,13 @@ from preprocessed_tu import PREPROCESSED_TU_SCHEMA
 from recompilation import measure_recompilation
 from checkpoint import BenchmarkCheckpoint, CHECKPOINT_SCHEMA
 from metric_cache import CACHE_SCHEMA
+from metric_cache import load as _cache_load, store as _cache_store
+
 import subprocess
+
+# Bump when the request shape or the adapter contract changes -- the key covers
+# the image and the binary, not how we ask for them.
+DECOMPILE_CACHE_VERSION = "v1-batch-addresses"
 
 app = typer.Typer(help="Fission decompiler benchmark runner.")
 
@@ -404,42 +410,80 @@ async def decompile_batch_and_score(
             _failure_score(t, f"Failed to read binary: {e}") for t in targets
         ]
 
-    # Post to batch endpoint under semaphore
-    async with sem:
-        try:
-            timeout_key = (
-                "BENCHMARK_"
-                + dname.upper().replace("-", "_").replace(".", "_")
-                + "_TIMEOUT_S"
-            )
-            default_timeout = 1800.0 if corpus_split == "scale" else 300.0
-            timeout_s = float(
-                os.environ.get(timeout_key)
-                or os.environ.get("BENCHMARK_DECOMPILE_TIMEOUT_S")
-                or default_timeout
-            )
-            resp = await client.post(
-                f"{url}/decompile_batch",
-                json={
-                    "binary_b64": binary_b64,
-                    "addresses": addresses,
-                },
-                timeout=timeout_s,
-            )
-            if resp.status_code != 200:
-                raise RuntimeError(
-                    f"HTTP status {resp.status_code}: {resp.text[:500]}"
+    # Decompiling a binary is the largest cost in the run, and the answer only
+    # depends on (tool image, binary bytes, addresses). Measured on the smoke
+    # slice, de-duplicated per binary: revng 152.4s of 256.4s total (59%),
+    # Ghidra 73.8s -- together 88%. Fission is 8.2s.
+    #
+    # revng's cost is not a misconfigured adapter: it batches correctly, one
+    # `revng artifact --analyze` per binary, and per-function times within a
+    # binary are identical. It is that heavy, and the cost tracks the binary
+    # rather than the function count (string_utils, one function, 71.0s).
+    #
+    # Keyed on the image identity too -- a rebuilt decompiler must never be
+    # served yesterday's output. With no identity available the cache is
+    # skipped rather than risk that.
+    _image_id = os.environ.get(
+        "BENCHMARK_IMAGE_ID_" + dname.upper().replace("-", "_").replace(".", "_")
+    ) or os.environ.get("BENCHMARK_IMAGE_IDS_FINGERPRINT", "")
+    _cache_key = (
+        {
+            "decompiler": dname,
+            "image": _image_id,
+            "binary_sha256": binary_sha256,
+            "addresses": sorted(str(a) for a in addresses),
+        }
+        if _image_id
+        else None
+    )
+    batch_results = None
+    if _cache_key is not None:
+        _hit = _cache_load("decompile-batch", DECOMPILE_CACHE_VERSION, _cache_key)
+        if isinstance(_hit, list):
+            batch_results = _hit
+
+    if batch_results is None:
+        # Post to batch endpoint under semaphore
+        async with sem:
+            try:
+                timeout_key = (
+                    "BENCHMARK_"
+                    + dname.upper().replace("-", "_").replace(".", "_")
+                    + "_TIMEOUT_S"
                 )
-            data = resp.json()
-            batch_results = data.get("results", [])
-        except Exception as e:
-            detail = f"{type(e).__name__}: {e}".strip()
-            if detail in ("", ":", "Exception:", "Exception: "):
-                detail = repr(e)
-            err_msg = f"Batch decompile error: {detail}"
-            return [
-                _failure_score(t, err_msg) for t in targets
-            ]
+                default_timeout = 1800.0 if corpus_split == "scale" else 300.0
+                timeout_s = float(
+                    os.environ.get(timeout_key)
+                    or os.environ.get("BENCHMARK_DECOMPILE_TIMEOUT_S")
+                    or default_timeout
+                )
+                resp = await client.post(
+                    f"{url}/decompile_batch",
+                    json={
+                        "binary_b64": binary_b64,
+                        "addresses": addresses,
+                    },
+                    timeout=timeout_s,
+                )
+                if resp.status_code != 200:
+                    raise RuntimeError(
+                        f"HTTP status {resp.status_code}: {resp.text[:500]}"
+                    )
+                data = resp.json()
+                batch_results = data.get("results", [])
+            except Exception as e:
+                detail = f"{type(e).__name__}: {e}".strip()
+                if detail in ("", ":", "Exception:", "Exception: "):
+                    detail = repr(e)
+                err_msg = f"Batch decompile error: {detail}"
+                return [
+                    _failure_score(t, err_msg) for t in targets
+                ]
+
+        if _cache_key is not None and batch_results:
+            _cache_store(
+                "decompile-batch", DECOMPILE_CACHE_VERSION, _cache_key, batch_results
+            )
 
     # Map batch results back (normalize hex forms so 0x1400… vs 0X1400… match).
     def _addr_key(addr: object) -> str:

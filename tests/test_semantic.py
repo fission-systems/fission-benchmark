@@ -51,6 +51,10 @@ def test_semantic_verification_compiles_once_and_runs_each_case(monkeypatch) -> 
         return SimpleNamespace(returncode=0, stderr="", stdout=output)
 
     monkeypatch.setattr("runner.semantic.subprocess.run", fake_run)
+    # This asserts on the *number of compiler invocations*, so it must observe
+    # a cache miss. Without this the run's own cache (or an earlier test's)
+    # answers from disk and gcc is never called at all.
+    monkeypatch.setenv("FISSION_BENCHMARK_NO_CACHE", "1")
 
     result = verify_semantic_correctness(
         "clamp",

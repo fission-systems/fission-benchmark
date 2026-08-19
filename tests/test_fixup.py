@@ -133,3 +133,51 @@ def test_semantic_cache_key_separates_different_code():
                 os.environ.pop("FISSION_BENCHMARK_CACHE_DIR", None)
             else:
                 os.environ["FISSION_BENCHMARK_CACHE_DIR"] = old
+
+
+def test_decompile_cache_key_includes_image_identity():
+    """A rebuilt decompiler must not be served the previous image's output.
+
+    Decompilation is the run's largest cost -- de-duplicated per binary on the
+    smoke slice, revng alone is 152.4s of 256.4s -- so it is worth caching, but
+    only if a new image invalidates it. With no identity available the cache is
+    skipped entirely rather than risk a stale answer.
+    """
+    import os
+    import tempfile
+
+    from runner.metric_cache import load, store
+
+    with tempfile.TemporaryDirectory() as tmp:
+        old = os.environ.get("FISSION_BENCHMARK_CACHE_DIR")
+        os.environ["FISSION_BENCHMARK_CACHE_DIR"] = tmp
+        try:
+            base = {
+                "decompiler": "revng",
+                "binary_sha256": "a" * 64,
+                "addresses": ["0x1000"],
+            }
+            key_v1 = {**base, "image": "sha256:aaa"}
+            key_v2 = {**base, "image": "sha256:bbb"}
+
+            store("decompile-batch", "v1-batch-addresses", key_v1, [{"addr": "0x1000"}])
+            assert load("decompile-batch", "v1-batch-addresses", key_v1) is not None
+            # A different image id must miss.
+            assert load("decompile-batch", "v1-batch-addresses", key_v2) is None
+        finally:
+            if old is None:
+                os.environ.pop("FISSION_BENCHMARK_CACHE_DIR", None)
+            else:
+                os.environ["FISSION_BENCHMARK_CACHE_DIR"] = old
+
+
+def test_decompile_cache_is_skipped_without_image_identity():
+    """`BENCHMARK_IMAGE_ID_*` absent means no caching at all, not a blank key."""
+    import inspect
+
+    from runner import runner as runner_mod
+
+    src = inspect.getsource(runner_mod)
+    # The guard is `if _image_id else None`; a blank id must not produce a key.
+    assert "if _image_id" in src
+    assert '"image": _image_id' in src

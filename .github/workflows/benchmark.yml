@@ -235,6 +235,7 @@ jobs:
             echo "Docker services changed in this push: ${CHANGED_SERVICES:-<none>}"
           fi
           mkdir -p /tmp/img-status
+          : > /tmp/img-digests.txt
 
           pull_one() {
             local svc="$1"
@@ -349,6 +350,23 @@ jobs:
           key: benchmark-runtime-v1-${{ runner.os }}-${{ hashFiles('runner/*.py', 'runner/**/*.py', 'corpus/**/manifests/**', 'corpus/matrix/**') }}
           restore-keys: |
             benchmark-runtime-v1-${{ runner.os }}-
+
+      # Identity for the decompile cache: a rebuilt image must invalidate it.
+      # `docker images --no-trunc -q` is the local image ID, which changes on
+      # any rebuild, so it works for both pulled and locally-built images.
+      - name: Export decompiler image identities
+        run: |
+          set -euo pipefail
+          fingerprint=""
+          for svc in fission ghidra boomerang radare2 angr snowman revng reko retdec; do
+            id="$(docker images --no-trunc -q "fission-benchmark-${svc}" 2>/dev/null | head -1)"
+            [ -n "$id" ] || continue
+            var="BENCHMARK_IMAGE_ID_$(echo "$svc" | tr '[:lower:]-' '[:upper:]_')"
+            echo "${var}=${id}" >> "$GITHUB_ENV"
+            fingerprint="${fingerprint}${svc}:${id};"
+          done
+          echo "BENCHMARK_IMAGE_IDS_FINGERPRINT=$(printf '%s' "$fingerprint" | sha256sum | cut -d' ' -f1)" >> "$GITHUB_ENV"
+          echo "recorded image identities for the decompile cache"
 
       - name: Start decompiler containers
         run: |
