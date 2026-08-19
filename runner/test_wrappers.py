@@ -537,4 +537,113 @@ TEST_WRAPPERS: dict[str, list[str]] = {
         "\nint main() { if (go_saturating_add(-2147483647-1, -1) != (-2147483647-1)) return 1; return 0; }\n",
         "\nint main() { if (go_saturating_add(100, -30) != 70) return 1; return 0; }\n",
     ],
+    "file_size": [
+        '\nint main() { FILE *f = tmpfile(); if (!f) return 0; fputs("hello", f); rewind(f); if (file_size(f) != 5) return 1; fclose(f); return 0; }\n',
+        '\nint main() { FILE *f = tmpfile(); if (!f) return 0; if (file_size(f) != 0) return 1; fclose(f); return 0; }\n',
+        "\nint main() { FILE *f = tmpfile(); if (!f) return 0; for (int i = 0; i < 100; i++) fputc('x', f); rewind(f); if (file_size(f) != 100) return 1; fclose(f); return 0; }\n",
+        '\nint main() { FILE *f = tmpfile(); if (!f) return 0; fputs("abcdefgh", f); fseek(f, 3, SEEK_SET); if (file_size(f) != 8) return 1; if (ftell(f) != 3) return 1; fclose(f); return 0; }\n',
+        "\nint main() { FILE *f = tmpfile(); if (!f) return 0; fputc('z', f); rewind(f); if (file_size(f) != 1) return 1; fclose(f); return 0; }\n",
+    ],
+    "open_reader": [
+        '\nint main() { FILE *f = open_reader("/nonexistent_path_for_semantic_check_xyz"); if (f != NULL) return 1; return 0; }\n',
+        '\nint main() { FILE *w = fopen("sem_open_reader_a.tmp", "wb"); if (!w) return 0; fputs("data", w); fclose(w); FILE *f = open_reader("sem_open_reader_a.tmp"); if (f == NULL) return 1; fclose(f); remove("sem_open_reader_a.tmp"); return 0; }\n',
+        '\nint main() { FILE *w = fopen("sem_open_reader_b.tmp", "wb"); if (!w) return 0; fclose(w); FILE *f = open_reader("sem_open_reader_b.tmp"); if (f == NULL) return 1; fclose(f); remove("sem_open_reader_b.tmp"); return 0; }\n',
+        '\nint main() { FILE *w = fopen("sem_open_reader_c.tmp", "wb"); if (!w) return 0; fputs("xyz", w); fclose(w); FILE *f = open_reader("sem_open_reader_c.tmp"); if (f == NULL) return 1; if (fgetc(f) != \'x\') return 1; fclose(f); remove("sem_open_reader_c.tmp"); return 0; }\n',
+        '\nint main() { FILE *f = open_reader(""); if (f != NULL) return 1; return 0; }\n',
+    ],
+    "count_spaces": [
+        '\nint main() { if (count_spaces("a b c") != 2) return 1; return 0; }\n',
+        '\nint main() { if (count_spaces("") != 0) return 1; return 0; }\n',
+        '\nint main() { if (count_spaces("nospaces") != 0) return 1; return 0; }\n',
+        '\nint main() { if (count_spaces("   ") != 3) return 1; return 0; }\n',
+        '\nint main() { if (count_spaces(" lead and trail ") != 4) return 1; return 0; }\n',
+        '\nint main() { if (count_spaces("\\tno\\nspace\\tchars") != 0) return 1; return 0; }\n',
+    ],
+    "tm_year_of": [
+        '\n#include <time.h>\nint main() { struct tm t; memset(&t, 0, sizeof t); t.tm_year = 70; if (tm_year_of(&t) != 1970) return 1; return 0; }\n',
+        '\n#include <time.h>\nint main() { struct tm t; memset(&t, 0, sizeof t); t.tm_year = 0; if (tm_year_of(&t) != 1900) return 1; return 0; }\n',
+        '\n#include <time.h>\nint main() { struct tm t; memset(&t, 0, sizeof t); t.tm_year = 126; if (tm_year_of(&t) != 2026) return 1; return 0; }\n',
+        '\n#include <time.h>\nint main() { struct tm t; memset(&t, 0, sizeof t); t.tm_year = 200; if (tm_year_of(&t) != 2100) return 1; return 0; }\n',
+        '\n#include <time.h>\nint main() { struct tm t; memset(&t, 0, sizeof t); t.tm_year = -100; if (tm_year_of(&t) != 1800) return 1; return 0; }\n',
+    ],
+    "days_between": [
+        '\n#include <time.h>\nint main() { if (days_between((time_t)0, (time_t)86400) != 1) return 1; return 0; }\n',
+        '\n#include <time.h>\nint main() { if (days_between((time_t)0, (time_t)0) != 0) return 1; return 0; }\n',
+        '\n#include <time.h>\nint main() { if (days_between((time_t)0, (time_t)(86400 * 7)) != 7) return 1; return 0; }\n',
+        '\n#include <time.h>\nint main() { if (days_between((time_t)86400, (time_t)0) != -1) return 1; return 0; }\n',
+        '\n#include <time.h>\nint main() { if (days_between((time_t)0, (time_t)86399) != 0) return 1; return 0; }\n',
+    ],
+    "quotient_of": [
+        '\nint main() { if (quotient_of(17, 5) != 5) return 1; return 0; }\n',
+        '\nint main() { if (quotient_of(10, 2) != 5) return 1; return 0; }\n',
+        '\nint main() { if (quotient_of(0, 7) != 0) return 1; return 0; }\n',
+        '\nint main() { if (quotient_of(7, 10) != 7) return 1; return 0; }\n',
+        '\nint main() { if (quotient_of(-17, 5) != -5) return 1; return 0; }\n',
+        '\nint main() { if (quotient_of(1, 1) != 1) return 1; return 0; }\n',
+    ],
+    "make_range": [
+        '\nint main() { int *p = make_range(4); if (p == NULL) return 1; for (int i = 0; i < 4; i++) if (p[i] != i) return 1; free(p); return 0; }\n',
+        '\nint main() { int *p = make_range(1); if (p == NULL) return 1; if (p[0] != 0) return 1; free(p); return 0; }\n',
+        '\nint main() { int *p = make_range(100); if (p == NULL) return 1; if (p[0] != 0 || p[99] != 99) return 1; free(p); return 0; }\n',
+        '\nint main() { int *p = make_range(2); if (p == NULL) return 1; if (p[0] != 0 || p[1] != 1) return 1; free(p); return 0; }\n',
+        '\nint main() { int *p = make_range(10); if (p == NULL) return 1; int sum = 0; for (int i = 0; i < 10; i++) sum += p[i]; free(p); if (sum != 45) return 1; return 0; }\n',
+    ],
+    "copy_prefix": [
+        '\nint main() { char b[16]; copy_prefix(b, "hello world", 5); if (strcmp(b, "hello") != 0) return 1; return 0; }\n',
+        '\nint main() { char b[16]; copy_prefix(b, "abc", 0); if (b[0] != \'\\0\') return 1; return 0; }\n',
+        '\nint main() { char b[16]; copy_prefix(b, "abc", 3); if (strcmp(b, "abc") != 0) return 1; return 0; }\n',
+        '\nint main() { char b[16]; memset(b, \'Z\', sizeof b); copy_prefix(b, "ab", 2); if (b[2] != \'\\0\') return 1; return 0; }\n',
+        '\nint main() { char b[64]; copy_prefix(b, "0123456789abcdef", 16); if (strcmp(b, "0123456789abcdef") != 0) return 1; return 0; }\n',
+    ],
+    "read_line": [
+        '\nint main() { char buf[32]; FILE *f = tmpfile(); if (!f) return 0; fputs("line one\\n", f); rewind(f); char *r = read_line(f, buf, (int)sizeof buf); if (r == NULL) return 1; if (strcmp(r, "line one") != 0) return 1; fclose(f); return 0; }\n',
+        '\nint main() { char buf[32]; FILE *f = tmpfile(); if (!f) return 0; rewind(f); char *r = read_line(f, buf, (int)sizeof buf); if (r != NULL) return 1; fclose(f); return 0; }\n',
+        '\nint main() { char buf[32]; FILE *f = tmpfile(); if (!f) return 0; fputs("no newline", f); rewind(f); char *r = read_line(f, buf, (int)sizeof buf); if (r == NULL) return 1; if (strcmp(r, "no newline") != 0) return 1; fclose(f); return 0; }\n',
+        '\nint main() { char buf[32]; FILE *f = tmpfile(); if (!f) return 0; fputs("\\n", f); rewind(f); char *r = read_line(f, buf, (int)sizeof buf); if (r == NULL) return 1; if (r[0] != \'\\0\') return 1; fclose(f); return 0; }\n',
+        '\nint main() { char buf[8]; FILE *f = tmpfile(); if (!f) return 0; fputs("abcdefghij\\n", f); rewind(f); char *r = read_line(f, buf, (int)sizeof buf); if (r == NULL) return 1; if (strcmp(r, "abcdefg") != 0) return 1; fclose(f); return 0; }\n',
+    ],
+    "parse_prefix": [
+        '\nint main() { if (parse_prefix("0x2a", 16) != 42) return 1; return 0; }\n',
+        '\nint main() { if (parse_prefix("123", 10) != 123) return 1; return 0; }\n',
+        '\nint main() { if (parse_prefix("zz", 10) != -1) return 1; return 0; }\n',
+        '\nint main() { if (parse_prefix("", 10) != -1) return 1; return 0; }\n',
+        '\nint main() { if (parse_prefix("42abc", 10) != 42) return 1; return 0; }\n',
+        '\nint main() { if (parse_prefix("777", 8) != 511) return 1; return 0; }\n',
+    ],
+    "buffer_too_small": [
+        '\nint main() { if (buffer_too_small(64, 16) != (long)0x8007007A) return 1; return 0; }\n',
+        '\nint main() { if (buffer_too_small(16, 64) != 0) return 1; return 0; }\n',
+        '\nint main() { if (buffer_too_small(32, 32) != 0) return 1; return 0; }\n',
+        '\nint main() { if (buffer_too_small(1, 0) != (long)0x8007007A) return 1; return 0; }\n',
+        '\nint main() { if (buffer_too_small(0, 0) != 0) return 1; return 0; }\n',
+        '\nint main() { if (buffer_too_small(4294967295UL, 1) != (long)0x8007007A) return 1; return 0; }\n',
+    ],
+    "describe_error": [
+        '\nint main() { if (strcmp(describe_error(5), "denied") != 0) return 1; return 0; }\n',
+        '\nint main() { if (strcmp(describe_error(6), "handle") != 0) return 1; return 0; }\n',
+        '\nint main() { if (strcmp(describe_error(8), "memory") != 0) return 1; return 0; }\n',
+        '\nint main() { if (strcmp(describe_error(32), "sharing") != 0) return 1; return 0; }\n',
+        '\nint main() { if (strcmp(describe_error(0), "other") != 0) return 1; return 0; }\n',
+        '\nint main() { if (strcmp(describe_error(999999), "other") != 0) return 1; return 0; }\n',
+    ],
+}
+
+
+# Corpus functions the Linux semantic harness cannot run, with the reason.
+#
+# `verify_semantic_correctness` compiles the decompiled C with gcc and executes
+# it. A function whose behaviour *is* a Windows API call has no meaning under
+# that harness: the decompilation references an import that does not exist on
+# the host, so it fails to link no matter how correct the recovery was.
+#
+# They are still in the corpus on purpose -- they exist to measure Win32
+# constant-name recovery, an axis semantic execution does not cover. Listing
+# them here keeps that debt named rather than silent: `runner/semantic.py`
+# reports them as `no_wrapper`, which the ranking already excludes from
+# correctness.
+SEMANTIC_UNTESTABLE: dict[str, str] = {
+    "open_missing_is_not_found": "calls CreateFileA/CloseHandle/GetLastError",
+    "reserve_guarded": "calls VirtualAlloc/VirtualProtect",
+    "probe_registry_key": "calls RegOpenKeyExA/RegCloseKey",
+    "wait_for_one": "calls WaitForSingleObject",
 }

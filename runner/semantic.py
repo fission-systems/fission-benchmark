@@ -126,6 +126,43 @@ typedef union DataValue DataValue;
 #define __sborrow(a, b) (__builtin_sub_overflow(((__typeof__(a))(a)), ((__typeof__(a))(b)), &((__typeof__(a)){0})))
 
 #define __popcount(x) __builtin_popcount(x)
+
+// Win32 status/error constants, for corpus functions that traffic in them.
+// Without these the harness punishes exactly the recovery it means to measure:
+// a decompiler that names ERROR_ACCESS_DENIED emits an identifier this TU has
+// never heard of and scores compile_error, while one that leaves the raw 5
+// compiles and passes. Guarded so a decompiler emitting its own definitions
+// wins instead of colliding.
+#ifndef ERROR_SUCCESS
+#define ERROR_SUCCESS 0L
+#endif
+#ifndef ERROR_FILE_NOT_FOUND
+#define ERROR_FILE_NOT_FOUND 2L
+#endif
+#ifndef ERROR_ACCESS_DENIED
+#define ERROR_ACCESS_DENIED 5L
+#endif
+#ifndef ERROR_INVALID_HANDLE
+#define ERROR_INVALID_HANDLE 6L
+#endif
+#ifndef ERROR_NOT_ENOUGH_MEMORY
+#define ERROR_NOT_ENOUGH_MEMORY 8L
+#endif
+#ifndef ERROR_INSUFFICIENT_BUFFER
+#define ERROR_INSUFFICIENT_BUFFER 122L
+#endif
+#ifndef ERROR_SHARING_VIOLATION
+#define ERROR_SHARING_VIOLATION 32L
+#endif
+#ifndef WAIT_OBJECT_0
+#define WAIT_OBJECT_0 0x00000000L
+#endif
+#ifndef WAIT_ABANDONED
+#define WAIT_ABANDONED 0x00000080L
+#endif
+#ifndef WAIT_TIMEOUT
+#define WAIT_TIMEOUT 258L
+#endif
 """
 
 

@@ -3,7 +3,7 @@ from pathlib import Path
 from runner.corpus import Corpus
 from runner.runner import load_function_source_text
 from runner.scoring import FunctionScore, assign_consensus_ranks, extract_function_source, compute_correctness_score
-from runner.test_wrappers import TEST_WRAPPERS
+from runner.test_wrappers import SEMANTIC_UNTESTABLE, TEST_WRAPPERS
 from scripts.precompute_source_metrics import discover_source_files
 
 
@@ -91,14 +91,33 @@ def test_crypto_functions_have_semantic_wrappers() -> None:
 
 
 def test_all_corpus_functions_have_semantic_wrappers() -> None:
-    """Every locked corpus function must be oracle-testable (no silent no_wrapper debt)."""
+    """Every locked corpus function is oracle-testable, or named as one that is not.
+
+    The debt this guards against is the *silent* kind. A function the harness
+    cannot run (a Win32 API call has no meaning under gcc-on-Linux) is allowed,
+    but only by appearing in SEMANTIC_UNTESTABLE with a reason -- so the list
+    is reviewable and cannot grow by accident.
+    """
     from runner.corpus import Corpus
 
     names = {fn.name for fn in Corpus.load_all("full").functions}
     assert names, "expected non-empty corpus"
-    missing = sorted(names - set(TEST_WRAPPERS))
+
+    overlap = sorted(set(TEST_WRAPPERS) & set(SEMANTIC_UNTESTABLE))
+    assert overlap == [], f"listed both testable and untestable: {overlap}"
+
+    missing = sorted(names - set(TEST_WRAPPERS) - set(SEMANTIC_UNTESTABLE))
     assert missing == [], f"functions without wrappers: {missing}"
-    for name in names:
+
+    # An entry that no longer names a corpus function is stale; drop it rather
+    # than leave a standing excuse for a function that is gone or renamed.
+    stale = sorted(set(SEMANTIC_UNTESTABLE) - names)
+    assert stale == [], f"SEMANTIC_UNTESTABLE names non-corpus functions: {stale}"
+
+    for name, reason in SEMANTIC_UNTESTABLE.items():
+        assert reason.strip(), f"{name} needs a reason"
+
+    for name in names - set(SEMANTIC_UNTESTABLE):
         assert len(TEST_WRAPPERS[name]) >= 5, f"{name} needs ≥5 cases"
 
 
