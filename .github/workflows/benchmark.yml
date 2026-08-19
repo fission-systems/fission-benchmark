@@ -436,7 +436,18 @@ jobs:
 
       - name: Run holdout benchmark
         # Skip if validity gate failed — holdout on an invalid run wastes CI time.
-        if: steps.fission-gate.outcome == 'success'
+        #
+        # Also skipped on push. Holdout is the anti-overfitting cohort; nothing
+        # published to the dashboard comes from it, and it dominated the push
+        # run: measured on 32220288367, 3,843s of a 6,278s job (61%), against
+        # 1,152s for the dev benchmark that actually feeds the envelope. The
+        # weekly schedule and manual dispatch still run it, which is the
+        # cadence a held-out cohort wants -- re-measuring it on every push
+        # neither changes the published numbers nor guards anything, since the
+        # bundle under test is a fixed release either way.
+        if: >-
+          steps.fission-gate.outcome == 'success' &&
+          github.event_name != 'push'
         # Was 40 on push, sized for the (broken) 0-function holdout run that
         # used to fail instantly. Now that core_c_pe_holdout actually loads
         # and evaluates its 5-function/6-variant cohort across every
