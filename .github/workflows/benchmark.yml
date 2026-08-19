@@ -190,6 +190,16 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      # A push touching docker/** starts publish-images.yml in parallel, which
+      # bakes the same image *with* a buildx layer cache. The benchmark's own
+      # fallback is `docker compose build`, cold every time -- so the two race
+      # and the slower, uncached one is on the critical path. Measured on run
+      # 32220288367: `docker/oracle/**` changed, oracle was queued for local
+      # build, and "Pull or build decompiler images" took 841s.
+      #
+      # Waiting for the bake costs latency only when the image genuinely
+      # changed, and the loop already falls through to the local build if the
+      # bake never lands.
       - name: Wait for GHCR fission image (release bake)
         if: github.event_name != 'push'
         env:
@@ -237,8 +247,25 @@ jobs:
               tag="fission-benchmark-${svc}"
             fi
             if echo " ${CHANGED_SERVICES} " | grep -q " ${svc} "; then
+              # publish-images.yml is baking this same service right now, with a
+              # layer cache we do not have. Give it a window before falling back
+              # to an uncached local build of the identical Dockerfile.
+              # Pull by the commit-pinned tag, not :latest -- :latest already
+              # exists and would resolve immediately to the *previous* bake,
+              # silently benchmarking the image this push was meant to replace.
+              pinned="${IMAGE_PREFIX}-${svc}:${GITHUB_SHA}"
+              echo "==> ${svc}: changed in push — waiting for ${pinned}"
+              for attempt in $(seq 1 20); do
+                if docker pull "${pinned}" 2>/dev/null; then
+                  docker tag "${pinned}" "${tag}"
+                  echo "ok" > "/tmp/img-status/${svc}"
+                  echo "  ✓ Pulled freshly baked ${svc} (attempt ${attempt})"
+                  return 0
+                fi
+                sleep 30
+              done
               echo "build" > "/tmp/img-status/${svc}"
-              echo "==> ${svc}: changed in push — queue local build"
+              echo "==> ${svc}: bake did not land in time — local build"
               return 0
             fi
             echo "==> Trying to pull ${remote}..."
