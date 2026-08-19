@@ -13,6 +13,10 @@ results/
 
 # Corpus binaries (compiled locally)
 corpus/*/binaries/
+# Preprocessed translation units are rebuilt by the corpus builder alongside
+# the binaries -- 112 manifest entries name one, and none has ever been
+# tracked. Ignored so a local build does not offer them for commit.
+corpus/*/preprocessed/
 corpus/scale/source_cfgs/
 corpus/scale/manifests/
 corpus/scale/inventory.json
