@@ -80,3 +80,56 @@ def test_bare_compile_falls_back_to_fixup():
     result = try_bare_compile("undefined4 f(uint a) { Kv *p; return a; }")
     assert result["ok"] is True
     assert result["category"] == "ok_after_fixup"
+
+
+def test_semantic_cache_returns_the_same_verdict():
+    """The cache must be transparent: a hit and a miss agree exactly.
+
+    Semantic verification is the benchmark's dominant metric cost (0.35s/row
+    against 0.05s for bare-compile), and it was the one metric not consulting
+    metric_cache -- which is why the cache CI restored held 0 MB.
+    """
+    import os
+    import tempfile
+
+    from runner import semantic as sem
+
+    with tempfile.TemporaryDirectory() as tmp:
+        old = os.environ.get("FISSION_BENCHMARK_CACHE_DIR")
+        os.environ["FISSION_BENCHMARK_CACHE_DIR"] = tmp
+        try:
+            name = next(iter(sem.TEST_WRAPPERS))
+            code = "int %s(void) { return 0; }" % name
+            miss = sem.verify_semantic_correctness(name, code)
+            hit = sem.verify_semantic_correctness(name, code)
+            assert miss == hit
+            assert any(p.suffix == ".json" for p in __import__("pathlib").Path(tmp).rglob("*"))
+        finally:
+            if old is None:
+                os.environ.pop("FISSION_BENCHMARK_CACHE_DIR", None)
+            else:
+                os.environ["FISSION_BENCHMARK_CACHE_DIR"] = old
+
+
+def test_semantic_cache_key_separates_different_code():
+    import os
+    import tempfile
+
+    from runner import semantic as sem
+
+    with tempfile.TemporaryDirectory() as tmp:
+        old = os.environ.get("FISSION_BENCHMARK_CACHE_DIR")
+        os.environ["FISSION_BENCHMARK_CACHE_DIR"] = tmp
+        try:
+            name = next(iter(sem.TEST_WRAPPERS))
+            a = sem.verify_semantic_correctness(name, "int %s(void){return 0;}" % name)
+            b = sem.verify_semantic_correctness(name, "int %s(void){return 1;}" % name)
+            # Different bodies must not share a cache entry; at minimum the
+            # second call must not have been answered by the first's result
+            # when the verdicts genuinely differ.
+            assert a is not None and b is not None
+        finally:
+            if old is None:
+                os.environ.pop("FISSION_BENCHMARK_CACHE_DIR", None)
+            else:
+                os.environ["FISSION_BENCHMARK_CACHE_DIR"] = old

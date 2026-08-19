@@ -8,9 +8,20 @@ import subprocess
 import tempfile
 from pathlib import Path
 try:
+    from .metric_cache import load as cache_load, store as cache_store
+except ImportError:
+    from metric_cache import load as cache_load, store as cache_store
+
+try:
     from .test_wrappers import TEST_WRAPPERS
 except ImportError:  # Direct script/module execution from runner/.
     from test_wrappers import TEST_WRAPPERS
+
+# Bump when anything that can change a verdict changes: STANDARD_HEADER, the
+# translation-unit assembly, the compiler flags, or the fixup fallback reached
+# through bare_compile. The key below covers the per-call inputs; this covers
+# the harness itself, which they cannot see.
+SEMANTIC_CACHE_VERSION = "v1-stdheader-win32-consts"
 
 STANDARD_HEADER = """
 #include <stdint.h>
@@ -246,6 +257,38 @@ def verify_semantic_correctness(
     func_name: str,
     decompiled_code: str,
 ) -> tuple[float | None, str | None, str, int, int]:
+    """Cached front end for :func:`_verify_semantic_correctness_uncached`.
+
+    Verifying one function compiles a translation unit and runs it once per
+    case -- measured at 0.35s/row against 0.05s for bare-compile and ~0 for
+    GED, which makes this the benchmark's dominant metric cost. GED and
+    recompilation already consult metric_cache; this one did not, which is why
+    the cache CI restores was 0 MB of the only thing worth caching.
+
+    The verdict is a pure function of (function, code, cases), so those are the
+    whole key; `SEMANTIC_CACHE_VERSION` covers the harness they cannot see.
+    """
+    if func_name not in TEST_WRAPPERS:
+        return None, f"No test wrapper defined for function {func_name}", "no_wrapper", 0, 0
+
+    cache_key = {
+        "function": func_name,
+        "code": decompiled_code,
+        "cases": TEST_WRAPPERS[func_name],
+    }
+    cached = cache_load("semantic", SEMANTIC_CACHE_VERSION, cache_key)
+    if isinstance(cached, list) and len(cached) == 5:
+        return cached[0], cached[1], cached[2], cached[3], cached[4]
+
+    result = _verify_semantic_correctness_uncached(func_name, decompiled_code)
+    cache_store("semantic", SEMANTIC_CACHE_VERSION, cache_key, list(result))
+    return result
+
+
+def _verify_semantic_correctness_uncached(
+    func_name: str,
+    decompiled_code: str,
+) -> tuple[float | None, str | None, str, int, int]:
     """
     Verify correctness of decompiled code by running all test cases.
 
@@ -265,6 +308,7 @@ def verify_semantic_correctness(
         # "no_wrapper" means the function is untestable, not that it failed.
         # Return None semantic_score so correctness ranking can treat this separately.
         return None, f"No test wrapper defined for function {func_name}", "no_wrapper", 0, 0
+
 
     if not decompiled_code.strip():
         return 0.0, "Empty decompilation output", "compile_error", 0, 0

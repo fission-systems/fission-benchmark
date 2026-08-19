@@ -559,6 +559,10 @@ jobs:
           path: |
             .cache/benchmark-checkpoints
             .cache/metric-cache
+          # `github.run_id` keeps every run's save unique (actions/cache refuses
+          # to overwrite an existing key), while the restore above matches on
+          # the `benchmark-runtime-v1-<os>-` prefix via restore-keys. Without
+          # the suffix the second run onwards would silently skip saving.
           key: benchmark-runtime-v1-${{ runner.os }}-${{ hashFiles('runner/*.py', 'runner/**/*.py', 'corpus/**/manifests/**', 'corpus/matrix/**') }}-${{ github.run_id }}
 
       - name: Determine publish mode
