@@ -113,6 +113,37 @@ def try_bare_compile(decompiled_code: str, *, timeout_s: float = 5.0) -> dict[st
         err = (proc.stderr or proc.stdout or "").strip()
         # Collapse whitespace for storage.
         err = re.sub(r"\s+", " ", err)[:400]
+
+        # BARE_HEADER only covers what someone thought to list. When it does
+        # not, fall back to the diagnostic-driven repair, which injects exactly
+        # what gcc says is missing. Measured on the 432 committed rows: 18
+        # functions compile this way that scored 0 before, 17 of them Ghidra's
+        # (`Kv`, `Pair`, `ConfigNode`, `in_RCX` -- names the header never had),
+        # and 0 regressed. A header tuned to one decompiler's output is a
+        # measurement tilted toward it.
+        try:
+            from .fixup import compile_with_fixup  # type: ignore[import-not-found]
+        except ImportError:  # pragma: no cover - direct-script import path
+            from fixup import compile_with_fixup  # type: ignore[no-redef]
+        try:
+            fix = compile_with_fixup(decompiled_code, "bare")
+        except Exception:  # a repair failure must not lose the real diagnosis
+            fix = None
+        if fix is not None and fix.obj_path is not None:
+            try:
+                fix.obj_path.unlink()
+            except OSError:
+                pass
+            return {
+                "ok": True,
+                "category": "ok_after_fixup",
+                "error": None,
+                "compiler": "gcc",
+                "mode": "gcc -c (diagnostic-driven fixup)",
+                "fixup_iterations": fix.iterations,
+                "fixup_injected": len(fix.injected),
+            }
+
         return {
             "ok": False,
             "category": "compile_error",

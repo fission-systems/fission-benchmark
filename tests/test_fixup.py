@@ -1,0 +1,82 @@
+"""Fixup repairs the shapes a fixed header cannot enumerate.
+
+Each case here is a real failure mode, not a synthetic one: `describe_error`
+is what `corpus/dev/source/c/win32_status.c` produces when a decompiler
+recovers Win32 constant *names*, which the semantic harness scored 0 for on
+2026-08-19 while a decompiler that emitted the raw integer passed.
+"""
+from __future__ import annotations
+
+import shutil
+
+import pytest
+
+from runner.fixup import compile_with_fixup
+
+pytestmark = pytest.mark.skipif(shutil.which("gcc") is None, reason="no gcc")
+
+
+def _compiles(code: str, name: str):
+    res = compile_with_fixup(code, name)
+    ok = res.obj_path is not None
+    if res.obj_path is not None:
+        res.obj_path.unlink(missing_ok=True)
+    return ok, res
+
+
+def test_recovered_constant_names_in_case_labels_compile():
+    """A `case` label needs an integer constant, so the `long NAME;` a missing
+    global normally gets is rejected. Penalising this scores *better* recovery
+    lower, which is backwards."""
+    ok, res = _compiles(
+        """
+const char *describe_error(unsigned long code)
+{
+  switch (code) {
+  case ERROR_ACCESS_DENIED: return "denied";
+  case ERROR_INVALID_HANDLE: return "handle";
+  default: return "other";
+  }
+}
+""",
+        "describe_error",
+    )
+    assert ok, res.error
+    assert any("enum" in d for d in res.injected), res.injected
+
+
+def test_ghidra_pseudo_types_compile():
+    ok, res = _compiles(
+        "undefined4 sum3(undefined4 a, uint b, code *fn) { return a + b; }",
+        "sum3",
+    )
+    assert ok, res.error
+
+
+def test_undeclared_callee_gets_a_prototype():
+    ok, res = _compiles(
+        "int wrapper(int x) { return helper_never_declared(x) + 1; }",
+        "wrapper",
+    )
+    assert ok, res.error
+    assert any("helper_never_declared" in d for d in res.injected), res.injected
+
+
+def test_clang_diagnostics_are_understood():
+    """On macOS `gcc` is clang. Upstream only matched gcc's wording, so the
+    repair loop found nothing to inject and reported the function as
+    non-compiling -- the same silent zero this module removes."""
+    from runner.fixup import _RE_IMPLICIT_FUNC, _RE_UNDECLARED
+
+    assert _RE_IMPLICIT_FUNC.search("error: call to undeclared function 'foo'")
+    assert _RE_IMPLICIT_FUNC.search("error: implicit declaration of function 'foo'")
+    assert _RE_UNDECLARED.search("error: use of undeclared identifier 'BAR'")
+    assert _RE_UNDECLARED.search("error: 'BAR' undeclared (first use in this function)")
+
+
+def test_bare_compile_falls_back_to_fixup():
+    from runner.bare_compile import try_bare_compile
+
+    result = try_bare_compile("undefined4 f(uint a) { Kv *p; return a; }")
+    assert result["ok"] is True
+    assert result["category"] == "ok_after_fixup"

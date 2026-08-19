@@ -138,6 +138,15 @@ class RawFissionDecompiler(Decompiler):
             "--json",
             "--no-header",
             "--no-warnings",
+            # Without this, a single pathologically slow function blocks the
+            # whole `--all` batch (and every OTHER target function in the
+            # same binary) up to the full `binary_timeout_seconds`, instead
+            # of just falling out as one miss. 45s matches the real DecBench
+            # sample-set submission's own per-function budget
+            # (`run_fission.py`), so this stays realistic rather than
+            # optimistic about what a real submission would actually score.
+            "--timeout-ms",
+            "45000",
         ]
         proc = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout_s)
         stdout = (proc.stdout or "").strip()
