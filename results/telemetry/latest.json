@@ -55,16 +55,16 @@
   "provenance": {
     "corpus": "dev",
     "decompilers": "fission,ghidra",
-    "generated_at": "2026-08-19T07:24:35.296279Z",
+    "generated_at": "2026-08-19T13:05:20.637972Z",
     "github_run_attempt": "1",
-    "github_run_id": "32220288367",
-    "newest_source_at": "2026-08-19T07:24:35.220239Z",
-    "oldest_source_at": "2026-08-19T05:40:25.196392Z",
-    "runner_commit": "6a6e9e87209bcc82c4b64de23c58954751b41a7c",
+    "github_run_id": "32253508082",
+    "newest_source_at": "2026-08-19T13:05:20.547435Z",
+    "oldest_source_at": "2026-08-19T12:37:27.877224Z",
+    "runner_commit": "0b1f9ca6c7061c4d2095e3058836b7682aad1de7",
     "sources": [
       {
         "bytes": 6956,
-        "modified_at": "2026-08-19T07:24:35.219316Z",
+        "modified_at": "2026-08-19T13:05:20.546406Z",
         "path": "results/assembly_parity/latest.jsonl",
         "rows": 20,
         "sha256": "2de5822e257c66984575e2e91248892dcc2b66eed6558429cd7d3a086f56f7f0",
@@ -72,7 +72,7 @@
       },
       {
         "bytes": 11231,
-        "modified_at": "2026-08-19T07:24:35.219582Z",
+        "modified_at": "2026-08-19T13:05:20.546683Z",
         "path": "results/pcode_parity/latest.jsonl",
         "rows": 20,
         "sha256": "7c891f07a3b8fd3b07c3570daed2fd75a85439ccbf6a8d4dacf95179856bba4a",
@@ -80,7 +80,7 @@
       },
       {
         "bytes": 13363,
-        "modified_at": "2026-08-19T07:24:35.219820Z",
+        "modified_at": "2026-08-19T13:05:20.546946Z",
         "path": "results/cfg_parity/latest.jsonl",
         "rows": 20,
         "sha256": "3798cf7f49be0b1255e44a775b3d14928e32f003b2395fd739918233db924dc5",
@@ -88,7 +88,7 @@
       },
       {
         "bytes": 6572,
-        "modified_at": "2026-08-19T07:24:35.220029Z",
+        "modified_at": "2026-08-19T13:05:20.547223Z",
         "path": "results/function_discovery/latest.jsonl",
         "rows": 9,
         "sha256": "5c4f16905013e18a3b3179724df165be01bf358318b45d7aa962a93a0bcec696",
@@ -96,7 +96,7 @@
       },
       {
         "bytes": 7640,
-        "modified_at": "2026-08-19T07:24:35.220239Z",
+        "modified_at": "2026-08-19T13:05:20.547435Z",
         "path": "results/ir_invariants/latest.jsonl",
         "rows": 20,
         "sha256": "aed014fc46f42423e37b691e8ec0ddf1ce90915864f544c64a4011c2da377ad8",
@@ -104,7 +104,7 @@
       },
       {
         "bytes": 5653,
-        "modified_at": "2026-08-19T05:40:25.196392Z",
+        "modified_at": "2026-08-19T12:37:27.877224Z",
         "path": "results/golden_repros/latest.jsonl",
         "rows": 12,
         "sha256": "8f67e8a673cc2afa8295fc60899231357bea0e0476edfe5604f68340ccbd0370",
