@@ -54,6 +54,16 @@ jobs:
         with:
           fetch-depth: 2
 
+      # `docker manifest inspect` below needs a token, and an unauthenticated
+      # failure is indistinguishable from "image absent" -- which would mark
+      # every service missing and rebuild all ten on every push.
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Detect changed services
         id: detect
         run: |
@@ -68,6 +78,22 @@ jobs:
             if git diff --name-only HEAD~1 HEAD | grep -Eq '^runner/(differential_oracle|semantic)\.py$'; then
               CHANGED=$(printf '%s\noracle\n' "$CHANGED" | sed '/^$/d' | sort -u)
             fi
+            # Also bake anything the registry does not have yet. Baking only
+            # *changed* services meant a service whose docker/ dir never changed
+            # was never published at all -- and the benchmark then rebuilt it
+            # from source on every single run. Measured on run 32220288367:
+            # 7 of 10 services (angr, boomerang, radare2, retdec, revng,
+            # snowman, oracle) were compiled locally, boomerang from C++
+            # sources, inside an 841s "Pull or build decompiler images" step.
+            MISSING=""
+            for dir in docker/*/; do
+              svc="$(basename "$dir")"
+              case "$svc" in common|corpus-builder) continue ;; esac
+              if ! docker manifest inspect "${IMAGE_PREFIX}-${svc}:latest" >/dev/null 2>&1; then
+                MISSING="${MISSING}${svc}"$'\n'
+              fi
+            done
+            CHANGED=$(printf '%s\n%s' "$CHANGED" "$MISSING" | sed '/^$/d' | sort -u)
             if [ -z "$CHANGED" ]; then
               SERVICES='[]'
             else
