@@ -2,25 +2,25 @@
   "schema_version": 1,
   "passed": true,
   "threshold_pp": 10.0,
-  "dev_envelope_sha256": "6e325505f0dfacef4ca870f1f808d31a06ec21a4db31833117fec431ff0425a4",
-  "holdout_envelope_sha256": "3958707ab9583a56cc6350a725110f89f8829a5272627922377e92cea4fd38c0",
+  "dev_envelope_sha256": "2a016dcb5904a6541ab50d2729b3d8abed4f2f4f95e695eae0d5d79e66b6d159",
+  "holdout_envelope_sha256": "684ac21bafb9f3ab16ca4b53e4ec8122dd9831e05d6155b569eedbff83286829",
   "flagged_decompilers": [],
   "dev": {
     "ghidra": {
       "count": 215,
       "correctness_tested": 215,
       "semantic_tested": 215,
-      "avg_correctness": 0.7255813953488373,
-      "avg_similarity": 0.38399116279069745,
-      "avg_semantic": 0.7255813953488373
+      "avg_correctness": 0.7302325581395349,
+      "avg_similarity": 0.3839911627906975,
+      "avg_semantic": 0.7302325581395349
     },
     "fission": {
-      "count": 211,
-      "correctness_tested": 211,
-      "semantic_tested": 211,
-      "avg_correctness": 0.6854668246445497,
-      "avg_similarity": 0.15627345971563986,
-      "avg_semantic": 0.6854660347551342
+      "count": 213,
+      "correctness_tested": 213,
+      "semantic_tested": 213,
+      "avg_correctness": 0.6499896713615027,
+      "avg_similarity": 0.16369201877934278,
+      "avg_semantic": 0.649988821819808
     }
   },
   "holdout": {
@@ -36,9 +36,9 @@
       "count": 30,
       "correctness_tested": 30,
       "semantic_tested": 30,
-      "avg_correctness": 0.6722199999999999,
-      "avg_similarity": 0.1902466666666667,
-      "avg_semantic": 0.6722222222222223
+      "avg_correctness": 0.6677766666666666,
+      "avg_similarity": 0.2033266666666667,
+      "avg_semantic": 0.6677777777777778
     }
   }
 }

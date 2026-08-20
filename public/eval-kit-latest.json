@@ -1,7 +1,7 @@
 {
   "schema": "fission-eval-kit-index-v1",
-  "release_version": "v0.1.9",
-  "run_id": "3cfcd867-88f0-409a-940d-a3ecd85c5f8f",
+  "release_version": "v0.2.2",
+  "run_id": "0ece7383-c9ac-41ca-a5b8-7bc84753a6f9",
   "release_contract_id": "release-baseline-v1",
   "row_count": 432,
   "subject_count": 216,
@@ -9,10 +9,10 @@
   "binary_count": 48,
   "source_cfg_count": 216,
   "source_cfg_contract": "preprocessed-tu-v1",
-  "manifest_sha256": "a764d20b352dbfe48b8b97cf05e5f0604acef40194b9b706fb008d713fc2703d",
-  "artifact_name": "benchmark-eval-kit-31199597204",
-  "github_run_id": "31199597204",
-  "github_release_tag": "benchmark-v0.1.9",
-  "asset_name": "fission-eval-kit-v0.1.9.tar.gz",
-  "download_url": "https://github.com/fission-systems/fission-benchmark/releases/download/benchmark-v0.1.9/fission-eval-kit-v0.1.9.tar.gz"
+  "manifest_sha256": "a44bd65077e87e1545cb2cf431b067d022da5f775c5e149fe4a5a529f4e75a3e",
+  "artifact_name": "benchmark-eval-kit-32319657644",
+  "github_run_id": "32319657644",
+  "github_release_tag": "benchmark-v0.2.2",
+  "asset_name": "fission-eval-kit-v0.2.2.tar.gz",
+  "download_url": "https://github.com/fission-systems/fission-benchmark/releases/download/benchmark-v0.2.2/fission-eval-kit-v0.2.2.tar.gz"
 }
