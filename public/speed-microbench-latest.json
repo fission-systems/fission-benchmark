@@ -1,13 +1,13 @@
 {
   "schema": "speed-microbench-v2",
-  "run_id": "559dd662-8b65-493e-bccb-b00bc0ed2e7b",
-  "started_at": "2026-09-14T12:33:30.972751+00:00",
-  "finished_at": "2026-09-14T12:34:27.315673+00:00",
-  "duration_ms": 56342,
+  "run_id": "1e5f1116-4bd9-4f77-bbbf-967aa32c0d52",
+  "started_at": "2026-09-21T12:39:51.016511+00:00",
+  "finished_at": "2026-09-21T12:40:49.413412+00:00",
+  "duration_ms": 58396,
   "toolchain": {
     "fission_version": "v0.2.3",
-    "runner_commit": "5f982708789119dc8cd5cf07d430dc8890e16076",
-    "github_run_id": "34843865782"
+    "runner_commit": "60a4c4330355166fcea072037535d8378b559f40",
+    "github_run_id": "35600590466"
   },
   "config": {
     "trials": 5,
@@ -27,8 +27,8 @@
       "ghidra"
     ],
     "resource_containers": {
-      "fission": "2d112700ba9da9c145edcc4e2bead3de3a0fe6706812168db74ec34e6e1cbd9b",
-      "ghidra": "4c9ee9e29e8282f78e56ca1bb0877e5093e37c0d9030e6b52f56dede426c217e"
+      "fission": "8abea442951a5f07a751169e980148830f11d40b42f05adc97eceffdaf7397ad",
+      "ghidra": "9f8403480ab894238633e2878f1198672a9dea813833b4390b15a4cd62c52f62"
     },
     "resource_scope": "docker_container_cgroup",
     "ranking": false
@@ -44,145 +44,145 @@
         "0x1400015dc",
         "0x140001612"
       ],
-      "resource_container": "2d112700ba9da9c145edcc4e2bead3de3a0fe6706812168db74ec34e6e1cbd9b",
+      "resource_container": "8abea442951a5f07a751169e980148830f11d40b42f05adc97eceffdaf7397ad",
       "trials": [
         {
           "trial": 0,
           "phase": "cold",
           "ok": true,
-          "wall_ms": 2172.967,
-          "adapter_ms": 2164.0,
+          "wall_ms": 2108.839,
+          "adapter_ms": 2098.0,
           "error": null,
           "resources": {
             "available": true,
             "collector": "docker_stats",
             "scope": "container_cgroup",
             "samples": 8,
-            "mean_cpu_percent": 50.34,
-            "peak_cpu_percent": 100.11,
-            "mean_memory_bytes": 204367462,
-            "peak_memory_bytes": 364485018,
-            "mean_memory_percent": 1.215,
-            "peak_memory_percent": 2.17,
-            "peak_pids": 12,
-            "container": "2d112700ba9da9c145edcc4e2bead3de3a0fe6706812168db74ec34e6e1cbd9b"
+            "mean_cpu_percent": 48.255,
+            "peak_cpu_percent": 95.94,
+            "mean_memory_bytes": 228521410,
+            "peak_memory_bytes": 412300083,
+            "mean_memory_percent": 1.365,
+            "peak_memory_percent": 2.46,
+            "peak_pids": 11,
+            "container": "8abea442951a5f07a751169e980148830f11d40b42f05adc97eceffdaf7397ad"
           }
         },
         {
           "trial": 1,
           "phase": "warm",
           "ok": true,
-          "wall_ms": 1146.536,
-          "adapter_ms": 1140.0,
+          "wall_ms": 1140.669,
+          "adapter_ms": 1135.0,
           "error": null,
           "resources": {
             "available": true,
             "collector": "docker_stats",
             "scope": "container_cgroup",
             "samples": 4,
-            "mean_cpu_percent": 1.99,
-            "peak_cpu_percent": 1.99,
-            "mean_memory_bytes": 47301263,
-            "peak_memory_bytes": 47301263,
+            "mean_cpu_percent": 1.97,
+            "peak_cpu_percent": 1.97,
+            "mean_memory_bytes": 47710208,
+            "peak_memory_bytes": 47710208,
             "mean_memory_percent": 0.28,
             "peak_memory_percent": 0.28,
             "peak_pids": 7,
-            "container": "2d112700ba9da9c145edcc4e2bead3de3a0fe6706812168db74ec34e6e1cbd9b"
+            "container": "8abea442951a5f07a751169e980148830f11d40b42f05adc97eceffdaf7397ad"
           }
         },
         {
           "trial": 2,
           "phase": "warm",
           "ok": true,
-          "wall_ms": 1123.096,
-          "adapter_ms": 1117.0,
+          "wall_ms": 1162.487,
+          "adapter_ms": 1156.0,
           "error": null,
           "resources": {
             "available": true,
             "collector": "docker_stats",
             "scope": "container_cgroup",
             "samples": 4,
-            "mean_cpu_percent": 2.8,
-            "peak_cpu_percent": 2.8,
-            "mean_memory_bytes": 47563407,
-            "peak_memory_bytes": 47563407,
-            "mean_memory_percent": 0.28,
-            "peak_memory_percent": 0.28,
+            "mean_cpu_percent": 2.79,
+            "peak_cpu_percent": 2.79,
+            "mean_memory_bytes": 47825551,
+            "peak_memory_bytes": 47825551,
+            "mean_memory_percent": 0.29,
+            "peak_memory_percent": 0.29,
             "peak_pids": 7,
-            "container": "2d112700ba9da9c145edcc4e2bead3de3a0fe6706812168db74ec34e6e1cbd9b"
+            "container": "8abea442951a5f07a751169e980148830f11d40b42f05adc97eceffdaf7397ad"
           }
         },
         {
           "trial": 3,
           "phase": "warm",
           "ok": true,
-          "wall_ms": 1125.858,
-          "adapter_ms": 1120.0,
+          "wall_ms": 1115.5,
+          "adapter_ms": 1110.0,
           "error": null,
           "resources": {
             "available": true,
             "collector": "docker_stats",
             "scope": "container_cgroup",
             "samples": 4,
-            "mean_cpu_percent": 3.57,
-            "peak_cpu_percent": 3.57,
-            "mean_memory_bytes": 47710208,
-            "peak_memory_bytes": 47710208,
-            "mean_memory_percent": 0.28,
-            "peak_memory_percent": 0.28,
+            "mean_cpu_percent": 3.6,
+            "peak_cpu_percent": 3.6,
+            "mean_memory_bytes": 48098181,
+            "peak_memory_bytes": 48098181,
+            "mean_memory_percent": 0.29,
+            "peak_memory_percent": 0.29,
             "peak_pids": 7,
-            "container": "2d112700ba9da9c145edcc4e2bead3de3a0fe6706812168db74ec34e6e1cbd9b"
+            "container": "8abea442951a5f07a751169e980148830f11d40b42f05adc97eceffdaf7397ad"
           }
         },
         {
           "trial": 4,
           "phase": "warm",
           "ok": true,
-          "wall_ms": 1135.146,
-          "adapter_ms": 1129.0,
+          "wall_ms": 1132.471,
+          "adapter_ms": 1127.0,
           "error": null,
           "resources": {
             "available": true,
             "collector": "docker_stats",
             "scope": "container_cgroup",
             "samples": 4,
-            "mean_cpu_percent": 4.33,
-            "peak_cpu_percent": 4.33,
-            "mean_memory_bytes": 47699722,
-            "peak_memory_bytes": 47699722,
+            "mean_cpu_percent": 4.36,
+            "peak_cpu_percent": 4.36,
+            "mean_memory_bytes": 47437578,
+            "peak_memory_bytes": 47437578,
             "mean_memory_percent": 0.28,
             "peak_memory_percent": 0.28,
             "peak_pids": 7,
-            "container": "2d112700ba9da9c145edcc4e2bead3de3a0fe6706812168db74ec34e6e1cbd9b"
+            "container": "8abea442951a5f07a751169e980148830f11d40b42f05adc97eceffdaf7397ad"
           }
         }
       ],
       "cold": {
         "n": 1,
-        "mean_ms": 2164.0,
-        "p50_ms": 2164.0,
-        "p95_ms": 2164.0,
-        "min_ms": 2164.0,
-        "max_ms": 2164.0,
-        "sum_ms": 2164.0
+        "mean_ms": 2098.0,
+        "p50_ms": 2098.0,
+        "p95_ms": 2098.0,
+        "min_ms": 2098.0,
+        "max_ms": 2098.0,
+        "sum_ms": 2098.0
       },
       "warm": {
         "n": 4,
-        "mean_ms": 1126.5,
-        "p50_ms": 1124.5,
-        "p95_ms": 1138.35,
-        "min_ms": 1117.0,
-        "max_ms": 1140.0,
-        "sum_ms": 4506.0
+        "mean_ms": 1132.0,
+        "p50_ms": 1131.0,
+        "p95_ms": 1152.85,
+        "min_ms": 1110.0,
+        "max_ms": 1156.0,
+        "sum_ms": 4528.0
       },
       "all": {
         "n": 5,
-        "mean_ms": 1334.0,
-        "p50_ms": 1129.0,
-        "p95_ms": 1959.2,
-        "min_ms": 1117.0,
-        "max_ms": 2164.0,
-        "sum_ms": 6670.0
+        "mean_ms": 1325.2,
+        "p50_ms": 1135.0,
+        "p95_ms": 1909.6,
+        "min_ms": 1110.0,
+        "max_ms": 2098.0,
+        "sum_ms": 6626.0
       }
     },
     {
@@ -194,145 +194,145 @@
         "0x1400015dc",
         "0x140001612"
       ],
-      "resource_container": "4c9ee9e29e8282f78e56ca1bb0877e5093e37c0d9030e6b52f56dede426c217e",
+      "resource_container": "9f8403480ab894238633e2878f1198672a9dea813833b4390b15a4cd62c52f62",
       "trials": [
         {
           "trial": 0,
           "phase": "cold",
           "ok": true,
-          "wall_ms": 16965.239,
-          "adapter_ms": 16959.0,
+          "wall_ms": 18140.372,
+          "adapter_ms": 18134.0,
           "error": null,
           "resources": {
             "available": true,
             "collector": "docker_stats",
             "scope": "container_cgroup",
-            "samples": 68,
-            "mean_cpu_percent": 172.475,
-            "peak_cpu_percent": 284.94,
-            "mean_memory_bytes": 718760112,
-            "peak_memory_bytes": 1217623228,
-            "mean_memory_percent": 4.287,
-            "peak_memory_percent": 7.26,
+            "samples": 72,
+            "mean_cpu_percent": 180.941,
+            "peak_cpu_percent": 299.48,
+            "mean_memory_bytes": 696633816,
+            "peak_memory_bytes": 1319628702,
+            "mean_memory_percent": 4.156,
+            "peak_memory_percent": 7.87,
             "peak_pids": 87,
-            "container": "4c9ee9e29e8282f78e56ca1bb0877e5093e37c0d9030e6b52f56dede426c217e"
+            "container": "9f8403480ab894238633e2878f1198672a9dea813833b4390b15a4cd62c52f62"
           }
         },
         {
           "trial": 1,
           "phase": "warm",
           "ok": true,
-          "wall_ms": 5453.336,
-          "adapter_ms": 5448.0,
-          "error": null,
-          "resources": {
-            "available": true,
-            "collector": "docker_stats",
-            "scope": "container_cgroup",
-            "samples": 20,
-            "mean_cpu_percent": 163.126,
-            "peak_cpu_percent": 247.78,
-            "mean_memory_bytes": 388015063,
-            "peak_memory_bytes": 489894707,
-            "mean_memory_percent": 2.314,
-            "peak_memory_percent": 2.92,
-            "peak_pids": 63,
-            "container": "4c9ee9e29e8282f78e56ca1bb0877e5093e37c0d9030e6b52f56dede426c217e"
-          }
-        },
-        {
-          "trial": 2,
-          "phase": "warm",
-          "ok": true,
-          "wall_ms": 5497.305,
-          "adapter_ms": 5492.0,
+          "wall_ms": 5699.321,
+          "adapter_ms": 5694.0,
           "error": null,
           "resources": {
             "available": true,
             "collector": "docker_stats",
             "scope": "container_cgroup",
             "samples": 22,
-            "mean_cpu_percent": 162.019,
-            "peak_cpu_percent": 252.03,
-            "mean_memory_bytes": 400336784,
-            "peak_memory_bytes": 561931878,
-            "mean_memory_percent": 2.386,
-            "peak_memory_percent": 3.35,
+            "mean_cpu_percent": 165.855,
+            "peak_cpu_percent": 257.18,
+            "mean_memory_bytes": 406437590,
+            "peak_memory_bytes": 557947290,
+            "mean_memory_percent": 2.425,
+            "peak_memory_percent": 3.33,
+            "peak_pids": 65,
+            "container": "9f8403480ab894238633e2878f1198672a9dea813833b4390b15a4cd62c52f62"
+          }
+        },
+        {
+          "trial": 2,
+          "phase": "warm",
+          "ok": true,
+          "wall_ms": 5590.312,
+          "adapter_ms": 5585.0,
+          "error": null,
+          "resources": {
+            "available": true,
+            "collector": "docker_stats",
+            "scope": "container_cgroup",
+            "samples": 22,
+            "mean_cpu_percent": 166.826,
+            "peak_cpu_percent": 247.01,
+            "mean_memory_bytes": 406456655,
+            "peak_memory_bytes": 574305075,
+            "mean_memory_percent": 2.425,
+            "peak_memory_percent": 3.43,
             "peak_pids": 67,
-            "container": "4c9ee9e29e8282f78e56ca1bb0877e5093e37c0d9030e6b52f56dede426c217e"
+            "container": "9f8403480ab894238633e2878f1198672a9dea813833b4390b15a4cd62c52f62"
           }
         },
         {
           "trial": 3,
           "phase": "warm",
           "ok": true,
-          "wall_ms": 5340.656,
-          "adapter_ms": 5335.0,
+          "wall_ms": 5783.02,
+          "adapter_ms": 5777.0,
           "error": null,
           "resources": {
             "available": true,
             "collector": "docker_stats",
             "scope": "container_cgroup",
-            "samples": 20,
-            "mean_cpu_percent": 165.398,
-            "peak_cpu_percent": 245.73,
-            "mean_memory_bytes": 392461025,
-            "peak_memory_bytes": 491572429,
-            "mean_memory_percent": 2.338,
-            "peak_memory_percent": 2.93,
+            "samples": 22,
+            "mean_cpu_percent": 168.564,
+            "peak_cpu_percent": 252.44,
+            "mean_memory_bytes": 402977289,
+            "peak_memory_bytes": 538129203,
+            "mean_memory_percent": 2.405,
+            "peak_memory_percent": 3.21,
             "peak_pids": 66,
-            "container": "4c9ee9e29e8282f78e56ca1bb0877e5093e37c0d9030e6b52f56dede426c217e"
+            "container": "9f8403480ab894238633e2878f1198672a9dea813833b4390b15a4cd62c52f62"
           }
         },
         {
           "trial": 4,
           "phase": "warm",
           "ok": true,
-          "wall_ms": 5357.176,
-          "adapter_ms": 5352.0,
+          "wall_ms": 5493.615,
+          "adapter_ms": 5489.0,
           "error": null,
           "resources": {
             "available": true,
             "collector": "docker_stats",
             "scope": "container_cgroup",
-            "samples": 20,
-            "mean_cpu_percent": 164.958,
-            "peak_cpu_percent": 240.15,
-            "mean_memory_bytes": 390930104,
-            "peak_memory_bytes": 499541606,
-            "mean_memory_percent": 2.33,
-            "peak_memory_percent": 2.98,
-            "peak_pids": 67,
-            "container": "4c9ee9e29e8282f78e56ca1bb0877e5093e37c0d9030e6b52f56dede426c217e"
+            "samples": 22,
+            "mean_cpu_percent": 169.69,
+            "peak_cpu_percent": 247.09,
+            "mean_memory_bytes": 408992303,
+            "peak_memory_bytes": 548300390,
+            "mean_memory_percent": 2.439,
+            "peak_memory_percent": 3.27,
+            "peak_pids": 68,
+            "container": "9f8403480ab894238633e2878f1198672a9dea813833b4390b15a4cd62c52f62"
           }
         }
       ],
       "cold": {
         "n": 1,
-        "mean_ms": 16959.0,
-        "p50_ms": 16959.0,
-        "p95_ms": 16959.0,
-        "min_ms": 16959.0,
-        "max_ms": 16959.0,
-        "sum_ms": 16959.0
+        "mean_ms": 18134.0,
+        "p50_ms": 18134.0,
+        "p95_ms": 18134.0,
+        "min_ms": 18134.0,
+        "max_ms": 18134.0,
+        "sum_ms": 18134.0
       },
       "warm": {
         "n": 4,
-        "mean_ms": 5406.75,
-        "p50_ms": 5400.0,
-        "p95_ms": 5485.4,
-        "min_ms": 5335.0,
-        "max_ms": 5492.0,
-        "sum_ms": 21627.0
+        "mean_ms": 5636.25,
+        "p50_ms": 5639.5,
+        "p95_ms": 5764.55,
+        "min_ms": 5489.0,
+        "max_ms": 5777.0,
+        "sum_ms": 22545.0
       },
       "all": {
         "n": 5,
-        "mean_ms": 7717.2,
-        "p50_ms": 5448.0,
-        "p95_ms": 14665.6,
-        "min_ms": 5335.0,
-        "max_ms": 16959.0,
-        "sum_ms": 38586.0
+        "mean_ms": 8135.8,
+        "p50_ms": 5694.0,
+        "p95_ms": 15662.6,
+        "min_ms": 5489.0,
+        "max_ms": 18134.0,
+        "sum_ms": 40679.0
       }
     }
   ],
@@ -340,30 +340,30 @@
     "fission": {
       "cold": {
         "n": 1,
-        "mean_ms": 2164.0,
-        "p50_ms": 2164.0,
-        "p95_ms": 2164.0,
-        "min_ms": 2164.0,
-        "max_ms": 2164.0,
-        "sum_ms": 2164.0
+        "mean_ms": 2098.0,
+        "p50_ms": 2098.0,
+        "p95_ms": 2098.0,
+        "min_ms": 2098.0,
+        "max_ms": 2098.0,
+        "sum_ms": 2098.0
       },
       "warm": {
         "n": 4,
-        "mean_ms": 1126.5,
-        "p50_ms": 1124.5,
-        "p95_ms": 1138.35,
-        "min_ms": 1117.0,
-        "max_ms": 1140.0,
-        "sum_ms": 4506.0
+        "mean_ms": 1132.0,
+        "p50_ms": 1131.0,
+        "p95_ms": 1152.85,
+        "min_ms": 1110.0,
+        "max_ms": 1156.0,
+        "sum_ms": 4528.0
       },
       "all": {
         "n": 5,
-        "mean_ms": 1334.0,
-        "p50_ms": 1129.0,
-        "p95_ms": 1959.2,
-        "min_ms": 1117.0,
-        "max_ms": 2164.0,
-        "sum_ms": 6670.0
+        "mean_ms": 1325.2,
+        "p50_ms": 1135.0,
+        "p95_ms": 1909.6,
+        "min_ms": 1110.0,
+        "max_ms": 2098.0,
+        "sum_ms": 6626.0
       },
       "resources": {
         "collector": "docker_stats",
@@ -371,89 +371,89 @@
         "cold": {
           "n_trials": 1,
           "samples": 8,
-          "mean_cpu_percent": 50.34,
-          "peak_cpu_percent": 100.11,
-          "mean_peak_memory_bytes": 364485018,
-          "peak_memory_bytes": 364485018,
-          "peak_memory_percent": 2.17
+          "mean_cpu_percent": 48.255,
+          "peak_cpu_percent": 95.94,
+          "mean_peak_memory_bytes": 412300083,
+          "peak_memory_bytes": 412300083,
+          "peak_memory_percent": 2.46
         },
         "warm": {
           "n_trials": 4,
           "samples": 16,
-          "mean_cpu_percent": 3.172,
-          "peak_cpu_percent": 4.33,
-          "mean_peak_memory_bytes": 47568650,
-          "peak_memory_bytes": 47710208,
-          "peak_memory_percent": 0.28
+          "mean_cpu_percent": 3.18,
+          "peak_cpu_percent": 4.36,
+          "mean_peak_memory_bytes": 47767880,
+          "peak_memory_bytes": 48098181,
+          "peak_memory_percent": 0.29
         },
         "all": {
           "n_trials": 5,
           "samples": 24,
-          "mean_cpu_percent": 12.606,
-          "peak_cpu_percent": 100.11,
-          "mean_peak_memory_bytes": 110951924,
-          "peak_memory_bytes": 364485018,
-          "peak_memory_percent": 2.17
+          "mean_cpu_percent": 12.195,
+          "peak_cpu_percent": 95.94,
+          "mean_peak_memory_bytes": 120674320,
+          "peak_memory_bytes": 412300083,
+          "peak_memory_percent": 2.46
         }
       }
     },
     "ghidra": {
       "cold": {
         "n": 1,
-        "mean_ms": 16959.0,
-        "p50_ms": 16959.0,
-        "p95_ms": 16959.0,
-        "min_ms": 16959.0,
-        "max_ms": 16959.0,
-        "sum_ms": 16959.0
+        "mean_ms": 18134.0,
+        "p50_ms": 18134.0,
+        "p95_ms": 18134.0,
+        "min_ms": 18134.0,
+        "max_ms": 18134.0,
+        "sum_ms": 18134.0
       },
       "warm": {
         "n": 4,
-        "mean_ms": 5406.75,
-        "p50_ms": 5400.0,
-        "p95_ms": 5485.4,
-        "min_ms": 5335.0,
-        "max_ms": 5492.0,
-        "sum_ms": 21627.0
+        "mean_ms": 5636.25,
+        "p50_ms": 5639.5,
+        "p95_ms": 5764.55,
+        "min_ms": 5489.0,
+        "max_ms": 5777.0,
+        "sum_ms": 22545.0
       },
       "all": {
         "n": 5,
-        "mean_ms": 7717.2,
-        "p50_ms": 5448.0,
-        "p95_ms": 14665.6,
-        "min_ms": 5335.0,
-        "max_ms": 16959.0,
-        "sum_ms": 38586.0
+        "mean_ms": 8135.8,
+        "p50_ms": 5694.0,
+        "p95_ms": 15662.6,
+        "min_ms": 5489.0,
+        "max_ms": 18134.0,
+        "sum_ms": 40679.0
       },
       "resources": {
         "collector": "docker_stats",
         "scope": "container_cgroup",
         "cold": {
           "n_trials": 1,
-          "samples": 68,
-          "mean_cpu_percent": 172.475,
-          "peak_cpu_percent": 284.94,
-          "mean_peak_memory_bytes": 1217623228,
-          "peak_memory_bytes": 1217623228,
-          "peak_memory_percent": 7.26
+          "samples": 72,
+          "mean_cpu_percent": 180.941,
+          "peak_cpu_percent": 299.48,
+          "mean_peak_memory_bytes": 1319628702,
+          "peak_memory_bytes": 1319628702,
+          "peak_memory_percent": 7.87
         },
         "warm": {
           "n_trials": 4,
-          "samples": 82,
-          "mean_cpu_percent": 163.875,
-          "peak_cpu_percent": 252.03,
-          "mean_peak_memory_bytes": 510735155,
-          "peak_memory_bytes": 561931878,
-          "peak_memory_percent": 3.35
+          "samples": 88,
+          "mean_cpu_percent": 167.734,
+          "peak_cpu_percent": 257.18,
+          "mean_peak_memory_bytes": 554670490,
+          "peak_memory_bytes": 574305075,
+          "peak_memory_percent": 3.43
         },
         "all": {
           "n_trials": 5,
-          "samples": 150,
-          "mean_cpu_percent": 165.595,
-          "peak_cpu_percent": 284.94,
-          "mean_peak_memory_bytes": 652112770,
-          "peak_memory_bytes": 1217623228,
-          "peak_memory_percent": 7.26
+          "samples": 160,
+          "mean_cpu_percent": 170.375,
+          "peak_cpu_percent": 299.48,
+          "mean_peak_memory_bytes": 707662132,
+          "peak_memory_bytes": 1319628702,
+          "peak_memory_percent": 7.87
         }
       }
     }
