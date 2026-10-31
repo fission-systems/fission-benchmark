@@ -1,52 +1,18 @@
-# Python
 __pycache__/
 *.pyc
-*.pyo
-.venv/
-venv/
-dist/
+.venv*/
 *.egg-info/
-
-# Results (generated, not committed)
-results/
-!results/.gitkeep
-
-# Corpus binaries (compiled locally)
-corpus/*/binaries/
-# Preprocessed translation units are rebuilt by the corpus builder alongside
-# the binaries -- 112 manifest entries name one, and none has ever been
-# tracked. Ignored so a local build does not offer them for commit.
-corpus/*/preprocessed/
-corpus/scale/source_cfgs/
-corpus/scale/manifests/
-corpus/scale/inventory.json
-
-# Docker build cache
-.docker/
-
-# Resumable benchmark checkpoints and metric content cache
-.cache/
-
-# OS
 .DS_Store
-
-# Local environment config
 .env
 .env.local
-
-# Local current-build Fission bundle (prepare_local_fission.sh)
+.cache/
 .local/
+.legacy-backup/
 
-# Vercel
-.vercel/
-.vercel
+# Local inputs/outputs: only docs/ is published
+decbench-data*/
+decbench-harness/
+runs/
 
-# Next.js
-.next/
-out/
-node_modules/
-next-env.d.ts
-vendor/
-
-# Joern/pyjoern's own scratch working directory (runner/ged.py)
+# pyjoern scratch
 workspace/

@@ -1,3 +1,0 @@
-# Holdout corpus (20% of functions)
-# Populated by: python runner/corpus.py split --input corpus/dev/manifests/c_small.json
-# WARNING: Do not inspect or tune against these functions during development.

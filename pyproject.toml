@@ -1,48 +1,10 @@
 [project]
 name = "fission-benchmark"
-version = "0.1.2"
-description = "Multi-decompiler comparison benchmark: Fission vs Ghidra, Boomerang, Radare2, and others"
+version = "1.0.0"
+description = "Local, DecBench-style benchmark for the Fission decompiler"
 requires-python = ">=3.11"
 dependencies = [
-    "httpx>=0.27",
-    "fastapi>=0.111",
-    "uvicorn[standard]>=0.30",
-    "jinja2>=3.1",
-    "jsonschema>=4.23",
-    "pycparser>=2.22",
-    "requests>=2.32",
-    "rich>=13.0",
-    "typer>=0.12",
-    "pyyaml>=6.0",
-    "zss>=1.2",
-    "pyelftools>=0.31",
-    "capstone>=5.0",
-    "lief>=0.15",
-    # GED metric (runner/ged.py). NOTE: first import of pyjoern downloads
-    # ~1.8GB of Joern (JVM) binaries into pyjoern's own site-packages
-    # directory -- not a separate user cache dir, and not something `pip
-    # install` itself fetches. This is a deliberate, known infra cost
-    # (chosen over a lighter pycparser-based CFG extractor) -- see
-    # runner/ged.py's module docstring.
-    "pyjoern>=4.0",
-    "cfgutils>=1.16",
-]
-
-[project.optional-dependencies]
-# Keep local and CI lint semantics identical. Ruff 0.16 expands the default
-# rule set and turns hundreds of pre-existing style findings into hard errors;
-# upgrading it requires a separate, intentional repository-wide cleanup.
-dev = ["pytest>=8.0", "ruff==0.15.19"]
-# `scripts/decbench_local_eval.py`: runs DecBench's own real GED/type_match/
-# byte_match metric code against Fission (and optionally Ghidra/angr), as an
-# independent cross-check of this repo's own `runner/ged.py` reimplementation.
-# Not on PyPI -- MIT-licensed source at https://github.com/Noelo-Lab/decbench,
-# pinned to a commit so this stays reproducible against a moving upstream.
-# Install into a SEPARATE venv from this project's own (pulls in pyjoern's
-# ~1.8GB one-time Joern download again, angr/pyghidra if you also want those
-# comparison decompilers, and its own dependency set that may not agree with
-# fission-benchmark's own pins): `pip install -e ".[decbench-eval]"`.
-decbench-eval = [
+    # Not on PyPI. Provides the real GED / type_match / byte_match metrics.
     "decbench @ git+https://github.com/Noelo-Lab/decbench.git@325046fd48c7c5338f140e6de4daaf72f9991884",
 ]
 
@@ -50,16 +12,11 @@ decbench-eval = [
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
-# The `decbench-eval` extra pins DecBench by git URL because it is not on PyPI.
-# Hatchling rejects a direct reference anywhere in the metadata unless this is
-# set -- and it validates every optional-dependency group when it generates
-# metadata, so `pip install -e ".[dev]"` fails too even though it never touches
-# that extra. That is what broke every CI job from 3ee5530 (2026-08-08) on.
 [tool.hatch.metadata]
 allow-direct-references = true
 
 [tool.hatch.build.targets.wheel]
-packages = ["benchmark", "runner"]
+packages = ["fbench"]
 
-[tool.ruff]
-line-length = 100
+[project.scripts]
+fbench = "fbench.cli:main"
