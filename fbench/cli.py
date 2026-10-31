@@ -18,6 +18,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from .score import METRICS, PERFECT, Job, find_fission_cli, fission_version, score_binary
+from .provenance import environment, make_manifest, result_matches
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA_DEFAULT = ROOT / "decbench-data"
@@ -68,6 +69,40 @@ def cmd_list(args) -> int:
     return 0
 
 
+def cmd_audit(args) -> int:
+    """Inventory every selected binary, including ones without source CFGs."""
+    base = Path(args.data) / "binaries"
+    if not base.is_dir():
+        print(f"dataset binaries directory not found: {base}", file=sys.stderr)
+        return 2
+    rows = []
+    for opt in sorted(p for p in base.iterdir() if p.is_dir()):
+        if args.opt and opt.name not in args.opt:
+            continue
+        for project in sorted(p for p in opt.iterdir() if p.is_dir()):
+            if args.project and project.name not in args.project:
+                continue
+            for binary in sorted(p for p in project.iterdir() if p.is_file()):
+                key = f"{opt.name}/{project.name}/{binary.name}"
+                if args.match and args.match not in key:
+                    continue
+                cfg_root = Path(args.data) / "pipeline_data" / "source_cfgs" / opt.name / project.name
+                exact = cfg_root / f"{binary.name}.json"
+                stem = cfg_root / f"{binary.stem}.json"
+                cfg = exact if exact.is_file() else stem if stem.is_file() else None
+                rows.append({"opt": opt.name, "project": project.name, "binary": binary.name,
+                             "source_cfg": str(cfg) if cfg else None,
+                             "match": "exact" if cfg == exact else "stem" if cfg else "missing"})
+    if args.limit:
+        step = max(1, len(rows) // args.limit)
+        rows = rows[::step][:args.limit]
+    counts = {status: sum(row["match"] == status for row in rows)
+              for status in ("exact", "stem", "missing")}
+    print(json.dumps({"schema": 1, "data_root": str(Path(args.data).resolve()),
+                      "counts": counts, "binaries": rows}, indent=2))
+    return 0
+
+
 def cmd_run(args) -> int:
     cli = find_fission_cli(args.fission_cli)
     if not cli:
@@ -77,28 +112,63 @@ def cmd_run(args) -> int:
     if unknown:
         print(f"unknown metric(s): {unknown}; choose from {METRICS}", file=sys.stderr)
         return 2
-    results = Path(args.results)
-    run_dir = results / "binaries"
+    if args.jobs < 1 or args.binary_timeout < 1 or (args.limit is not None and args.limit < 1):
+        print("jobs, binary timeout and limit must be positive", file=sys.stderr)
+        return 2
     items = _select(args)
+    if not items:
+        print("no matching dataset binaries", file=sys.stderr)
+        return 2
+    try:
+        env = environment(cli, args.layer, args.metrics, args.binary_timeout)
+        env["fission"]["version"] = fission_version(cli)
+        manifest = make_manifest(items, env)
+    except (OSError, RuntimeError) as exc:
+        print(f"cannot identify run inputs: {exc}", file=sys.stderr)
+        return 2
+    results = Path(args.results)
+    run_root = results / "runs" / manifest["run_id"]
+    run_dir = run_root / "binaries"
+    run_root.mkdir(parents=True, exist_ok=True)
+    manifest_path = run_root / "manifest.json"
+    if manifest_path.exists():
+        try:
+            if json.loads(manifest_path.read_text()) != manifest:
+                raise ValueError("manifest does not match its run identity")
+        except (OSError, ValueError) as exc:
+            print(f"invalid run manifest: {exc}", file=sys.stderr)
+            return 2
+    else:
+        tmp = manifest_path.with_suffix(".tmp")
+        tmp.write_text(json.dumps(manifest, indent=2))
+        tmp.replace(manifest_path)
+    latest = results / "latest.json"
+    latest_tmp = latest.with_suffix(".tmp")
+    latest_tmp.write_text(json.dumps({"run_id": manifest["run_id"]}))
+    latest_tmp.replace(latest)
     jobs = []
-    for opt, proj, name, path, cfg in items:
+    for (opt, proj, name, path, cfg), entry in zip(items, manifest["inputs"], strict=True):
         out = run_dir / opt / proj / f"{name}.{args.layer}.json"
         if out.exists() and not args.force:
-            continue
+            try:
+                if result_matches(json.loads(out.read_text()), manifest, entry):
+                    continue
+            except (OSError, ValueError):
+                pass
         jobs.append(Job(opt, proj, name, str(path), str(cfg), str(out), cli,
-                        layer=args.layer, metrics=tuple(args.metrics),
-                        binary_timeout_s=args.binary_timeout))
+                        layer=args.layer, metrics=tuple(env["metrics"]),
+                        binary_timeout_s=args.binary_timeout, run_id=manifest["run_id"],
+                        binary_sha256=entry["binary_sha256"], cfg_sha256=entry["cfg_sha256"],
+                        cli_sha256=env["fission"]["sha256"]))
     print(f"fission {fission_version(cli)} ({args.layer}) | {len(items)} selected, "
           f"{len(items) - len(jobs)} already scored, {len(jobs)} to run, -j {args.jobs}", flush=True)
     if not jobs:
         return 0
-    meta = {"fission_cli": cli, "fission_version": fission_version(cli), "layer": args.layer,
-            "started": datetime.now(timezone.utc).isoformat()}
-    results.mkdir(parents=True, exist_ok=True)
-    (results / f"run-meta.{args.layer}.json").write_text(json.dumps(meta, indent=2))
+    print(f"run {manifest['run_id']}", flush=True)
 
     t0 = time.time()
     done = 0
+    failures = 0
     with ProcessPoolExecutor(max_workers=args.jobs) as pool:
         futs = {pool.submit(score_binary, j): j for j in jobs}
         for fut in as_completed(futs):
@@ -109,11 +179,14 @@ def cmd_run(args) -> int:
                 note = f"{r['status']:9s} {r['produced']}/{r['targets']} fns {r['seconds']}s"
                 if r.get("error"):
                     note += f"  ! {r['error'][:80]}"
+                if r['status'] != 'ok':
+                    failures += 1
             except Exception as exc:  # worker crash (OOM etc.)
                 note = f"crashed   {type(exc).__name__}: {exc}"
+                failures += 1
             print(f"[{done}/{len(jobs)}] {j.key}  {note}", flush=True)
     print(f"done in {time.time() - t0:.0f}s. Next: python -m fbench report", flush=True)
-    return 0
+    return 1 if failures else 0
 
 
 # ---------------------------------------------------------------- report
@@ -166,13 +239,31 @@ def _finish(agg: dict) -> dict:
 
 def cmd_report(args) -> int:
     results = Path(args.results)
-    files = sorted((results / "binaries").rglob(f"*.{args.layer}.json"))
-    if not files:
-        print(f"no results under {results / 'binaries'}; run `python -m fbench run` first", file=sys.stderr)
-        return 1
+    try:
+        run_id = args.run_id or json.loads((results / "latest.json").read_text())["run_id"]
+        if not isinstance(run_id, str) or len(run_id) != 64 or any(c not in "0123456789abcdef" for c in run_id):
+            raise ValueError("invalid run ID")
+        run_root = results / "runs" / run_id
+        manifest = json.loads((run_root / "manifest.json").read_text())
+        from .provenance import canonical_hash
+        if manifest.get("run_id") != run_id or canonical_hash({k: v for k, v in manifest.items() if k != "run_id"}) != run_id:
+            raise ValueError("manifest identity mismatch")
+        if manifest["environment"]["layer"] != args.layer:
+            raise ValueError("requested layer does not match manifest")
+        records = []
+        for item in manifest["inputs"]:
+            path = run_root / "binaries" / item["opt"] / item["project"] / f"{item['binary']}.{args.layer}.json"
+            rec = json.loads(path.read_text())
+            if not result_matches(rec, manifest, item, success=False):
+                raise ValueError(f"result provenance mismatch: {path}")
+            if rec.get("status") not in ("ok", "no_output", "no_targets") and not rec.get("targets"):
+                raise ValueError(f"target population unavailable: {path}")
+            records.append(rec)
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        print(f"cannot report incomplete or invalid run: {exc}", file=sys.stderr)
+        return 2
     total, by_opt, by_proj, bins = _blank(), defaultdict(_blank), defaultdict(_blank), []
-    for f in files:
-        rec = json.loads(f.read_text())
+    for rec in records:
         _add(total, rec)
         _add(by_opt[rec["opt"]], rec)
         _add(by_proj[(rec["opt"], rec["project"])], rec)
@@ -182,12 +273,13 @@ def cmd_report(args) -> int:
         row.update(opt=rec["opt"], project=rec["project"], binary=rec["binary"],
                    status=rec["status"], seconds=rec.get("seconds"), error=rec.get("error"))
         bins.append(row)
-    meta_path = results / f"run-meta.{args.layer}.json"
-    meta = json.loads(meta_path.read_text()) if meta_path.exists() else {}
+    if not any(total[m]["scored"] for m in manifest["environment"]["metrics"]):
+        print("cannot report: no selected metric has any scores", file=sys.stderr)
+        return 2
     summary = {
         "generated": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-        "decompiler": "fission", "version": meta.get("fission_version"), "layer": args.layer,
-        "metrics": list(METRICS),
+        "decompiler": "fission", "version": manifest["environment"]["fission"]["version"], "layer": args.layer,
+        "run_id": run_id, "metrics": manifest["environment"]["metrics"],
         "total": _finish(total),
         "by_opt": {k: _finish(v) for k, v in sorted(by_opt.items())},
         "by_project": [dict(opt=o, project=p, **_finish(v)) for (o, p), v in sorted(by_proj.items())],
@@ -227,9 +319,15 @@ def main(argv: list[str] | None = None) -> int:
         sp.add_argument("--match", help="substring of opt/project/binary")
         sp.add_argument("--limit", type=int, help="evenly sample N binaries")
 
-    sp = sub.add_parser("list", help="show selectable binaries"); selection(sp); sp.set_defaults(fn=cmd_list)
+    sp = sub.add_parser("list", help="show selectable binaries")
+    selection(sp)
+    sp.set_defaults(fn=cmd_list)
+    sp = sub.add_parser("audit", help="inventory binaries, including missing source CFGs")
+    selection(sp)
+    sp.set_defaults(fn=cmd_audit)
 
-    sp = sub.add_parser("run", help="decompile + score binaries locally"); selection(sp)
+    sp = sub.add_parser("run", help="decompile + score binaries locally")
+    selection(sp)
     sp.add_argument("-j", "--jobs", type=int, default=max(1, (os.cpu_count() or 2) // 2))
     sp.add_argument("--layer", default="nir", choices=["nir", "hir"])
     sp.add_argument("--metrics", nargs="+", default=list(METRICS))
@@ -242,9 +340,11 @@ def main(argv: list[str] | None = None) -> int:
     sp = sub.add_parser("report", help="aggregate results into docs/data for GitHub Pages")
     sp.add_argument("--layer", default="nir", choices=["nir", "hir"])
     sp.add_argument("--results", default=str(RESULTS_DEFAULT))
+    sp.add_argument("--run-id", help="report one manifest-identified run (default: latest)")
     sp.set_defaults(fn=cmd_report)
 
-    sp = sub.add_parser("serve", help="preview docs/ locally"); sp.add_argument("--port", type=int, default=8000)
+    sp = sub.add_parser("serve", help="preview docs/ locally")
+    sp.add_argument("--port", type=int, default=8000)
     sp.set_defaults(fn=cmd_serve)
 
     args = p.parse_args(argv)

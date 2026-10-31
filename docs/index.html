@@ -51,6 +51,7 @@
     Scores come from <a href="https://github.com/Noelo-Lab/decbench">DecBench</a>'s metrics, run locally on the published DecBench binaries
     against a <em>stripped</em> copy. Rates are over all target functions: a function Fission fails to produce counts as a miss.
     "n/a" means the metric abstained (e.g. no recompile toolchain on the machine that ran the benchmark).
+    Union counts perfect results among the selected metrics; absent or unscored metrics cannot contribute.
     Reproduce with <code>python -m fbench run</code>.
   </footer>
 </main>
@@ -91,7 +92,7 @@ fetch('data/summary.json').then(r => r.json()).then(s => {
   const card = (k, v, n) => `<div class="card"><div class="k">${k}</div><div class="v">${v}</div><div class="n">${n}</div></div>`;
   const p = v => v == null ? 'n/a' : v.toFixed(1) + '%';
   document.getElementById('cards').innerHTML =
-    card('Union', p(t.union), 'perfect on ≥1 metric') +
+    card('Union', p(t.union), `perfect on ≥1 selected metric (${s.metrics.join(', ')})`) +
     card('Structure (GED = 0)', p(t.ged.perfect_pct), `${t.ged.perfect.toLocaleString()} functions`) +
     card('Types (100%)', p(t.type_match.perfect_pct), `${t.type_match.perfect.toLocaleString()} functions`) +
     card('Byte match', p(t.byte_match.perfect_pct), `${t.byte_match.perfect.toLocaleString()} functions`) +

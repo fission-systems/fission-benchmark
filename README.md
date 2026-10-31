@@ -31,15 +31,33 @@ for x86-64 ELF); without one that metric abstains and shows as `n/a`.
 
 ```sh
 python -m fbench list --opt O0                      # what can be run
-python -m fbench run -j 4                           # all binaries, resumable (runs/binaries/...)
+python -m fbench audit --opt O0 > inventory.json    # include binaries missing source CFGs
+python -m fbench run -j 4                           # all binaries, resumable (runs/runs/<id>/...)
 python -m fbench run --opt O2 --project zlib        # a slice
 python -m fbench run --limit 50 --layer hir         # evenly sampled, HIR print surface
 python -m fbench report                             # -> docs/data/summary.json
 python -m fbench serve                              # preview docs/ at http://localhost:8000
 ```
 
-Already-scored binaries are skipped; use `--force` to redo them. Use `DECBENCH_DATA`
-or `--data` to point at the dataset elsewhere.
+Each run gets a content-derived ID and manifest with the selected binaries and
+source-CFG hashes, Fission executable hash, evaluation settings, Python package
+versions, DecBench and runner Python-source hashes, and compiler/tool hashes.
+Only matching successful results are resumed; failed or damaged records are
+retried. Changing the selected inputs, metrics, executable or recorded
+environment creates a separate run. `--force` redoes matching results. Reports
+use the latest run unless `--run-id` is specified, and reject missing or
+foreign records. Old `runs/binaries/` records are preserved but cannot be
+automatically reused: they do not contain sufficient provenance.
+The audit command records exact matches, stem-based fallbacks and missing
+source CFGs; it inventories paths, but does not prove source identity or parse
+the CFG contents. `list` and `run` still select only binaries with a CFG.
+
+Use `DECBENCH_DATA` or `--data` to point at the dataset elsewhere. A manifest
+does not yet hash Fission's resource bundle, all native dependencies, or the
+Joern installation; it records a reproducibility boundary, not a guarantee of
+bit-for-bit replay across machines. The legacy name-based target selection can
+also collapse same-named functions and is not yet qualified for C++ overloads.
+Do not use its output as a C++ ranking.
 
 ## Publish (GitHub Pages)
 

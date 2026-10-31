@@ -28,6 +28,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from .provenance import file_hash
+
 METRICS = ("ged", "type_match", "byte_match")
 # A function is "perfect" on a metric when it reaches this value.
 PERFECT = {"ged": 0.0, "type_match": 1.0, "byte_match": 1.0}
@@ -49,6 +51,10 @@ class Job:
     metrics: tuple[str, ...] = METRICS
     binary_timeout_s: int = 3600
     function_timeout_ms: int = 45000
+    run_id: str = ""
+    binary_sha256: str = ""
+    cfg_sha256: str = ""
+    cli_sha256: str = ""
 
     @property
     def key(self) -> str:
@@ -81,9 +87,12 @@ def symbol_table(binary: Path) -> dict[int, str]:
     nm = shutil.which("llvm-nm") or shutil.which("nm")
     if not nm:
         raise RuntimeError("llvm-nm/nm not found")
-    out = subprocess.run(
+    proc = subprocess.run(
         [nm, "--defined-only", str(binary)], capture_output=True, text=True
-    ).stdout
+    )
+    if proc.returncode:
+        raise RuntimeError(f"symbol extraction failed: {proc.stderr.strip()[:200]}")
+    out = proc.stdout
     table: dict[int, str] = {}
     for line in out.splitlines():
         parts = line.split()
@@ -143,8 +152,14 @@ def score_binary(job: Job) -> dict[str, Any]:
         "schema": SCHEMA_VERSION, "opt": job.opt, "project": job.project,
         "binary": job.binary, "layer": job.layer, "status": "ok", "error": None,
         "targets": 0, "produced": 0, "functions": {},
+        "provenance": {"run_id": job.run_id, "binary_sha256": job.binary_sha256,
+                       "cfg_sha256": job.cfg_sha256},
     }
     try:
+        for path, expected in ((job.path, job.binary_sha256), (job.cfg_path, job.cfg_sha256),
+                               (job.fission_cli, job.cli_sha256)):
+            if not expected or file_hash(Path(path)) != expected:
+                raise RuntimeError(f"input changed after run manifest was created: {path}")
         _score(job, result)
     except subprocess.TimeoutExpired:
         result.update(status="timeout", error=f"fission timed out after {job.binary_timeout_s}s")
