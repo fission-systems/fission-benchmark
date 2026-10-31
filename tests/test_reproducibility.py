@@ -10,7 +10,7 @@ from unittest.mock import patch
 
 from fbench import cli
 from fbench.provenance import file_hash, make_manifest
-from fbench.score import Job, score_binary
+from fbench.score import Job, score_binary, target_addresses
 
 
 class InlineExecutor:
@@ -85,6 +85,13 @@ class RunIdentityTests(unittest.TestCase):
         worker.assert_not_called()
         self.assertEqual(result['status'], 'error')
         self.assertIn('input changed', result['error'])
+
+    def test_ambiguous_function_identity_fails_closed(self):
+        self.assertEqual(target_addresses({1: {'f', 'unrelated'}}, {'f'}), {1: 'f'})
+        with self.assertRaisesRegex(ValueError, 'multiple addresses'):
+            target_addresses({1: {'f'}, 2: {'f'}}, {'f'})
+        with self.assertRaisesRegex(ValueError, 'share address'):
+            target_addresses({1: {'f', 'g'}}, {'f', 'g'})
 
     def test_resume_isolated_and_failed_rows_retried(self):
         calls = []

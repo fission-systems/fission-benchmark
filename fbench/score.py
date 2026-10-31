@@ -82,8 +82,8 @@ def fission_version(cli: str) -> str:
         return "unknown"
 
 
-def symbol_table(binary: Path) -> dict[int, str]:
-    """``{address: name}`` for defined text symbols of the *original* binary."""
+def symbol_table(binary: Path) -> dict[int, set[str]]:
+    """Preserve every defined text symbol, including address aliases."""
     nm = shutil.which("llvm-nm") or shutil.which("nm")
     if not nm:
         raise RuntimeError("llvm-nm/nm not found")
@@ -93,15 +93,32 @@ def symbol_table(binary: Path) -> dict[int, str]:
     if proc.returncode:
         raise RuntimeError(f"symbol extraction failed: {proc.stderr.strip()[:200]}")
     out = proc.stdout
-    table: dict[int, str] = {}
+    table: dict[int, set[str]] = {}
     for line in out.splitlines():
         parts = line.split()
         if len(parts) >= 3 and parts[1] in ("t", "T"):
             try:
-                table.setdefault(int(parts[0], 16), parts[2])
+                table.setdefault(int(parts[0], 16), set()).add(parts[2])
             except ValueError:
                 continue
     return table
+
+
+def target_addresses(symbols: dict[int, set[str]], source_names: set[str]) -> dict[int, str]:
+    """Match only identities that name-based DecBench data can distinguish."""
+    matched: dict[int, str] = {}
+    by_name: dict[str, int] = {}
+    for address, names in symbols.items():
+        selected = names & source_names
+        if len(selected) > 1:
+            raise ValueError(f"multiple source functions share address {address:#x}: {sorted(selected)}")
+        if selected:
+            name = next(iter(selected))
+            if name in by_name and by_name[name] != address:
+                raise ValueError(f"source function name resolves to multiple addresses: {name}")
+            by_name[name] = address
+            matched[address] = name
+    return matched
 
 
 def strip_copy(binary: Path, dest_dir: Path) -> Path:
@@ -185,9 +202,10 @@ def _score(job: Job, result: dict[str, Any]) -> None:
     original = Path(job.path)
     cfg_payload = json.loads(Path(job.cfg_path).read_text(encoding="utf-8"))
     source_cfgs = {n: rebuild_cfg(fc) for n, fc in (cfg_payload.get("functions") or {}).items()}
-    syms = symbol_table(original)
-    names = set(syms.values())
-    targets = {n for n in source_cfgs if n in names}
+    syms = target_addresses(symbol_table(original), set(source_cfgs))
+    targets = set(syms.values())
+    result["source_cfg_functions"] = len(source_cfgs)
+    result["unmatched_source_functions"] = len(set(source_cfgs) - targets)
     result["targets"] = len(targets)
     result["functions"] = {n: {} for n in sorted(targets)}
     if not targets:

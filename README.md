@@ -55,9 +55,11 @@ the CFG contents. `list` and `run` still select only binaries with a CFG.
 Use `DECBENCH_DATA` or `--data` to point at the dataset elsewhere. A manifest
 does not yet hash Fission's resource bundle, all native dependencies, or the
 Joern installation; it records a reproducibility boundary, not a guarantee of
-bit-for-bit replay across machines. The legacy name-based target selection can
-also collapse same-named functions and is not yet qualified for C++ overloads.
-Do not use its output as a C++ ranking.
+bit-for-bit replay across machines. Name-based source CFGs are not yet qualified
+for C++ overloads. A name matching multiple addresses or multiple target names
+sharing an address makes the binary fail closed rather than selecting one.
+Unmatched source names are counted in the result; do not use these results as a
+C++ ranking.
 
 ## Publish (GitHub Pages)
 
